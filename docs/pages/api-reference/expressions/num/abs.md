@@ -4,7 +4,7 @@ order: 0
 status: published
 ---
 
-### abs
+### Abs
 
 Function to get the absolute value of a number.
 

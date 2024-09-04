@@ -144,6 +144,8 @@ def parse_struct_into_dict(value: Any) -> Union[dict, list]:
         return [parse_struct_into_dict(x) for x in value]
     elif isinstance(value, dict) or isinstance(value, frozendict):
         return {key: parse_struct_into_dict(val) for key, val in value.items()}
+    elif value is None or pd.isna(value):
+        return None
     else:
         return value
 

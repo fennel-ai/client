@@ -19,9 +19,11 @@ evaluates to True. `then` must always be called on the result of a `when`
 expression.
 </Expandable>
 
-<Expandable title="otherwise" type="Expr">
+<Expandable title="otherwise" type="Expr" defaultVal="lit(None)">
 The equivalent of `else` branch in the ternary expression - the whole expression
-evaluates to this branch when the predicate evaluates to be False.
+evaluates to this branch when the predicate evaluates to be False. 
+
+Defaults to `lit(None)` when not provided.
 </Expandable>
 
 

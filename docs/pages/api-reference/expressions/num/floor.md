@@ -4,7 +4,7 @@ order: 0
 status: published
 ---
 
-### floor
+### Floor
 
 Function in `num` namespace to get the floor of a number.
 

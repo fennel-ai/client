@@ -96,16 +96,11 @@ sidebar:
       - "api-reference/expressions/typeof"
       - "api-reference/expressions/when"
       # - "api-reference/expressions/datetime"
-      # - "api-reference/expressions/str/lower"
-      # - "api-reference/expressions/str/upper"
-      # - "api-reference/expressions/str/endswith"
-      # - "api-reference/expressions/str/concat"
-      # - "api-reference/expressions/str/parse"
-      # - "api-reference/expressions/str/len"
-      # - "api-reference/expressions/str/contains"
-      # - "api-reference/expressions/list.len"
-      # - "api-reference/expressions/list.hasnull"
-      # - "api-reference/expressions/list.contains"
+      # - "api-reference/expressions/from_epoch"
+
+  - slug: "api-reference/expressions/dt"
+    title: "Datetime Expressions"
+    pages:
       # - "api-reference/expressions/dt.since"
       # - "api-reference/expressions/dt.since_epoch"
       # - "api-reference/expressions/dt.year"
@@ -115,14 +110,13 @@ sidebar:
       # - "api-reference/expressions/dt.minute"
       # - "api-reference/expressions/dt.second"
       # - "api-reference/expressions/dt.strftime"
-      # - "api-reference/expressions/struct"
-      # - "api-reference/expressions/from_epoch"
-      # - "api-reference/expressions/struct.get"
 
-  - slug: "api-reference/expressions/str"
-    title: "String Expressions"
+  - slug: "api-reference/expressions/list"
+    title: "List Expressions"
     pages:
-      - "api-reference/expressions/str/startswith"
+      # - "api-reference/expressions/list.len"
+      # - "api-reference/expressions/list.hasnull"
+      # - "api-reference/expressions/list.contains"
 
   - slug: "api-reference/expressions/num"
     title: "Num Expressions"
@@ -131,6 +125,26 @@ sidebar:
       - "api-reference/expressions/num/ceil"
       - "api-reference/expressions/num/floor"
       - "api-reference/expressions/num/round"
+
+  - slug: "api-reference/expressions/str"
+    title: "String Expressions"
+    pages:
+      - "api-reference/expressions/str/concat"
+      - "api-reference/expressions/str/contains"
+      - "api-reference/expressions/str/endswith"
+      - "api-reference/expressions/str/len"
+      - "api-reference/expressions/str/lower"
+      - "api-reference/expressions/str/parse"
+      - "api-reference/expressions/str/startswith"
+      - "api-reference/expressions/str/strptime"
+      - "api-reference/expressions/str/upper"
+
+  - slug: "api-reference/expressions/struct"
+    title: "Struct Expressions"
+    pages:
+      - "api-reference/expressions/struct/get"
+      # - "api-reference/expressions/struct/init"
+
 
   - slug: "api-reference/decorators"
     title: "Decorators"
