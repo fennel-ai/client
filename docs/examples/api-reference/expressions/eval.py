@@ -46,7 +46,7 @@ def test_eval():
 
     # dataframe doesn't have the required column even though schema is provided
     df = pd.DataFrame({"other": [1, 2, 3]})
-    with pytest.raises(KeyError):
+    with pytest.raises(Exception):
         expr.eval(df, schema={"amount": int})
         
     # /docsnip

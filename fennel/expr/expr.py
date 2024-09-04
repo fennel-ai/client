@@ -12,7 +12,7 @@ import numpy as np
 
 from fennel.dtypes.dtypes import FENNEL_STRUCT, FENNEL_STRUCT_SRC_CODE
 import pandas as pd
-from fennel.internal_lib.schema.schema import from_proto, parse_json
+from fennel.internal_lib.schema.schema import convert_dtype_to_arrow_type_with_nullable, from_proto, parse_json
 import pyarrow as pa
 from fennel_data_lib import eval, type_of
 
@@ -83,7 +83,15 @@ class Expr(object):
     def abs(self) -> _Number:
         return _Number(self, Abs())
 
-    def round(self, precision: int) -> _Number:
+    def round(self, precision: int = 0) -> _Number:
+        if not isinstance(precision, int):
+            raise InvalidExprException(
+                f"precision can only be an int but got {precision} instead"
+            )
+        if precision < 0:
+            raise InvalidExprException(
+                f"precision can only be a positive int but got {precision} instead"
+            )
         return _Number(self, Round(precision))
 
     def ceil(self) -> _Number:
@@ -106,6 +114,9 @@ class Expr(object):
 
     def __bool__(self):
         raise InvalidExprException("can not convert: '%s' to bool" % self)
+
+    def __neg__(self) -> Expr:
+        return Unary("-", self)
 
     def __add__(self, other: Any) -> Expr:
         other = make_expr(other)
@@ -345,7 +356,18 @@ class Expr(object):
                     )
                 new_df[column] = cast_col_to_arrow_dtype(new_df[column], dtype)
             new_df = new_df.loc[:, list(schema.keys())]
-            return pa.RecordBatch.from_pandas(new_df, preserve_index=False)
+            fields = []
+            for column, dtype in schema.items():
+                proto_dtype = get_datatype(dtype)
+                pa_type, nullable = convert_dtype_to_arrow_type_with_nullable(proto_dtype)
+                field = pa.field(column, type=pa_type, nullable=nullable)
+                print("adding field", field, "dtype was", dtype, "proto_dtype", proto_dtype, "nullable", nullable)
+                print("field is nullable", field.nullable)
+                fields.append(field)
+            pa_schema = pa.schema(fields)
+            print("pa_schema", pa_schema)
+            print("new_df", new_df)
+            return pa.RecordBatch.from_pandas(new_df, preserve_index=False, schema=pa_schema)
 
         def pa_to_pd(pa_data, ret_type):
             ret = pa_data.to_pandas(types_mapper=pd.ArrowDtype)
@@ -358,6 +380,7 @@ class Expr(object):
         proto_expr = serializer.serialize(self.root)
         proto_bytes = proto_expr.SerializeToString()
         df_pa = pd_to_pa(input_df, schema)
+        print("df_pa", df_pa)
         proto_schema = {}
         for key, value in schema.items():
             proto_schema[key] = get_datatype(value).SerializeToString()
@@ -443,6 +466,13 @@ class StringOp:
 class StrContains(StringOp):
     item: Expr
 
+@dataclass
+class StrStartsWith(StringOp):
+    item: Expr
+
+@dataclass
+class StrEndsWith(StringOp):
+    item: Expr
 
 class Lower(StringOp):
     pass
@@ -477,7 +507,6 @@ class Concat(StringOp):
 
 
 class _String(Expr):
-
     def __init__(self, expr: Expr, op: StringOp):
         self.op = op
         self.operand = expr
@@ -501,7 +530,7 @@ class _String(Expr):
         return _Number(_String(self, StrLen()), MathNoop())
 
     def strptime(
-        self, format: str, timezone: Optional[str] = None
+        self, format: str, timezone: Optional[str] = "UTC"
     ) -> _DateTime:
         return _DateTime(
             _String(self, StringStrpTime(format, timezone)), DateTimeNoop()
@@ -509,6 +538,14 @@ class _String(Expr):
 
     def parse(self, dtype: Type) -> Expr:
         return _String(self, StringParse(dtype))
+
+    def startswith(self, item) -> _Bool:
+        item_expr = make_expr(item)
+        return _Bool(_String(self, StrStartsWith(item_expr)))
+    
+    def endswith(self, item) -> _Bool:
+        item_expr = make_expr(item)
+        return _Bool(_String(self, StrEndsWith(item_expr)))
 
 
 #########################################################
@@ -582,12 +619,12 @@ class _Struct(Expr):
         self.operand = expr
         super(_Struct, self).__init__()
 
-    def get(self, key: str) -> Expr:
-        if not isinstance(key, str):
+    def get(self, field: str) -> Expr:
+        if not isinstance(field, str):
             raise InvalidExprException(
-                f"invalid field access for struct, expected string but got {key}"
+                f"invalid field access for struct, expected string but got {field}"
             )
-        return _Struct(self, StructGet(key))
+        return _Struct(self, StructGet(field))
 
 
 #########################################################
@@ -781,7 +818,7 @@ class Literal(Expr):
 
 class Unary(Expr):
     def __init__(self, op: str, operand: Any):
-        valid = ("~", "len", "str")
+        valid = ("~", "-")
         if op not in valid:
             raise InvalidExprException(
                 "unary expressions only support %s but given '%s'"
@@ -797,10 +834,7 @@ class Unary(Expr):
         super(Unary, self).__init__()
 
     def __str__(self) -> str:
-        if self.op in ["len", "str"]:
-            return f"{self.op}({self.operand})"
-        else:
-            return f"{self.op}{self.operand}"
+        return f"{self.op} {self.operand}"
 
 
 class Binary(Expr):
@@ -953,14 +987,14 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
     # TODO: Add support for more types recursively
     if type is not None:
         return Literal(v, type)
+    elif isinstance(v, bool):
+        return Literal(v, bool)
     elif isinstance(v, int):
         return Literal(v, int)
     elif isinstance(v, float):
         return Literal(v, float)
     elif isinstance(v, str):
         return Literal(v, str)
-    elif isinstance(v, bool):
-        return Literal(v, bool)
     elif v is None:
         return Literal(v, None)  # type: ignore
     else:

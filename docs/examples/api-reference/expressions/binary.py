@@ -14,14 +14,14 @@ def test_typeof():
 
     df = pd.DataFrame({"x": [1, 2, None]})
     expr = lit(1) + col("x")
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [2, 3, None]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [2, 3, pd.NA]
     
     expr = lit(1) - col("x")
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [0, -1, None]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [0, -1, pd.NA]
     
     expr = lit(1) * col("x")
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [1, 2, None]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [1, 2, pd.NA]
     
     expr = lit(1) / col("x")
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [1, 0.5, None]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [1, 0.5, pd.NA]
     # /docsnip

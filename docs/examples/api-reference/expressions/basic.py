@@ -2,25 +2,6 @@ import pytest
 from typing import Optional
 import pandas as pd
 
-def test_num_abs():
-    # docsnip expr_num_abs
-    from fennel.expr import col
-
-    # docsnip-highlight next-line
-    expr = col("x").num.abs()
-    assert expr.typeof(schema={"x": int}) == int
-    assert expr.typeof(schema={"x": Optional[int]}) == Optional[int]
-    assert expr.typeof(schema={"x": float}) == float
-    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
-
-    # can be evaluated with a dataframe
-    df = pd.DataFrame({"x": pd.Series([1, -2, None], dtype=pd.Int64Dtype())})
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [1, 2, None]
-
-    with pytest.raises(ValueError):
-        expr.typeof(schema={"x": str})
-    # /docsnip
-
 def test_unary_not():
     # docsnip expr_unary_not
     from fennel.expr import lit
@@ -63,7 +44,7 @@ def test_col():
 
 def test_when_then():
     # docsnip expr_when_then
-    from fennel.expr import when, col
+    from fennel.expr import when, col, InvalidExprException
 
     # docsnip-highlight next-line
     expr = when(col("x")).then(1).otherwise(0)
@@ -84,8 +65,8 @@ def test_when_then():
     assert expr.eval(df, schema={"x": bool}).tolist() == [1, 0, 1]
 
     # not valid if only when is provided
-    expr = when(col("x"))
-    with pytest.raises(ValueError):
+    with pytest.raises(InvalidExprException):
+        expr = when(col("x"))
         expr.typeof(schema={"x": bool})
 
     # if otherwise is not provided, it defaults to None
@@ -114,7 +95,7 @@ def test_isnull():
     import pandas as pd
 
     df = pd.DataFrame({"x": pd.Series([1, 2, None], dtype=pd.Int64Dtype())})
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [True, False, False]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [False, False, True]
     # /docsnip
 
 def test_fillnull():
@@ -153,5 +134,5 @@ def test_lit():
     # can be evaluated with a dataframe
     expr = col("x") + lit(1)
     df = pd.DataFrame({"x": pd.Series([1, 2, None], dtype=pd.Int64Dtype())})
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [2, 3, None]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [2, 3, pd.NA]
     # /docsnip

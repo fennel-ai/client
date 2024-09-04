@@ -45,6 +45,8 @@ from fennel.expr.expr import (
     StrLen,
     StringStrpTime,
     StringParse,
+    StrStartsWith,
+    StrEndsWith,
     Lower,
     Upper,
     StrContains,
@@ -104,7 +106,12 @@ class ExprSerializer(Visitor):
 
     def visitUnary(self, obj):
         expr = proto.Expr()
-        expr.unary.op = obj.op
+        if obj.op == "~":
+            expr.unary.op = proto.UnaryOp.NOT
+        elif obj.op == "-":
+            expr.unary.op = proto.UnaryOp.NEG
+        else:
+            raise Exception("invalid unary operation: %s" % obj.op)
         operand = self.visit(obj.operand)
         expr.unary.operand.CopyFrom(operand)
         return expr
@@ -260,6 +267,18 @@ class ExprSerializer(Visitor):
                     json_decode=proto.JsonDecode(
                         dtype=get_datatype(obj.op.dtype)
                     )
+                )
+            )
+        elif isinstance(obj.op, StrStartsWith):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(
+                    startswith=proto.StartsWith(key=self.visit(obj.op.item))
+                )
+            )
+        elif isinstance(obj.op, StrEndsWith):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(
+                    endswith=proto.EndsWith(key=self.visit(obj.op.item))
                 )
             )
         else:

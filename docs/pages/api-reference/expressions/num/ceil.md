@@ -4,7 +4,7 @@ order: 0
 status: published
 ---
 
-### ceil
+### Ceil
 
 Function in `num` namespace to get the ceil of a number.
 

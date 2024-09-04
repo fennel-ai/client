@@ -336,7 +336,7 @@ class FetchReferences(Visitor):
         self.refs.add(obj._col)
 
     def visitUnary(self, obj):
-        self.visit(obj.expr)
+        self.visit(obj.operand)
 
     def visitBinary(self, obj):
         self.visit(obj.left)
