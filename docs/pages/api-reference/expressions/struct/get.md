@@ -6,7 +6,7 @@ status: published
 
 ### Get
 
-Function to get a given field from a struct.
+Function to get the value of a given field from a struct.
 
 #### Parameters
 <Expandable title="field" type="str">
@@ -15,7 +15,7 @@ must be a literal string, not an expression.
 </Expandable>
 
 <pre snippet="api-reference/expressions/struct_snip#get"
-    status="success" message="Get a field from a sturct">
+    status="success" message="Get a field from a struct">
 </pre>
 
 #### Returns

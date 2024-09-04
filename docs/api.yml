@@ -111,12 +111,13 @@ sidebar:
   #     - "api-reference/expressions/dt.second"
   #     - "api-reference/expressions/dt.strftime"
 
-  # - slug: "api-reference/expressions/list"
-  #   title: "List Expressions"
-  #   pages:
-  #     - "api-reference/expressions/list.len"
-  #     - "api-reference/expressions/list.hasnull"
-  #     - "api-reference/expressions/list.contains"
+  - slug: "api-reference/expressions/list"
+    title: "List Expressions"
+    pages:
+      - "api-reference/expressions/list/at"
+      - "api-reference/expressions/list/contains"
+      - "api-reference/expressions/list/hasnull"
+      - "api-reference/expressions/list/len"
 
   - slug: "api-reference/expressions/num"
     title: "Num Expressions"
