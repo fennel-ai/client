@@ -98,25 +98,25 @@ sidebar:
       # - "api-reference/expressions/datetime"
       # - "api-reference/expressions/from_epoch"
 
-  - slug: "api-reference/expressions/dt"
-    title: "Datetime Expressions"
-    pages:
-      # - "api-reference/expressions/dt.since"
-      # - "api-reference/expressions/dt.since_epoch"
-      # - "api-reference/expressions/dt.year"
-      # - "api-reference/expressions/dt.month"
-      # - "api-reference/expressions/dt.day"
-      # - "api-reference/expressions/dt.hour"
-      # - "api-reference/expressions/dt.minute"
-      # - "api-reference/expressions/dt.second"
-      # - "api-reference/expressions/dt.strftime"
+  # - slug: "api-reference/expressions/dt"
+  #   title: "Datetime Expressions"
+  #   pages:
+  #     - "api-reference/expressions/dt.since"
+  #     - "api-reference/expressions/dt.since_epoch"
+  #     - "api-reference/expressions/dt.year"
+  #     - "api-reference/expressions/dt.month"
+  #     - "api-reference/expressions/dt.day"
+  #     - "api-reference/expressions/dt.hour"
+  #     - "api-reference/expressions/dt.minute"
+  #     - "api-reference/expressions/dt.second"
+  #     - "api-reference/expressions/dt.strftime"
 
-  - slug: "api-reference/expressions/list"
-    title: "List Expressions"
-    pages:
-      # - "api-reference/expressions/list.len"
-      # - "api-reference/expressions/list.hasnull"
-      # - "api-reference/expressions/list.contains"
+  # - slug: "api-reference/expressions/list"
+  #   title: "List Expressions"
+  #   pages:
+  #     - "api-reference/expressions/list.len"
+  #     - "api-reference/expressions/list.hasnull"
+  #     - "api-reference/expressions/list.contains"
 
   - slug: "api-reference/expressions/num"
     title: "Num Expressions"
