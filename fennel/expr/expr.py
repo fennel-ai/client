@@ -823,9 +823,12 @@ class _List(Expr):
         item_expr = make_expr(item)
         return _Bool(_List(self, ListContains(item_expr)))
 
-    def get(self, index: Expr) -> Expr:
+    def at(self, index: Expr) -> Expr:
         index_expr = make_expr(index)
         return _List(self, ListGet(index_expr))
+
+    def hasnull(self) -> _Bool:
+        return _Bool(_List(self, ListHasNull()))
 
 
 #######################################################

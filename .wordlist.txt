@@ -244,6 +244,7 @@ hackathon
 hardcoded
 hashable
 hashmap
+hasnull
 hostname
 html
 hudi

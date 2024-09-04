@@ -721,7 +721,7 @@ def test_parse():
 def test_list():
     test_cases = [
         ExprTestCase(
-            expr=(col("a").list.get(0)),
+            expr=(col("a").list.at(0)),
             df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
             schema={"a": List[int]},
             display="col('a')[0]",
@@ -732,7 +732,7 @@ def test_list():
         ),
         # Get index where index is an expression
         ExprTestCase(
-            expr=(col("a").list.get(col("b") + col("c"))),
+            expr=(col("a").list.at(col("b") + col("c"))),
             df=pd.DataFrame(
                 {
                     "a": [[1, 2, 3, 4], [4, 5, 6, 12], [7, 8, 9, 19]],
@@ -753,7 +753,7 @@ def test_list():
         ),
         # Out of bounds index
         ExprTestCase(
-            expr=(col("a").list.get(col("b"))),
+            expr=(col("a").list.at(col("b"))),
             df=pd.DataFrame(
                 {
                     "a": [[1, 2, 3, 4], [4, 5, 6, 12], [7, 8, 9, 19]],
