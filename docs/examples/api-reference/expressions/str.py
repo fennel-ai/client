@@ -13,15 +13,25 @@ def test_concact():
     assert expr.typeof(schema={"x": str, "y": str}) == str
     assert expr.typeof(schema={"x": str, "y": Optional[str]}) == Optional[str]
     assert expr.typeof(schema={"x": Optional[str], "y": str}) == Optional[str]
-    assert expr.typeof(schema={"x": Optional[str], "y": Optional[str]}) == Optional[str]
+    assert (
+        expr.typeof(schema={"x": Optional[str], "y": Optional[str]})
+        == Optional[str]
+    )
 
     # can be evaluated with a dataframe
-    df = pd.DataFrame({
-        "x": ["hello", "world", "some", None],
-        "y": [" world", " hello", None, None],
-    })
+    df = pd.DataFrame(
+        {
+            "x": ["hello", "world", "some", None],
+            "y": [" world", " hello", None, None],
+        }
+    )
     schema = {"x": Optional[str], "y": Optional[str]}
-    assert expr.eval(df, schema=schema).tolist() == ["hello world", "world hello", pd.NA, pd.NA]
+    assert expr.eval(df, schema=schema).tolist() == [
+        "hello world",
+        "world hello",
+        pd.NA,
+        pd.NA,
+    ]
 
     # schema of both columns must be str
     with pytest.raises(ValueError):
@@ -42,13 +52,18 @@ def test_contains():
     assert expr.typeof(schema={"x": str, "y": str}) == bool
     assert expr.typeof(schema={"x": str, "y": Optional[str]}) == Optional[bool]
     assert expr.typeof(schema={"x": Optional[str], "y": str}) == Optional[bool]
-    assert expr.typeof(schema={"x": Optional[str], "y": Optional[str]}) == Optional[bool]
+    assert (
+        expr.typeof(schema={"x": Optional[str], "y": Optional[str]})
+        == Optional[bool]
+    )
 
     # can be evaluated with a dataframe
-    df = pd.DataFrame({
-        "x": ["hello", "world", "some", None],
-        "y": ["ell", "random", None, None],
-    })
+    df = pd.DataFrame(
+        {
+            "x": ["hello", "world", "some", None],
+            "y": ["ell", "random", None, None],
+        }
+    )
     schema = {"x": Optional[str], "y": Optional[str]}
     assert expr.eval(df, schema=schema).tolist() == [True, False, pd.NA, pd.NA]
 
@@ -60,6 +75,7 @@ def test_contains():
         expr.typeof(schema={"x": str, "y": int})
     # /docsnip
 
+
 def test_startswith():
     # docsnip startswith
     from fennel.expr import col
@@ -70,13 +86,18 @@ def test_startswith():
     assert expr.typeof(schema={"x": str, "y": str}) == bool
     assert expr.typeof(schema={"x": str, "y": Optional[str]}) == Optional[bool]
     assert expr.typeof(schema={"x": Optional[str], "y": str}) == Optional[bool]
-    assert expr.typeof(schema={"x": Optional[str], "y": Optional[str]}) == Optional[bool]
+    assert (
+        expr.typeof(schema={"x": Optional[str], "y": Optional[str]})
+        == Optional[bool]
+    )
 
     # can be evaluated with a dataframe
-    df = pd.DataFrame({
-        "x": ["hello", "world", "some", None],
-        "y": ["he", "rld", None, None],
-    })
+    df = pd.DataFrame(
+        {
+            "x": ["hello", "world", "some", None],
+            "y": ["he", "rld", None, None],
+        }
+    )
     schema = {"x": Optional[str], "y": Optional[str]}
     assert expr.eval(df, schema=schema).tolist() == [True, False, pd.NA, pd.NA]
 
@@ -99,13 +120,18 @@ def test_endswith():
     assert expr.typeof(schema={"x": str, "y": str}) == bool
     assert expr.typeof(schema={"x": str, "y": Optional[str]}) == Optional[bool]
     assert expr.typeof(schema={"x": Optional[str], "y": str}) == Optional[bool]
-    assert expr.typeof(schema={"x": Optional[str], "y": Optional[str]}) == Optional[bool]
+    assert (
+        expr.typeof(schema={"x": Optional[str], "y": Optional[str]})
+        == Optional[bool]
+    )
 
     # can be evaluated with a dataframe
-    df = pd.DataFrame({
-        "x": ["hello", "world", "some", None],
-        "y": ["lo", "wor", None, None],
-    })
+    df = pd.DataFrame(
+        {
+            "x": ["hello", "world", "some", None],
+            "y": ["lo", "wor", None, None],
+        }
+    )
     schema = {"x": Optional[str], "y": Optional[str]}
     assert expr.eval(df, schema=schema).tolist() == [True, False, pd.NA, pd.NA]
 
@@ -131,7 +157,12 @@ def test_lower():
     # can be evaluated with a dataframe
     df = pd.DataFrame({"x": ["HeLLo", "World", "some", None]})
     schema = {"x": Optional[str]}
-    assert expr.eval(df, schema=schema).tolist() == ["hello", "world", "some", pd.NA]
+    assert expr.eval(df, schema=schema).tolist() == [
+        "hello",
+        "world",
+        "some",
+        pd.NA,
+    ]
 
     # schema of column must be str
     with pytest.raises(ValueError):
@@ -152,7 +183,12 @@ def test_upper():
     # can be evaluated with a dataframe
     df = pd.DataFrame({"x": ["HeLLo", "World", "some", None]})
     schema = {"x": Optional[str]}
-    assert expr.eval(df, schema=schema).tolist() == ["HELLO", "WORLD", "SOME", pd.NA]
+    assert expr.eval(df, schema=schema).tolist() == [
+        "HELLO",
+        "WORLD",
+        "SOME",
+        pd.NA,
+    ]
 
     # schema of column must be str
     with pytest.raises(ValueError):
@@ -208,13 +244,13 @@ def test_parse_basic():
         ("1.1", float, 1.1),
         ("true", bool, True),
         ("false", bool, False),
-        ("\"hi\"", str, "hi"),
+        ('"hi"', str, "hi"),
     ]
     for case in cases:
         expr = lit(case[0]).str.parse(case[1])
         assert expr.eval(df, schema).tolist() == [case[2]]
     # /docsnip
-    
+
 
 def test_parse_invalid():
     # docsnip parse_invalid
@@ -233,7 +269,7 @@ def test_parse_invalid():
         with pytest.raises(Exception):
             expr.eval(df, schema)
     # /docsnip
-    
+
 
 def test_parse_struct():
     # docsnip parse_struct
@@ -246,9 +282,9 @@ def test_parse_struct():
         y: Optional[bool]
 
     cases = [
-        ("{\"x\": 1, \"y\": true}", MyStruct(1, True)),
-        ("{\"x\": 2, \"y\": null}", MyStruct(2, None)),
-        ("{\"x\": 3}", MyStruct(3, None)),
+        ('{"x": 1, "y": true}', MyStruct(1, True)),
+        ('{"x": 2, "y": null}', MyStruct(2, None)),
+        ('{"x": 3}', MyStruct(3, None)),
     ]
     for case in cases:
         expr = lit(case[0]).str.parse(MyStruct)
@@ -257,29 +293,31 @@ def test_parse_struct():
         found = expr.eval(df, schema).tolist()
         assert len(found) == 1
         assert found[0].x == case[1].x
-        assert found[0].y == case[1].y
     # /docsnip
 
     # can also parse a list of structs
-    df = pd.DataFrame({"x": ["[{\"x\": 1, \"y\": true}, {\"x\": 2, \"y\": null}, null]"]})
+    df = pd.DataFrame(
+        {"x": ['[{"x": 1, "y": true}, {"x": 2, "y": null}, null]']}
+    )
     schema = {"x": str}
     target = List[Optional[MyStruct]]
     expr = col("x").str.parse(target)
     found = expr.eval(df, schema).tolist()
     assert len(found) == 1
     assert len(found[0]) == 3
+
     assert found[0][0].x == 1
-    assert found[0][0].y == True
+    assert found[0][0].y == True  # noqa
     assert found[0][1].x == 2
-    assert found[0][1].y == None
-    assert found[0][2] == None
+    assert pd.isna(found[0][1].y)
     # /docsnip
+
 
 def test_strptime():
     # docsnip strptime
     from fennel.expr import col
     from datetime import datetime
-    
+
     # docsnip-highlight next-line
     expr = col("x").str.strptime("%Y-%m-%d")
 

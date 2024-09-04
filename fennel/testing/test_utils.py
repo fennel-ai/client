@@ -256,7 +256,7 @@ def cast_df_to_arrow_dtype(
             df[f.name] = series
         except Exception as e:
             raise ValueError(
-                f"Failed to cast column `{f.name}` of type `{proto_to_dtype(f.dtype)}` to arrow dtype. Error: {e}"
+                f"Failed to cast column2 `{f.name}` of type `{proto_to_dtype(f.dtype)}` to arrow dtype. Error: {e}"
             )
     return df
 

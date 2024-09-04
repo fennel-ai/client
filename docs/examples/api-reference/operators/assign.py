@@ -67,6 +67,7 @@ class TestAssignSnips(unittest.TestCase):
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
+
         # docsnip-highlight next-line
         from fennel.expr import col
 
@@ -132,6 +133,7 @@ class TestAssignSnips(unittest.TestCase):
             from fennel.expr import col
 
             webhook = Webhook(name="webhook")
+
             @source(webhook.endpoint("txn"), disorder="14d", cdc="upsert")
             @dataset
             class Transaction:
@@ -155,6 +157,7 @@ class TestAssignSnips(unittest.TestCase):
                         # docsnip-highlight next-line
                         amount_half=(col("amount") / 2).astype(int),
                     )
+
         # /docsnip
 
     @mock

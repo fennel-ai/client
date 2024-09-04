@@ -392,15 +392,6 @@ class ExprSerializer(Visitor):
 
     def visitMakeStruct(self, obj):
         expr = proto.Expr()
-        fields = {}
-        for field, value in obj.fields.items():
-            fields[field] = self.visit(value)
-        expr.make_struct.fields.update(fields)
-        expr.make_struct.struct_type.CopyFrom(get_datatype(obj.dtype))
-        return expr
-
-    def visitMakeStruct(self, obj):
-        expr = proto.Expr()
         for field, value in obj.fields.items():
             field_expr = expr.make_struct.fields.get_or_create(field)
             field_expr.CopyFrom(self.visit(value))
@@ -414,7 +405,6 @@ class ExprSerializer(Visitor):
                 )
             )
         expr.make_struct.struct_type.CopyFrom(dtype.struct_type)
-
         return expr
 
     def visitDateTimeFromEpoch(self, obj):

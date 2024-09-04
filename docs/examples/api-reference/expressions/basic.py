@@ -2,6 +2,7 @@ import pytest
 from typing import Optional
 import pandas as pd
 
+
 def test_unary_not():
     # docsnip expr_unary_not
     from fennel.expr import lit
@@ -14,6 +15,7 @@ def test_unary_not():
     df = pd.DataFrame({"x": [1, 2, 3]})
     assert expr.eval(df, schema={"x": int}).tolist() == [False, False, False]
     # /docsnip
+
 
 def test_col():
     # docsnip expr_col
@@ -38,9 +40,15 @@ def test_col():
 
     # can be evaluated with a dataframe
     import pandas as pd
+
     df = pd.DataFrame({"x": [1, 2, 3], "y": [1.0, 2.0, 3.0]})
-    assert expr.eval(df, schema={"x": int, "y": float}).tolist() == [2.0, 4.0, 6.0]    
+    assert expr.eval(df, schema={"x": int, "y": float}).tolist() == [
+        2.0,
+        4.0,
+        6.0,
+    ]
     # /docsnip
+
 
 def test_when_then():
     # docsnip expr_when_then
@@ -61,6 +69,7 @@ def test_when_then():
 
     # can be evaluated with a dataframe
     import pandas as pd
+
     df = pd.DataFrame({"x": [True, False, True]})
     assert expr.eval(df, schema={"x": bool}).tolist() == [1, 0, 1]
 
@@ -73,6 +82,7 @@ def test_when_then():
     expr = when(col("x")).then(1)
     assert expr.typeof(schema={"x": bool}) == Optional[int]
     # /docsnip
+
 
 def test_isnull():
     # docsnip expr_isnull
@@ -95,8 +105,13 @@ def test_isnull():
     import pandas as pd
 
     df = pd.DataFrame({"x": pd.Series([1, 2, None], dtype=pd.Int64Dtype())})
-    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [False, False, True]
+    assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [
+        False,
+        False,
+        True,
+    ]
     # /docsnip
+
 
 def test_fillnull():
     # docsnip expr_fillnull
@@ -118,8 +133,13 @@ def test_fillnull():
 
     expr = col("x").fillnull(lit(10))
     df = pd.DataFrame({"x": pd.Series([1, 2, None], dtype=pd.Int64Dtype())})
-    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [1., 2., 10.]
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        1.0,
+        2.0,
+        10.0,
+    ]
     # /docsnip
+
 
 def test_lit():
     # docsnip expr_lit
