@@ -1,6 +1,7 @@
 from typing import Optional
 import pytest
 
+
 def test_typeof():
     # docsnip expr_typeof
     from fennel.expr import lit, col
@@ -11,7 +12,6 @@ def test_typeof():
     assert expr.typeof(schema={"amount": float}) == float
     assert expr.typeof(schema={"amount": Optional[int]}) == Optional[int]
     assert expr.typeof(schema={"amount": Optional[float]}) == Optional[float]
-
 
     # typeof raises an error if type of 'amount' isn't provided
     with pytest.raises(ValueError):
@@ -48,5 +48,5 @@ def test_eval():
     df = pd.DataFrame({"other": [1, 2, 3]})
     with pytest.raises(Exception):
         expr.eval(df, schema={"amount": int})
-        
+
     # /docsnip

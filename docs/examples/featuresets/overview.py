@@ -287,6 +287,7 @@ def test_featureset_many_extractors():
 
     # /docsnip
 
+
 @mock
 def test_feature_on_feature(client):
     # docsnip featureset_feature_on_feature
@@ -299,13 +300,14 @@ def test_feature_on_feature(client):
         over_3hrs: bool
 
         @extractor
-        @inputs("duration")    # docsnip-highlight
+        @inputs("duration")  # docsnip-highlight
         @outputs("over_3hrs")  # docsnip-highlight
         def e(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
             return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
 
     # /docsnip
     client.commit(featuresets=[Movies], message="some commit message")
+
 
 @mock
 def test_multiple_extractors_of_same_feature(client):

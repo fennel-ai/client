@@ -2,6 +2,7 @@ import pytest
 from typing import Optional
 import pandas as pd
 
+
 def test_abs():
     # docsnip abs
     from fennel.expr import col
@@ -28,7 +29,7 @@ def test_floor():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").floor() # equivalent to col("x").num.floor()
+    expr = col("x").floor()  # equivalent to col("x").num.floor()
     assert expr.typeof(schema={"x": int}) == int
     assert expr.typeof(schema={"x": Optional[int]}) == Optional[int]
     assert expr.typeof(schema={"x": float}) == int
@@ -36,7 +37,11 @@ def test_floor():
 
     # can be evaluated with a dataframe
     df = pd.DataFrame({"x": pd.Series([1.1, -2.3, None])})
-    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [1, -3, pd.NA]
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        1,
+        -3,
+        pd.NA,
+    ]
 
     with pytest.raises(ValueError):
         expr.typeof(schema={"x": str})
@@ -48,7 +53,7 @@ def test_ceil():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").ceil() # equivalent to col("x").num.ceil()
+    expr = col("x").ceil()  # equivalent to col("x").num.ceil()
     assert expr.typeof(schema={"x": int}) == int
     assert expr.typeof(schema={"x": Optional[int]}) == Optional[int]
     assert expr.typeof(schema={"x": float}) == int
@@ -56,7 +61,11 @@ def test_ceil():
 
     # can be evaluated with a dataframe
     df = pd.DataFrame({"x": pd.Series([1.1, -2.3, None])})
-    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [2, -2, pd.NA]
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        2,
+        -2,
+        pd.NA,
+    ]
 
     with pytest.raises(ValueError):
         expr.typeof(schema={"x": str})
@@ -68,7 +77,7 @@ def test_round():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").round() # equivalent to col("x").num.round()
+    expr = col("x").round()  # equivalent to col("x").num.round()
 
     assert expr.typeof(schema={"x": int}) == int
     assert expr.typeof(schema={"x": Optional[int]}) == Optional[int]
@@ -77,7 +86,11 @@ def test_round():
 
     # can be evaluated with a dataframe
     df = pd.DataFrame({"x": pd.Series([1.1, -2.3, None])})
-    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [1, -2, pd.NA]
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        1,
+        -2,
+        pd.NA,
+    ]
 
     # can also explicit specify the number of decimals
     # docsnip-highlight next-line
@@ -89,16 +102,24 @@ def test_round():
     assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
 
     df = pd.DataFrame({"x": pd.Series([1.12, -2.37, None])})
-    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [1.1, -2.4, pd.NA]
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        1.1,
+        -2.4,
+        pd.NA,
+    ]
 
     df = pd.DataFrame({"x": pd.Series([1, -2, None])})
-    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [1.0, -2.0, pd.NA]
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        1.0,
+        -2.0,
+        pd.NA,
+    ]
 
     # /docsnip
 
     # invalid number of decimals
     with pytest.raises(Exception):
         expr = col("x").round(-1)
-        
+
     with pytest.raises(Exception):
         expr = col("x").round(1.1)

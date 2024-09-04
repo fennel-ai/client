@@ -801,7 +801,7 @@ def test_convert_dtype_to_arrow_type():
     arrow_dtype = convert_dtype_to_arrow_type(data_type)
     assert (
         str(arrow_dtype)
-        == "list<item: struct<a: int64, b: map<string, int64>, c: list<item: int64>>>"
+        == "list<item: struct<a: int64 not null, b: map<string, int64> not null, c: list<item: int64 not null> not null> not null>"
     )
 
 

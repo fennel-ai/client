@@ -4,22 +4,19 @@ from enum import Enum
 import json
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
-
 import pandas as pd
-import json
-import inspect
-import numpy as np
 
 from fennel.dtypes.dtypes import FENNEL_STRUCT, FENNEL_STRUCT_SRC_CODE
-import pandas as pd
-from fennel.internal_lib.schema.schema import convert_dtype_to_arrow_type_with_nullable, from_proto, parse_json
+from fennel.internal_lib.schema.schema import (
+    convert_dtype_to_arrow_type_with_nullable,
+    from_proto,
+    parse_json,
+)
 import pyarrow as pa
 from fennel_data_lib import eval, type_of
 
 import fennel.gen.schema_pb2 as schema_proto
-from fennel.internal_lib import FENNEL_STRUCT
 from fennel.internal_lib.schema import (
-    from_proto,
     get_datatype,
     cast_col_to_arrow_dtype,
 )
@@ -328,7 +325,7 @@ class Expr(object):
     def __hash__(self) -> int:
         return self.nodeid
 
-    def typeof(self, schema: Dict=None) -> Type:
+    def typeof(self, schema: Dict = None) -> Type:
         schema = schema or {}
         from fennel.expr.serializer import ExprSerializer
 
@@ -359,28 +356,26 @@ class Expr(object):
             fields = []
             for column, dtype in schema.items():
                 proto_dtype = get_datatype(dtype)
-                pa_type, nullable = convert_dtype_to_arrow_type_with_nullable(proto_dtype)
+                pa_type, nullable = convert_dtype_to_arrow_type_with_nullable(
+                    proto_dtype
+                )
                 field = pa.field(column, type=pa_type, nullable=nullable)
-                print("adding field", field, "dtype was", dtype, "proto_dtype", proto_dtype, "nullable", nullable)
-                print("field is nullable", field.nullable)
                 fields.append(field)
             pa_schema = pa.schema(fields)
-            print("pa_schema", pa_schema)
-            print("new_df", new_df)
-            return pa.RecordBatch.from_pandas(new_df, preserve_index=False, schema=pa_schema)
+            return pa.RecordBatch.from_pandas(
+                new_df, preserve_index=False, schema=pa_schema
+            )
 
         def pa_to_pd(pa_data, ret_type):
             ret = pa_data.to_pandas(types_mapper=pd.ArrowDtype)
             ret = cast_col_to_pandas(ret, get_datatype(ret_type))
-            if is_user_defined_class(ret_type):
-                ret = ret.apply(lambda x: parse_json(ret_type, x))
+            ret = ret.apply(lambda x: parse_json(ret_type, x))
             return ret
 
         serializer = ExprSerializer()
         proto_expr = serializer.serialize(self.root)
         proto_bytes = proto_expr.SerializeToString()
         df_pa = pd_to_pa(input_df, schema)
-        print("df_pa", df_pa)
         proto_schema = {}
         for key, value in schema.items():
             proto_schema[key] = get_datatype(value).SerializeToString()
@@ -443,7 +438,7 @@ class _Number(Expr):
     def abs(self) -> _Number:
         return _Number(self, Abs())
 
-    def round(self, precision: int) -> _Number:
+    def round(self, precision: int) -> _Number:  # type: ignore
         return _Number(self, Round(precision))
 
     def ceil(self) -> _Number:
@@ -466,13 +461,16 @@ class StringOp:
 class StrContains(StringOp):
     item: Expr
 
+
 @dataclass
 class StrStartsWith(StringOp):
     item: Expr
 
+
 @dataclass
 class StrEndsWith(StringOp):
     item: Expr
+
 
 class Lower(StringOp):
     pass
@@ -542,7 +540,7 @@ class _String(Expr):
     def startswith(self, item) -> _Bool:
         item_expr = make_expr(item)
         return _Bool(_String(self, StrStartsWith(item_expr)))
-    
+
     def endswith(self, item) -> _Bool:
         item_expr = make_expr(item)
         return _Bool(_String(self, StrEndsWith(item_expr)))
@@ -619,12 +617,12 @@ class _Struct(Expr):
         self.operand = expr
         super(_Struct, self).__init__()
 
-    def get(self, field: str) -> Expr:
+    def get(self, field: str) -> Expr:  # type: ignore
         if not isinstance(field, str):
             raise InvalidExprException(
                 f"invalid field access for struct, expected string but got {field}"
             )
-        return _Struct(self, StructGet(field))
+        return _Struct(self, StructGet(field))  # type: ignore
 
 
 #########################################################
@@ -948,7 +946,7 @@ class FillNull(Expr):
         self.fill = make_expr(value)
 
     def __str__(self) -> str:
-        return f"fillnull({self.expr}, {self.value})"
+        return f"fillnull({self.expr}, {self.fill})"
 
 
 class MakeStruct(Expr):

@@ -36,6 +36,7 @@ def test_basic_expr1():
     ref_extractor.visit(expr.root)
     assert ref_extractor.refs == {"num", "d"}
 
+
 def test_unary_expr():
     invert = ~col("a")
     assert invert.typeof({"a": bool}) == bool
@@ -413,7 +414,11 @@ def compare_values(received, expected, dtype):
                 else:
                     compare_values([r], [e], field.type)
     else:
-        assert list(received) == expected
+        print("Received", received)
+        print("Expected", expected)
+        assert (
+            list(received) == expected
+        ), f"Expected {expected}, got {received} for dtype {dtype}"
 
 
 def check_test_case(test_case: ExprTestCase):
@@ -602,7 +607,7 @@ def test_parse():
     # Parse strings
     test_case = ExprTestCase(
         expr=(col("a").str.parse(str)),
-        df=pd.DataFrame({"a": ["\"a1\"", "\"b\"", "\"c\"", "\"d\""]}),
+        df=pd.DataFrame({"a": ['"a1"', '"b"', '"c"', '"d"']}),
         schema={"a": str},
         display="PARSE(col('a'), <class 'str'>)",
         refs={"a"},
@@ -713,25 +718,33 @@ def test_list():
         ),
         # Support struct inside a list
         ExprTestCase(
-            expr=(col("a").list.contains(make_struct({"x": 1, "y": 2, "z": "a"}, A))),
-            df=pd.DataFrame({"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}),
+            expr=(
+                col("a").list.contains(
+                    make_struct({"x": 1, "y": 2, "z": "a"}, A)
+                )
+            ),
+            df=pd.DataFrame(
+                {"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}
+            ),
             schema={"a": List[A]},
             display="""CONTAINS(col('a'), STRUCT(x=1, y=2, z="a"))""",
             refs={"a"},
             eval_result=[True],
             expected_dtype=bool,
             proto_json=None,
-         ),
+        ),
         ExprTestCase(
             expr=(col("a").list.len()),
-            df=pd.DataFrame({"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}),
+            df=pd.DataFrame(
+                {"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}
+            ),
             schema={"a": List[A]},
             display="LEN(col('a'))",
             refs={"a"},
             eval_result=[3],
             expected_dtype=int,
             proto_json=None,
-         ),
+        ),
         # List length
         ExprTestCase(
             expr=(col("a").list.len()),
@@ -758,21 +771,6 @@ def test_list():
 
     for test_case in test_cases:
         check_test_case(test_case)
-
-    # case = ExprTestCase(
-    #     expr=(col("a").list.contains("a")),
-    #     df=pd.DataFrame(
-    #         {"a": [["a", "b", "c"], ["d", "e", "f"], ["g", "h", "i"]]}
-    #     ),
-    #     schema={"a": List[str]},
-    #     display="CONTAINS(col('a'), \"a\")",
-    #     refs={"a"},
-    #
-    #     eval_result=[True, True, True],
-    #     expected_dtype=bool,
-    #     proto_json=None,
-    # )
-    # check_test_case(case)
 
 
 def test_struct():
@@ -1179,64 +1177,50 @@ def test_fillnull():
 
 def test_isnull():
     cases = [
-        # ExprTestCase(
-        #     expr=(col("a").isnull()),
-        #     df=pd.DataFrame({"a": [1, 2, None, 4]}),
-        #     schema={"a": Optional[int]},
-        #     display="IS_NULL(col('a'))",
-        #     refs={"a"},
-        #     eval_result=[False, False, True, False],
-        #     expected_dtype=bool,
-        #     proto_json=None,
-        # ),
-        # ExprTestCase(
-        #     expr=(col("a").isnull()),
-        #     df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
-        #     schema={"a": Optional[str]},
-        #     display="IS_NULL(col('a'))",
-        #     refs={"a"},
-        #     eval_result=[False, False, True, False],
-        #     expected_dtype=bool,
-        #     proto_json=None,
-        # ),
-        # Each type is a struct
-        # TODO(Aditya): Fix this test case
         ExprTestCase(
             expr=(col("a").isnull()),
-            df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), None]}),
-            schema={"a": Optional[A]},
+            df=pd.DataFrame({"a": [1, 2, None, 4]}),
+            schema={"a": Optional[int]},
             display="IS_NULL(col('a'))",
             refs={"a"},
-            eval_result=[False, False, True],
+            eval_result=[False, False, True, False],
             expected_dtype=bool,
             proto_json=None,
         ),
-        # Each type is a list
+        ExprTestCase(
+            expr=(col("a").isnull()),
+            df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
+            schema={"a": Optional[str]},
+            display="IS_NULL(col('a'))",
+            refs={"a"},
+            eval_result=[False, False, True, False],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
+        # Each type is a struct
+        # TODO(Aditya): Fix this test case
         # ExprTestCase(
         #     expr=(col("a").isnull()),
-        #     df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], None]}),
-        #     schema={"a": Optional[List[int]]},
+        #     df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), None]}),
+        #     schema={"a": Optional[A]},
         #     display="IS_NULL(col('a'))",
         #     refs={"a"},
         #     eval_result=[False, False, True],
         #     expected_dtype=bool,
         #     proto_json=None,
         # ),
+        # Each type is a list
+        ExprTestCase(
+            expr=(col("a").isnull()),
+            df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], None]}),
+            schema={"a": Optional[List[int]]},
+            display="IS_NULL(col('a'))",
+            refs={"a"},
+            eval_result=[False, False, True],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
     ]
 
     for case in cases:
         check_test_case(case)
-
-
-def test_complex_struct_parse():
-    from fennel.dtypes import struct
-    @struct
-    class A:
-        x: int
-        y: int
-        z: Optional[bool]
-
-    expr = col("a").str.parse(A).struct.get("z")
-    
-    # df = df.assign(**{json_col: lambda x: x[payload_col].fillna("{}").apply(json.loads)})
-# and then extract fields from json_col

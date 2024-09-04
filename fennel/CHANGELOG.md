@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.17] - 2024-09-04
+- Add support for several more expressions
+
 ## [1.5.16] - 2024-08-29
 - Add assign in preproc.
 

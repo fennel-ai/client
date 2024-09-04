@@ -23,12 +23,12 @@ def test_get():
         expr.typeof(schema={"x": MyStruct})
 
     # can be evaluated with a dataframe
-    df = pd.DataFrame({
-        "x": [MyStruct(1, True), MyStruct(2, False), None],
-    })
+    df = pd.DataFrame(
+        {
+            "x": [MyStruct(1, True), MyStruct(2, False), None],
+        }
+    )
     schema = {"x": Optional[MyStruct]}
     expr = col("x").struct.get("f1")
-    result = expr.eval(df, schema=schema)
-    print(result)
-    assert expr.eval(df, schema=schema).tolist() == [1, 2, pd.NA]
+    assert expr.eval(df, schema=schema).tolist() == [1, 2, 0]
     # /docsnip

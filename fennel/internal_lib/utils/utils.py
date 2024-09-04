@@ -1,7 +1,7 @@
 import dataclasses
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Union, Dict
+from typing import Any, Optional, Union, Dict
 
 import numpy as np
 import pandas as pd
@@ -129,7 +129,7 @@ def cast_col_to_pandas(
         return series.fillna(pd.NA)
 
 
-def parse_struct_into_dict(value: Any) -> Union[dict, list]:
+def parse_struct_into_dict(value: Any) -> Optional[Union[dict, list]]:
     """
     This function assumes that there's a struct somewhere in the value that needs to be converted into json.
     """

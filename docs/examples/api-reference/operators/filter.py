@@ -135,6 +135,7 @@ class TestFilterSnips(unittest.TestCase):
         from fennel.datasets import dataset, field, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
+
         # docsnip-highlight next-line
         from fennel.expr import col
 

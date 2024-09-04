@@ -78,7 +78,7 @@ follows:
 status="success" message="Using expressions in pipelines"
 ></pre>
 
-These expressions are strutured and hence can be fully executed in Fennel's 
+These expressions are structured and hence can be fully executed in Fennel's 
 Rust engine with zero dependency on Python at the runtime, making them 10-100x
 faster. In addition, they are able to catch almost all errors at the compile 
 time itself, hence improve the reliability of your pipelines.

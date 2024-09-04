@@ -84,9 +84,20 @@ class A:
 
 def test_struct():
     with pytest.raises(InvalidExprException) as e:
-        expr = col("a").struct.get(col("b"))
+        _ = col("a").struct.get(col("b"))
 
     assert (
         str(e.value)
         == "invalid field access for struct, expected string but got col('b')"
+    )
+
+
+def test_invalid_parse():
+    with pytest.raises(ValueError) as e:
+        expr = col("a").str.parse(int)
+        df = pd.DataFrame({"a": ['"A"', '"B"', '"C"']})
+        expr.eval(df, {"a": str})
+    assert (
+        str(e.value)
+        == "Failed to evaluate expression: failed to convert polars array to fennel array for type 'Int'"
     )
