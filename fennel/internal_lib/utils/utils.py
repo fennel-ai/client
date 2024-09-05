@@ -6,7 +6,7 @@ from typing import Any, Optional, Union, Dict
 import numpy as np
 import pandas as pd
 from frozendict import frozendict
-
+from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.schema_pb2 import DataType
 from fennel.internal_lib import FENNEL_STRUCT
 
@@ -129,7 +129,7 @@ def cast_col_to_pandas(
         return series.fillna(pd.NA)
 
 
-def parse_struct_into_dict(value: Any) -> Optional[Union[dict, list]]:
+def parse_struct_into_dict(value: Any, dtype: schema_proto.DataType) -> Optional[Union[dict, list]]:
     """
     This function assumes that there's a struct somewhere in the value that needs to be converted into json.
     """
@@ -141,11 +141,15 @@ def parse_struct_into_dict(value: Any) -> Optional[Union[dict, list]]:
                 f"Not able parse value: {value} into json, error: {e}"
             )
     elif isinstance(value, list) or isinstance(value, np.ndarray):
-        return [parse_struct_into_dict(x) for x in value]
+        return [parse_struct_into_dict(x, dtype.array_type.of) for x in value]
     elif isinstance(value, dict) or isinstance(value, frozendict):
-        return {key: parse_struct_into_dict(val) for key, val in value.items()}
+        return {key: parse_struct_into_dict(val, dtype.map_type.value) for key, val in value.items()}
     elif value is None or pd.isna(value):
-        return None
+        # If dtype is an optional struct type return, a dict with all fields as None
+        if dtype.HasField("optional_type") and dtype.optional_type.of.HasField("struct_type"):
+            return {field.name: None for field in dtype.optional_type.of.struct_type.fields}
+        else:
+            return None
     else:
         return value
 
@@ -174,12 +178,12 @@ def parse_datetime_in_value(
     elif dtype.HasField("map_type"):
         if isinstance(value, (dict, frozendict)):
             return {
-                key: parse_datetime_in_value(value, dtype.array_type.of)
+                key: parse_datetime_in_value(value, dtype.map_type.value)
                 for (key, value) in value.items()
             }
         elif isinstance(value, (list, np.ndarray)):
             return [
-                (key, parse_datetime_in_value(value, dtype.array_type.of))
+                (key, parse_datetime_in_value(value, dtype.map_type.value))
                 for (key, value) in value
             ]
         else:
