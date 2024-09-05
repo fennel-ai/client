@@ -5,6 +5,7 @@ from typing import Optional
 import pandas as pd
 
 from fennel.testing import mock
+from fennel.expr import lit
 
 __owner__ = "aditya@fennel.ai"
 
@@ -41,7 +42,7 @@ class TestDebugSnips(unittest.TestCase):
                 schema = ds.schema()
                 print(schema)
                 # docsnip-highlight end
-                return ds.assign("country", str, lambda df: "US")
+                return ds.assign(country=lit("US").astype(str))
 
         # /docsnip
 

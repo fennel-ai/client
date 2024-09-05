@@ -15,5 +15,5 @@ from fennel.datasets import (
     AggregateType,
     Stddev,
 )
-from fennel.featuresets import featureset, feature, extractor
+from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import meta

@@ -34,9 +34,9 @@ V1_API = "/api/v1"
 # Connection timeout i.e. the time spent by the client to establish a
 # connection to the remote machine. NOTE: This should be slightly larger than
 # a multiple of 3 (this is the default TCP retransmission window)
-_DEFAULT_CONNECT_TIMEOUT = 10
+_DEFAULT_CONNECT_TIMEOUT = 300
 # Default request timeout(s).
-_DEFAULT_TIMEOUT = 180
+_DEFAULT_TIMEOUT = 300
 # Name of the default branch
 _MAIN_BRANCH = "main"
 _BRANCH_HEADER_NAME = "X-FENNEL-BRANCH"
@@ -402,9 +402,6 @@ class Client:
         name (str): The name of the branch to delete.
 
         """
-        if name == _MAIN_BRANCH:
-            raise Exception("Cannot delete the main branch.")
-
         cur_branch = self._branch
         self.checkout(name)
         response = self._post_json(f"{V1_API}/delete", {})
@@ -430,14 +427,17 @@ class Client:
             )
         return [branch.get("name") for branch in resp["branches"]]
 
-    def checkout(self, name: str):
+    def checkout(self, name: str, init: bool = False):
         """Checkouts the client to another branch.
 
         Parameters:
         ----------
         name (str): The name of the branch to checkout.
+        init (bool): If the branch should be created if it doesn't exist
 
         """
+        if init and name not in self.list_branches():
+            self.init_branch(name)
         self._branch = name
 
     def branch(self) -> str:

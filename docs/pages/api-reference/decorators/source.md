@@ -88,18 +88,24 @@ them to commit depending on the environment.
 When present, specifies the preproc behavior for the columns referred to by the
 keys of the dictionary. 
 
-As of right now, there are two kinds of values of preproc:
+As of right now, there are three kinds of values of preproc:
 * `ref: Ref`: written as `ref(str)` and means that the column denoted
   by the key of this value is aliased to another column in the sourced data. This
   is useful, for instance, when you want to rename columns while bringing them
   to Fennel. With this, you can also perform indirections of kind A[B][C] and 
   rename them while bringing to fennel.
 
+* `eval: Eval`: written as `eval(Callable | Expr, schema: Dict[str, Type])` and means that the column denoted
+  by the key of this value computed either through python callable or rust expressions. This
+  is useful, for instance, when you want to change dtype of a column, add a new column using another column
+  or fill nulls in the columns with some value to Fennel. The schema parameter is used to specify schema of 
+  columns which is needed for evaluation but not present in dataset.
+
 * `Any`: means that the column denoted by the key of this value should be given
   a constant value.
 
 :::info
-Fennel supports preproc ref(str) values of type A[B][C] only for the JSON format and 
+Fennel supports preproc ref(str) values of type A[B][C] only for the JSON and Protobuf formats, and 
 A, B should be struct types. If you have data in other format or require indirection
 for other parent types apart from struct, please reach out to Fennel support.
 :::

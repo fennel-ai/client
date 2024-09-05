@@ -168,6 +168,13 @@ class QueryEngine:
                 self._check_schema_exceptions(output, dsschema, extractor.name)
                 continue
 
+            if extractor.extractor_type == ProtoExtractorType.EXPR:
+                output = self._compute_expr_extractor(
+                    extractor, intermediate_data
+                )
+                self._check_schema_exceptions(output, dsschema, extractor.name)
+                continue
+
             allowed_datasets = self._get_allowed_datasets(extractor)
             fennel.datasets.datasets.dataset_lookup = (
                 data_engine.get_dataset_lookup_impl(
@@ -345,6 +352,30 @@ class QueryEngine:
                 f"Extractor `{extractor_name}` returned "
                 f"invalid schema for data: {exceptions}"
             )
+
+    def _compute_expr_extractor(
+        self,
+        extractor: Extractor,
+        intermediate_data: Dict[str, pd.Series],
+    ) -> pd.Series:
+        if len(extractor.outputs) != 1:
+            raise ValueError(
+                f"expression based extractor outputs {len(extractor.outputs)} features, expected one"
+            )
+        if len(extractor.depends_on) != 0:
+            raise ValueError(
+                f"extractor for feature {extractor.outputs[0]} depends on {len(extractor.depends_on)} datasets, expression based extractors can not depend on datasets"
+            )
+        input_features = {
+            k.name: intermediate_data[k.fqn()] for k in extractor.inputs  # type: ignore
+        }
+        expr = extractor.expr
+        input_schema = {f.name: f.dtype for f in extractor.inputs}
+        df = pd.DataFrame(input_features)
+        res = expr.eval(df, input_schema)  # type: ignore
+        res.name = extractor.fqn_output_features()[0]
+        intermediate_data[extractor.fqn_output_features()[0]] = res
+        return res
 
     def _compute_lookup_extractor(
         self,

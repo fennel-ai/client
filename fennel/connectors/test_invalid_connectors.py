@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
+from lib2to3.fixes.fix_tuple_params import tuple_name
 from typing import Optional
 
-from fennel.connectors.connectors import Protobuf, ref
+from fennel.connectors.connectors import Protobuf, ref, eval
 import pytest
 
 from fennel.connectors import (
@@ -19,6 +20,7 @@ from fennel.connectors import (
     S3Connector,
 )
 from fennel.datasets import dataset, field
+from fennel.expr import col
 from fennel.lib import meta
 
 # noinspection PyUnresolvedReferences
@@ -155,6 +157,8 @@ s3 = S3(
     aws_access_key_id="ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
+
+simple_s3 = S3(name="my_simple_s3_src")
 
 
 def test_invalid_deltalake_cdc():
@@ -390,7 +394,7 @@ def test_invalid_sink(client):
 
     assert (
         str(e.value)
-        == "Sink only support Kafka Connector, found <class 'fennel.connectors.connectors.KinesisConnector'>"
+        == "Sink is only supported for Kafka and S3, found <class 'fennel.connectors.connectors.KinesisConnector'>"
     )
 
 
@@ -669,7 +673,7 @@ def test_invalid_preproc_value():
         == str(e.value)
     )
 
-    # Preproc value of type A[B][C] cannot be set for data other than JSON format
+    # Preproc value of type A[B][C] cannot be set for data other than JSON and Protobuf formats
     with pytest.raises(ValueError) as e:
         source(
             s3.bucket(
@@ -685,7 +689,7 @@ def test_invalid_preproc_value():
         == str(e.value)
     )
 
-    # Preproc value of type A[B][C] cannot be set for data other than JSON format
+    # Preproc value of type A[B][C] cannot be set for data other than JSON and Protobuf formats
     with pytest.raises(ValueError) as e:
         source(
             kafka.topic(topic="topic", format="Avro"),
@@ -695,7 +699,24 @@ def test_invalid_preproc_value():
             preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
         )
     assert (
-        "Preproc of type ref('A[B][C]') is applicable only for data in JSON format"
+        "Preproc of type ref('A[B][C]') is applicable only for data in JSON and Protobuf formats"
+        == str(e.value)
+    )
+
+    # Preproc value of type A[B][C] cannot be set for table sources
+    with pytest.raises(ValueError) as e:
+        source(
+            mysql.table(
+                "users",
+                cursor="added_on",
+            ),
+            every="1h",
+            disorder="14d",
+            cdc="debezium",
+            preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
+        )
+    assert (
+        "Preproc of type ref('A[B][C]') is not supported for table source"
         == str(e.value)
     )
 
@@ -756,3 +777,169 @@ def test_invalid_protobuf_args():
             token=None,
         )
     assert "Either username/password or token should be set" == str(e.value)
+
+
+def test_invalid_s3_batch_sink():
+    # CDC passed
+    with pytest.raises(ValueError) as e:
+        sink(
+            simple_s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+            ),
+            every="1h",
+            cdc="append",
+        )
+
+    assert "CDC shouldn't be set for S3 sink" == str(e.value)
+
+    # Format set to JSON
+    with pytest.raises(ValueError) as e:
+        sink(
+            simple_s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+                format="json",
+            ),
+            every="1h",
+        )
+
+    assert "Only Delta format supported for S3 sink" == str(e.value)
+
+    # Recreate style passed for how
+    with pytest.raises(ValueError) as e:
+        sink(
+            simple_s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+                format="delta",
+            ),
+            every="1h",
+            how="recreate",
+        )
+
+    assert "Only Incremental style supported for S3 sink" == str(e.value)
+
+    # Access and Secret keys passed for S3
+    with pytest.raises(ValueError) as e:
+        sink(
+            s3.bucket(
+                bucket_name="all_ratings",
+                prefix="prod/apac/",
+                format="delta",
+            ),
+            every="1h",
+            how="incremental",
+        )
+
+    assert (
+        "S3 sink only supports data access through Fennel DataAccess IAM Role"
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_timestamp_assign_preproc(client):
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"timestamp": eval(col("val1"), schema={"val1": datetime})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(ValueError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "Dataset `UserInfoDataset` has timestamp field set from assign preproc. Please either ref preproc or set a constant value."
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_assign_preproc(client):
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"age": eval(col("val1"), schema={"val1": int})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(ValueError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "Dataset `UserInfoDataset` has a source with a pre_proc value field `age`, but the field is not defined in the dataset."
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_eval_assign_preproc(client):
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"age": eval(col("val1"), schema={"val1": float})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(TypeError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "`age` is of type `int` in Dataset `UserInfoDataset`, can not be cast to `float`. Full expression: `col('val1')`"
+        == str(e.value)
+    )

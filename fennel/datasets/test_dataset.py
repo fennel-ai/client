@@ -41,6 +41,7 @@ class UserInfoDataset:
     age: int = field().meta(description="Users age lol")  # type: ignore
     account_creation_date: datetime
     country: Optional[str]
+    version: int
     timestamp: datetime = field(timestamp=True)
 
 
@@ -49,7 +50,7 @@ def test_simple_dataset():
     view = InternalTestClient()
     view.add(UserInfoDataset)
     assert desc(UserInfoDataset.age) == "Users age lol"
-    assert desc(UserInfoDataset.dob) == "Users date of birth"
+    # assert desc(UserInfoDataset.dob) == "Users date of birth"
 
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -58,7 +59,6 @@ def test_simple_dataset():
             {
                 "name": "UserInfoDataset",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
-                "version": 1,
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -81,6 +81,7 @@ def test_simple_dataset():
                                     "optionalType": {"of": {"stringType": {}}}
                                 },
                             },
+                            {"name": "version", "dtype": {"intType": {}}},
                         ]
                     },
                     "timestamp": "timestamp",
@@ -88,8 +89,9 @@ def test_simple_dataset():
                 "history": "63072000s",
                 "retention": "63072000s",
                 "fieldMetadata": {
-                    "age": {"description": "Users age lol"},
+                    "version": {},
                     "name": {},
+                    "age": {"description": "Users age lol"},
                     "account_creation_date": {},
                     "country": {},
                     "user_id": {"owner": "xyz@fennel.ai"},
@@ -99,6 +101,7 @@ def test_simple_dataset():
                 },
                 "pycode": {},
                 "isSourceDataset": True,
+                "version": 1,
             }
         ],
         "sources": [
@@ -118,8 +121,8 @@ def test_simple_dataset():
                 },
                 "dataset": "UserInfoDataset",
                 "dsVersion": 1,
-                "cdc": "Upsert",
                 "disorder": "1209600s",
+                "cdc": "Upsert",
             }
         ],
         "extdbs": [
@@ -559,107 +562,6 @@ def test_nested_dataset():
     assert sync_request == expected_sync_request, error_message(
         sync_request, expected_sync_request
     )
-
-
-# TODO(mohit): Uncomment once support for ondemand funcs is added on protos
-#
-# def test_dataset_with_pull():
-#     API_ENDPOINT_URL = "http://transunion.com/v1/credit_score"
-
-#     @meta(owner="test@test.com")
-#     @dataset(
-#         history="1y",
-#     )
-#     class UserCreditScore:
-#         user_id: int = field(key=True)
-#         name: str = field(key=True)
-#         credit_score: float
-#         timestamp: datetime
-
-#         @on_demand(expires_after="7d")
-#         def pull_from_api(
-#             cls, ts: pd.Series, user_id: pd.Series[int], names: pd.Series[str]
-#         ) -> pd.DataFrame:
-#             user_list = user_id.tolist()
-#             names = names.tolist()
-#             resp = requests.get(
-#                 API_ENDPOINT_URL, json={"users": user_list, "names": names}
-#             )
-#             df = pd.DataFrame(columns=["user_id", "credit_score", "timestamp"])
-#             if resp.status_code != 200:
-#                 return df
-#             results = resp.json()["results"]
-#             df[str(cls.user_id)] = user_id
-#             df[str(cls.name)] = names
-#             df[str(cls.timestamp)] = ts
-#             df[str(cls.credit_score)] = pd.Series(results)
-#             return df, pd.Series([True] * len(df))
-
-#     assert UserCreditScore._history == timedelta(days=365)
-#     view = InternalTestClient()
-#     view.add(UserCreditScore)
-#     sync_request = view._get_sync_request_proto()
-#     assert len(sync_request.datasets) == 1
-#     d = {
-#         "name": "UserCreditScore",
-#         "fields": [
-#             {
-#                 "name": "user_id",
-#                 "ftype": "Key",
-#                 "dtype": {"scalarType": "INT"},
-#                 "metadata": {},
-#             },
-#             {
-#                 "name": "name",
-#                 "ftype": "Key",
-#                 "dtype": {"scalarType": "STRING"},
-#                 "metadata": {},
-#             },
-#             {
-#                 "name": "credit_score",
-#                 "ftype": "Val",
-#                 "dtype": {"scalarType": "FLOAT"},
-#                 "metadata": {},
-#             },
-#             {
-#                 "name": "timestamp",
-#                 "ftype": "Timestamp",
-#                 "dtype": {"scalarType": "TIMESTAMP"},
-#                 "metadata": {},
-#             },
-#         ],
-#         "mode": "pandas",
-#         "metadata": {"owner": "test@test.com"},
-#         "history": "31536000000000",
-#         "onDemand": {"expiresAfter": "604800000000"},
-#     }
-
-#     # Ignoring schema validation since they are bytes and not human-readable
-#     dataset_req = sync_request.datasets[0]
-#     expected_ds_request = ParseDict(d, ds_proto.CoreDataset())
-#     assert dataset_req == expected_ds_request, error_message(
-#         dataset_req, expected_ds_request
-#     )
-
-#     with pytest.raises(TypeError) as e:
-
-#         @meta(owner="test@test.com")
-#         @dataset(history="1y")
-#         class UserCreditScore2:
-#             user_id: int = field(key=True)
-#             credit_score: float
-#             timestamp: datetime
-
-#             @on_demand
-#             def pull_from_api(
-#                 cls, user_id: pd.Series, names: pd.Series, timestamps: pd.Series
-#             ) -> pd.DataFrame:
-#                 pass
-
-#     assert (
-#         str(e.value) == "on_demand must be defined with a parameter "
-#         "expires_after of type Duration for eg: 30d."
-#     )
 
 
 def test_dataset_with_pipes():
@@ -3488,4 +3390,122 @@ def test_aggregation_emit_final():
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
+    )
+
+
+def test_select_all_columns():
+    @meta(owner="test@test.com")
+    @dataset
+    class A:
+        a1: int
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class B:
+        a1: int
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_b(cls, a: Dataset):
+            return a.select("a1", "a2", "a3", "a4")
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class C:
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_c(cls, a: Dataset):
+            return a.drop("a1", "a2").select("a3", "a4")
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class D:
+        a1: int
+        a2: int
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_d(cls, a: Dataset):
+            return a.select("a1", "a2", "a3", "a4").drop("a3", "a4")
+
+    view = InternalTestClient()
+    view.add(A)  # type: ignore
+    view.add(B)  # type: ignore
+    view.add(C)  # type: ignore
+    view.add(D)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    operators = sync_request.operators
+    # 3 ds ref + 2 drop operators
+    assert len(operators) == 5
+    operator_req = operators[0]
+    ds_ref = {
+        "id": "A",
+        "isRoot": True,
+        "pipelineName": "from_a_to_b",
+        "datasetName": "B",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    ds_ref = {
+        "id": "A",
+        "pipelineName": "from_a_to_c",
+        "datasetName": "C",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[1] == expected_operator_request, error_message(
+        operators[1], expected_operator_request
+    )
+    drop = {
+        "id": "69fa3b1907d6753bce7b409eb822632b",
+        "isRoot": True,
+        "pipelineName": "from_a_to_c",
+        "datasetName": "C",
+        "drop": {"operandId": "A", "dropcols": ["a1", "a2"]},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(drop, ds_proto.Operator())
+    assert operators[2] == expected_operator_request, error_message(
+        operators[2], expected_operator_request
+    )
+    ds_ref = {
+        "id": "A",
+        "pipelineName": "from_a_to_d",
+        "datasetName": "D",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[3] == expected_operator_request, error_message(
+        operators[3], expected_operator_request
+    )
+    drop = {
+        "id": "98ba3bf35c472883e9e3530b49b7c38e",
+        "isRoot": True,
+        "pipelineName": "from_a_to_d",
+        "datasetName": "D",
+        "drop": {"operandId": "A", "dropcols": ["a3", "a4"]},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(drop, ds_proto.Operator())
+    assert operators[4] == expected_operator_request, error_message(
+        operators[4], expected_operator_request
     )

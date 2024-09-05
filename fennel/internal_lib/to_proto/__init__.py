@@ -5,6 +5,7 @@ from fennel.internal_lib.to_proto.to_proto import (
     features_from_fs,
     featureset_to_proto,
     extractors_from_fs,
+    val_as_json,
 )
 from fennel.internal_lib.to_proto.source_code import (
     get_dataset_core_code,

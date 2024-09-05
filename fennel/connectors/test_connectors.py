@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 from typing import Optional
 
+import pandas as pd
 from google.protobuf.json_format import ParseDict  # type: ignore
 
 import fennel.gen.connector_pb2 as connector_proto
@@ -22,9 +23,11 @@ from fennel.connectors import (
     ref,
     S3Connector,
     PubSub,
+    eval,
 )
 from fennel.connectors.connectors import CSV
 from fennel.datasets import dataset, field, pipeline, Dataset
+from fennel.expr import col, lit
 from fennel.lib import meta
 from fennel.lib.params import inputs
 
@@ -360,6 +363,8 @@ s3 = S3(
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
+simple_s3 = S3(name="my_s3_src")
+
 bigquery = BigQuery(
     name="bq_movie_tags",
     project_id="gold-cocoa-356105",
@@ -493,6 +498,12 @@ def test_env_selector_on_connector():
         cdc="upsert",
         env=["dev"],
     )
+    @source(
+        kafka.topic("test_topic"),
+        disorder="14d",
+        cdc="upsert",
+        env=["prod_new"],
+    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -515,6 +526,13 @@ def test_env_selector_on_connector():
         kafka.topic("test_topic2"),
         cdc="debezium",
         env=["staging"],
+    )
+    @sink(
+        simple_s3.bucket("random_bucket", prefix="prod/apac/", format="delta"),
+        every="1d",
+        how="incremental",
+        renames={"uid": "new_uid"},
+        env=["prod_new"],
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -655,6 +673,36 @@ def test_env_selector_on_connector():
         "dataset": "UserInfoDatasetDerived",
         "dsVersion": 1,
         "cdc": "Debezium",
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
+
+    sync_request = view._get_sync_request_proto(env="prod_new")
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "random_bucket",
+                "pathPrefix": "prod/apac/",
+                "format": "delta",
+                "db": {
+                    "name": "my_s3_src",
+                    "s3": {},
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "every": "86400s",
+        "how": {"incremental": {}},
+        "create": True,
     }
     expected_sink_request = ParseDict(s, connector_proto.Sink())
     assert sink_request == expected_sink_request, error_message(
@@ -2191,7 +2239,7 @@ def test_bounded_source_with_idleness():
 
 
 def test_valid_preproc_value():
-    # Preproc value of type A[B][C] can be only set for data in JSON format
+    # Preproc value of type A[B][C] can be set for data in JSON and Protobuf formats
     source(
         s3.bucket(
             bucket_name="all_ratings", prefix="prod/apac/", format="json"
@@ -2228,6 +2276,20 @@ def test_valid_preproc_value():
     )
     source(
         kafka.topic(topic="topic", format="json"),
+        every="1h",
+        disorder="14d",
+        cdc="debezium",
+        preproc={"C": ref("A[B][C]"), "D": "A[B][D]"},
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url="http://localhost:8000",
+        username="user",
+        password="pwd",
+    )
+    source(
+        kafka.topic(topic="topic", format=protobuf),
         every="1h",
         disorder="14d",
         cdc="debezium",
@@ -2271,7 +2333,7 @@ def test_filter_preproc():
         source_request = sync_request.sources[0]
         s = {
             "table": {
-                "mysql_table": {
+                "mysqlTable": {
                     "db": {
                         "name": "mysql",
                         "mysql": {
@@ -2282,27 +2344,176 @@ def test_filter_preproc():
                             "port": 3306,
                         },
                     },
-                    "table_name": "users",
-                },
+                    "tableName": "users",
+                }
             },
             "dataset": "UserInfoDataset",
+            "dsVersion": 1,
             "every": "3600s",
-            "cdc": "Upsert",
+            "cursor": "added_on",
             "disorder": "72000s",
+            "timestampField": "timestamp",
+            "cdc": "Upsert",
             "bounded": True,
             "idleness": "3600s",
-            "cursor": "added_on",
-            "timestamp_field": "timestamp",
-            "dsVersion": 1,
             "filter": {
-                "entry_point": "UserInfoDataset_wrapper_2e6e95b302_filter",
-                "source_code": 'lambda df: df["user_id"] == 1',
-                "core_code": 'lambda df: df["user_id"] == 1',
-                "generated_code": '\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    gender: str\n    # Users date of birth\n    dob: str\n    age: int\n    account_creation_date: datetime\n    country: Optional[str]\n    timestamp: datetime = field(timestamp=True)\n\n\n    @classmethod\n    def wrapper_2e6e95b302(cls, *args, **kwargs):\n        _fennel_internal = lambda df: df["user_id"] == 1\n        return _fennel_internal(*args, **kwargs)\n\n\ndef UserInfoDataset_wrapper_2e6e95b302(*args, **kwargs):\n    _fennel_internal = UserInfoDataset.__fennel_original_cls__\n    return getattr(_fennel_internal, "wrapper_2e6e95b302")(*args, **kwargs)\n\ndef UserInfoDataset_wrapper_2e6e95b302_filter(df: pd.DataFrame) -> pd.DataFrame:\n    return df[UserInfoDataset_wrapper_2e6e95b302(df)]\n    ',
-                "imports": "__fennel_gen_code__=True\nimport pandas as pd\nimport numpy as np\nimport json\nimport os\nimport sys\nfrom datetime import datetime, date\nimport time\nimport random\nimport math\nimport re\nfrom enum import Enum\nfrom typing import *\nfrom collections import defaultdict\nfrom fennel.connectors.connectors import *\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.featuresets import feature as F\nfrom fennel.lib.expectations import *\nfrom fennel.internal_lib.schema import *\nfrom fennel.internal_lib.utils import *\nfrom fennel.lib.params import *\nfrom fennel.dtypes.dtypes import *\nfrom fennel.datasets.aggregate import *\nfrom fennel.lib.includes import includes\nfrom fennel.lib.metadata import meta\nfrom fennel.lib import secrets, bucketize\nfrom fennel.datasets.datasets import dataset_lookup\n",
+                "entryPoint": "UserInfoDataset_wrapper_2e6e95b302_filter",
+                "sourceCode": 'lambda df: df["user_id"] == 1',
+                "coreCode": 'lambda df: df["user_id"] == 1',
+                "generatedCode": '\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    gender: str\n    # Users date of birth\n    dob: str\n    age: int\n    account_creation_date: datetime\n    country: Optional[str]\n    timestamp: datetime = field(timestamp=True)\n\n\n    @classmethod\n    def wrapper_2e6e95b302(cls, *args, **kwargs):\n        _fennel_internal = lambda df: df["user_id"] == 1\n        return _fennel_internal(*args, **kwargs)\n\n\ndef UserInfoDataset_wrapper_2e6e95b302(*args, **kwargs):\n    _fennel_internal = UserInfoDataset.__fennel_original_cls__\n    return getattr(_fennel_internal, "wrapper_2e6e95b302")(*args, **kwargs)\n\ndef UserInfoDataset_wrapper_2e6e95b302_filter(df: pd.DataFrame) -> pd.DataFrame:\n    return df[UserInfoDataset_wrapper_2e6e95b302(df)]\n    ',
+                "imports": "__fennel_gen_code__=True\nimport pandas as pd\nimport numpy as np\nimport json\nimport os\nimport sys\nfrom datetime import datetime, date\nimport time\nimport random\nimport math\nimport re\nfrom enum import Enum\nfrom typing import *\nfrom collections import defaultdict\nfrom fennel.connectors.connectors import *\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.featuresets import feature\nfrom fennel.featuresets import feature as F\nfrom fennel.lib.expectations import *\nfrom fennel.internal_lib.schema import *\nfrom fennel.internal_lib.utils import *\nfrom fennel.lib.params import *\nfrom fennel.dtypes.dtypes import *\nfrom fennel.datasets.aggregate import *\nfrom fennel.lib.includes import includes\nfrom fennel.lib.metadata import meta\nfrom fennel.lib import secrets, bucketize\nfrom fennel.datasets.datasets import dataset_lookup\nfrom fennel.expr import col\n",
             },
         }
         expected_source_request = ParseDict(s, connector_proto.Source())
         assert source_request == expected_source_request, error_message(
             source_request, expected_source_request
         )
+
+
+def test_assign_python_preproc():
+    if sys.version_info >= (3, 10):
+
+        @source(
+            mysql.table(
+                "users",
+                cursor="added_on",
+            ),
+            every="1h",
+            disorder="20h",
+            bounded=True,
+            idleness="1h",
+            cdc="upsert",
+            preproc={"age": eval(lambda x: pd.to_numeric(x["age_str"]))},
+        )
+        @meta(owner="test@test.com")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            age_str: str
+            timestamp: datetime = field(timestamp=True)
+
+        view = InternalTestClient()
+        view.add(UserInfoDataset)
+        sync_request = view._get_sync_request_proto()
+
+        assert len(sync_request.sources) == 1
+        source_request = sync_request.sources[0]
+        s = {
+            "table": {
+                "mysqlTable": {
+                    "db": {
+                        "name": "mysql",
+                        "mysql": {
+                            "host": "localhost",
+                            "database": "test",
+                            "user": "root",
+                            "password": "root",
+                            "port": 3306,
+                        },
+                    },
+                    "tableName": "users",
+                }
+            },
+            "dataset": "UserInfoDataset",
+            "dsVersion": 1,
+            "every": "3600s",
+            "cursor": "added_on",
+            "disorder": "72000s",
+            "timestampField": "timestamp",
+            "cdc": "Upsert",
+            "bounded": True,
+            "idleness": "3600s",
+            "preProc": {"age": {"eval": {"pycode": {}}}},
+        }
+        expected_source_request = ParseDict(s, connector_proto.Source())
+        source_request.pre_proc.get("age").eval.pycode.Clear()
+        assert source_request == expected_source_request, error_message(
+            source_request, expected_source_request
+        )
+
+
+def test_assign_eval_preproc():
+
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={
+            "age": eval(
+                (col("val1") * col("val2") + lit(1)),
+                schema={"val1": int, "val2": int},
+            )
+        },
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDataset)
+    sync_request = view._get_sync_request_proto()
+
+    assert len(sync_request.sources) == 1
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysqlTable": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "tableName": "users",
+            }
+        },
+        "dataset": "UserInfoDataset",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cursor": "added_on",
+        "disorder": "72000s",
+        "timestampField": "timestamp",
+        "cdc": "Upsert",
+        "bounded": True,
+        "idleness": "3600s",
+        "preProc": {
+            "age": {
+                "eval": {
+                    "expr": {},
+                    "schema": {
+                        "fields": [
+                            {"name": "val1", "dtype": {"intType": {}}},
+                            {"name": "val2", "dtype": {"intType": {}}},
+                        ]
+                    },
+                }
+            }
+        },
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    source_request.pre_proc.get("age").eval.expr.Clear()
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )

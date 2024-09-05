@@ -22,15 +22,17 @@ __owner__ = "nitin@fennel.ai"
 webhook = Webhook(name="fennel_webhook")
 
 
+@source(webhook.endpoint("Transactions"), cdc="append", disorder="14d")
+@dataset
+class Transactions:
+    id: str
+    user_id: str
+    amount: float
+    t: datetime
+
+
 @mock
 def test_discrete_hopping_tumbling_window_aggregation(client):
-    @source(webhook.endpoint("Transactions"), cdc="append", disorder="14d")
-    @dataset
-    class Transactions:
-        id: str
-        user_id: str
-        amount: float
-        t: datetime
 
     @dataset(index=True)
     class Stats:
@@ -122,7 +124,7 @@ def test_discrete_hopping_window_aggregation(client):
         EventCount,
         keys=pd.DataFrame({"user_id": [1, 2, 3]}),
     )
-    assert df["count"].tolist() == [0, 0, 0]
+    assert df["count"].tolist() == [0, 3, 2]
 
     # Test offline lookups
     df, _ = client.lookup(
@@ -219,5 +221,79 @@ def test_keyed_discrete_hopping_window_aggregation(client):
         EventCountAggregate,
         keys=pd.DataFrame({"user_id": [1, 2, 3]}),
     )
-    expected = [2.454, 1.756, 1.648]
+    expected = [2.454, 1.613, 1.537]
     assert df["avg"].tolist() == pytest.approx(expected, abs=1e-3)
+
+
+@mock
+def test_discrete_aggregation_with_lookback(client):
+
+    @dataset(index=True)
+    class Stats:
+        user_id: str = field(key=True)
+        sum: float
+        count: int
+        t: datetime
+
+        @pipeline
+        @inputs(Transactions)
+        def pipeline(cls, event: Dataset):
+            return (
+                event.dedup("id")
+                .groupby("user_id")
+                .aggregate(
+                    count=Count(window=Tumbling("1h", lookback="1h")),
+                    sum=Sum(
+                        window=Hopping("1h", "30m", lookback="1h"), of="amount"
+                    ),
+                )
+            )
+
+    client.commit(datasets=[Transactions, Stats], message="first_commit")
+
+    now = datetime(2024, 1, 1, 15, 30, 0, tzinfo=timezone.utc)
+    now_1h = now - timedelta(hours=1)
+    now_2h = now - timedelta(hours=2)
+    now_3h = now - timedelta(hours=3)
+
+    # Frontier -> 2024-01-01 15:30:00
+    # With lookback as one hour
+    # Count -> (2024-01-01 13:00:00, 2024-01-01 14:00:00)
+    # Sum -> (2024-01-01 13:30:00, 2024-01-01 14:30:00)
+
+    df = pd.DataFrame(
+        {
+            "id": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "user_id": [1, 1, 1, 2, 2, 2, 3, 3, 3, 4],
+            "amount": [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000],
+            "t": [
+                now_1h,
+                now_2h,
+                now_3h,
+                now_1h,
+                now_2h,
+                now_3h,
+                now_1h,
+                now_2h,
+                now_3h,
+                now,
+            ],
+        }
+    )
+    client.log("fennel_webhook", "Transactions", df)
+    client.sleep()
+
+    df, _ = client.lookup(
+        Stats,
+        keys=pd.DataFrame({"user_id": [1, 2, 3]}),
+        timestamps=pd.Series([now, now, now]),
+    )
+    assert df["count"].tolist() == [1, 1, 1]
+    assert df["sum"].tolist() == [200, 500, 800]
+
+    df, _ = client.lookup(
+        Stats,
+        keys=pd.DataFrame({"user_id": [1, 2, 3]}),
+    )
+    assert df["count"].tolist() == [1, 1, 1]
+    assert df["sum"].tolist() == [200, 500, 800]

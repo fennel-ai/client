@@ -83,11 +83,75 @@ sidebar:
       - "api-reference/aggregations/quantile"
       - "api-reference/aggregations/exponential-decay-sum"
 
+  - slug: "api-reference/expressions"
+    title: "Expressions"
+    pages:
+      - "api-reference/expressions/binary"
+      - "api-reference/expressions/col"
+      - "api-reference/expressions/eval"
+      - "api-reference/expressions/isnull"
+      - "api-reference/expressions/fillnull"
+      - "api-reference/expressions/lit"
+      - "api-reference/expressions/not"
+      - "api-reference/expressions/typeof"
+      - "api-reference/expressions/when"
+      # - "api-reference/expressions/datetime"
+      # - "api-reference/expressions/from_epoch"
+
+  # - slug: "api-reference/expressions/dt"
+  #   title: "Datetime Expressions"
+  #   pages:
+  #     - "api-reference/expressions/dt.since"
+  #     - "api-reference/expressions/dt.since_epoch"
+  #     - "api-reference/expressions/dt.year"
+  #     - "api-reference/expressions/dt.month"
+  #     - "api-reference/expressions/dt.day"
+  #     - "api-reference/expressions/dt.hour"
+  #     - "api-reference/expressions/dt.minute"
+  #     - "api-reference/expressions/dt.second"
+  #     - "api-reference/expressions/dt.strftime"
+
+  # - slug: "api-reference/expressions/list"
+  #   title: "List Expressions"
+  #   pages:
+  #     - "api-reference/expressions/list.len"
+  #     - "api-reference/expressions/list.hasnull"
+  #     - "api-reference/expressions/list.contains"
+
+  - slug: "api-reference/expressions/num"
+    title: "Num Expressions"
+    pages:
+      - "api-reference/expressions/num/abs"
+      - "api-reference/expressions/num/ceil"
+      - "api-reference/expressions/num/floor"
+      - "api-reference/expressions/num/round"
+
+  - slug: "api-reference/expressions/str"
+    title: "String Expressions"
+    pages:
+      - "api-reference/expressions/str/concat"
+      - "api-reference/expressions/str/contains"
+      - "api-reference/expressions/str/endswith"
+      - "api-reference/expressions/str/len"
+      - "api-reference/expressions/str/lower"
+      - "api-reference/expressions/str/parse"
+      - "api-reference/expressions/str/startswith"
+      - "api-reference/expressions/str/strptime"
+      - "api-reference/expressions/str/upper"
+
+  - slug: "api-reference/expressions/struct"
+    title: "Struct Expressions"
+    pages:
+      - "api-reference/expressions/struct/get"
+      # - "api-reference/expressions/struct/init"
+
+
   - slug: "api-reference/decorators"
     title: "Decorators"
     pages:
       - "api-reference/decorators/meta"
       - "api-reference/decorators/source"
+      - "api-reference/decorators/sink"
       - "api-reference/decorators/dataset"
       - "api-reference/decorators/pipeline"
       - "api-reference/decorators/inputs"

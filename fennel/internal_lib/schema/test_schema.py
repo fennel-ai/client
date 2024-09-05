@@ -1,19 +1,23 @@
-from datetime import datetime, timedelta, timezone
-from decimal import Decimal as PythonDecimal
-from typing import Dict, List, Optional
-
 import numpy as np
 import pandas as pd
 import pytest
+import unittest
+
+from datetime import datetime, date, timedelta, timezone
+from decimal import Decimal as PythonDecimal
+from typing import Dict, List, Optional, Union, get_type_hints
 
 import fennel.gen.schema_pb2 as proto
 from fennel.dtypes.dtypes import (
+    Embedding,
     struct,
     FENNEL_STRUCT_SRC_CODE,
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     Decimal,
 )
 from fennel.internal_lib.schema.schema import (
+    fennel_is_optional,
+    from_proto,
     get_datatype,
     data_schema_check,
     between,
@@ -797,5 +801,160 @@ def test_convert_dtype_to_arrow_type():
     arrow_dtype = convert_dtype_to_arrow_type(data_type)
     assert (
         str(arrow_dtype)
-        == "list<item: struct<a: int64, b: map<string, int64>, c: list<item: int64>>>"
+        == "list<item: struct<a: int64 not null, b: map<string, int64> not null, c: list<item: int64 not null> not null> not null>"
     )
+
+
+class TestDataTypeConversions(unittest.TestCase):
+
+    def test_int_type(self):
+        original = int
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(original, result)
+
+    def test_float_type(self):
+        original = float
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(original, result)
+
+    def test_string_type(self):
+        original = str
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(original, result)
+
+    def test_datetime_type(self):
+        original = datetime
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(original, result)
+
+    def test_date_type(self):
+        original = date
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(original, result)
+
+    def test_numpy_int64(self):
+        original = np.int64
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(int, result)  # np.int64 should map to int
+
+    def test_numpy_float64(self):
+        original = np.float64
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(float, result)  # np.float64 should map to float
+
+    def test_pandas_int64_dtype(self):
+        original = pd.Int64Dtype
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(int, result)  # pd.Int64Dtype should map to int
+
+    def test_pandas_string_dtype(self):
+        original = pd.StringDtype
+        proto = get_datatype(original)
+        result = from_proto(proto)
+        self.assertEqual(str, result)  # pd.StringDtype should map to str
+
+    def test_custom_type_between(self):
+        original = between(
+            dtype=int, min=1, max=5, strict_min=True, strict_max=False
+        )
+        proto = original.to_proto()
+        result = from_proto(proto)
+        self.assertEqual(original.dtype, result.dtype)
+        self.assertEqual(original.min, result.min)
+        self.assertEqual(original.max, result.max)
+        self.assertEqual(original.strict_min, result.strict_min)
+        self.assertEqual(original.strict_max, result.strict_max)
+
+    def test_custom_type_oneof(self):
+        original = oneof(dtype=int, options=[1, 2, 3])
+        proto = original.to_proto()
+        result = from_proto(proto)
+        self.assertEqual(original.dtype, result.dtype)
+        self.assertEqual(original.options, result.options)
+
+    def test_list_type(self):
+        original_type = List[int]
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        self.assertEqual(original_type, converted_type)
+
+    def test_dict_type(self):
+        original_type = Dict[str, float]
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        self.assertEqual(original_type, converted_type)
+
+    def test_optional_type(self):
+        original_type = Optional[int]
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        self.assertEqual(original_type, converted_type)
+
+    def test_complex_case(self):
+        original_type = List[Dict[str, List[float]]]
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        self.assertEqual(original_type, converted_type)
+
+    def test_embedding_case(self):
+        original_type = Embedding[4]
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        self.assertEqual(original_type, converted_type)
+
+    def test_struct_case(self):
+        def assert_struct_fields_match(self, original_cls, reconstructed_cls):
+            # Names of class should match
+            self.assertEqual(
+                original_cls.__name__,
+                reconstructed_cls.__name__,
+                "Class names do not match.",
+            )
+            original_fields = get_type_hints(original_cls)
+            reconstructed_fields = get_type_hints(reconstructed_cls)
+            self.assertEqual(
+                set(original_fields.keys()),
+                set(reconstructed_fields.keys()),
+                "Field names do not match.",
+            )
+
+            for field_name, original_type in original_fields.items():
+                reconstructed_type = reconstructed_fields[field_name]
+                self.assertEqual(
+                    original_type,
+                    reconstructed_type,
+                    f"Types for field {field_name} do not match.",
+                )
+
+        @struct
+        class A:
+            a: int
+            b: str
+
+        original_type = A
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        assert_struct_fields_match(self, original_type, converted_type)
+
+        @struct
+        class ComplexStruct:
+            a: List[int]
+            b: Dict[str, float]
+            c: Optional[str]
+            d: Embedding[4]
+            e: List[Dict[str, List[float]]]
+            f: Dict[str, Optional[int]]
+            g: Optional[Dict[str, List[float]]]
+
+        original_type = ComplexStruct
+        proto = get_datatype(original_type)
+        converted_type = from_proto(proto)
+        assert_struct_fields_match(self, original_type, converted_type)

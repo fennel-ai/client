@@ -68,7 +68,7 @@ def test_invalid_multiple_extracts():
 
 def test_invalid_missing_fields():
     # no field nor feature
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(TypeError) as e:
 
         @featureset
         class UserInfo4:

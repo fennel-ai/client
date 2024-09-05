@@ -227,9 +227,14 @@ def test_valid_derived_extractors():
         {
             "name": "_fennel_alias_User.id",
             "datasets": [],
-            "inputs": [{"feature": {"feature_set_name": "User", "name": "id"}}],
+            "inputs": [
+                {
+                    "feature": {"feature_set_name": "User", "name": "id"},
+                    "dtype": {"int_type": {}},
+                }
+            ],
             "features": ["user_id"],
-            "metadata": {},
+            "metadata": {"description": "alias feature"},
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -240,10 +245,16 @@ def test_valid_derived_extractors():
             "name": "_fennel_lookup_UserInfoDataset.gender",
             "datasets": ["UserInfoDataset"],
             "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
+                {
+                    "feature": {
+                        "feature_set_name": "UserInfo",
+                        "name": "user_id",
+                    },
+                    "dtype": {"int_type": {}},
+                }
             ],
             "features": ["gender"],
-            "metadata": {},
+            "metadata": {"description": "lookup derived feature"},
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -257,10 +268,19 @@ def test_valid_derived_extractors():
             "name": "_fennel_lookup_UserInfoDataset.age",
             "datasets": ["UserInfoDataset"],
             "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
+                {
+                    "feature": {
+                        "feature_set_name": "UserInfo",
+                        "name": "user_id",
+                    },
+                    "dtype": {"int_type": {}},
+                }
             ],
             "features": ["age_years"],
-            "metadata": {},
+            "metadata": {
+                "owner": "zaki@fennel.ai",
+                "description": "lookup with meta",
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -274,10 +294,19 @@ def test_valid_derived_extractors():
             "name": "_fennel_lookup_UserInfoDataset.dob",
             "datasets": ["UserInfoDataset"],
             "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
+                {
+                    "feature": {
+                        "feature_set_name": "UserInfo",
+                        "name": "user_id",
+                    },
+                    "dtype": {"int_type": {}},
+                }
             ],
             "features": ["dob"],
-            "metadata": {},
+            "metadata": {
+                "deprecated": True,
+                "description": "deprecated feature",
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -291,10 +320,16 @@ def test_valid_derived_extractors():
             "name": "_fennel_lookup_UserInfoDataset.nickname",
             "datasets": ["UserInfoDataset"],
             "inputs": [
-                {"feature": {"feature_set_name": "UserInfo", "name": "user_id"}}
+                {
+                    "feature": {
+                        "feature_set_name": "UserInfo",
+                        "name": "user_id",
+                    },
+                    "dtype": {"int_type": {}},
+                }
             ],
             "features": ["optional_nickname"],
-            "metadata": {},
+            "metadata": {"description": "optional lookup derived feature"},
             "version": 0,
             "pycode": None,
             "feature_set_name": "UserInfo",
@@ -312,7 +347,8 @@ def test_valid_derived_extractors():
                     "feature": {
                         "feature_set_name": "UserInfo",
                         "name": "age_years",
-                    }
+                    },
+                    "dtype": {"int_type": {}},
                 }
             ],
             "features": ["age_group"],
@@ -331,11 +367,14 @@ def test_valid_derived_extractors():
                     "feature": {
                         "feature_set_name": "UserInfo",
                         "name": "age_group",
-                    }
+                    },
+                    "dtype": {"struct_type": age_group_struct_type},
                 }
             ],
             "features": ["age_group"],
-            "metadata": {},
+            "metadata": {
+                "description": "alias a feature that has an explicit extractor"
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "AgeInfo",
@@ -350,11 +389,14 @@ def test_valid_derived_extractors():
                     "feature": {
                         "feature_set_name": "UserInfo",
                         "name": "age_years",
-                    }
+                    },
+                    "dtype": {"int_type": {}},
                 }
             ],
             "features": ["age"],
-            "metadata": {},
+            "metadata": {
+                "description": "alias a feature that has a derived extractor"
+            },
             "version": 0,
             "pycode": None,
             "feature_set_name": "AgeInfo",

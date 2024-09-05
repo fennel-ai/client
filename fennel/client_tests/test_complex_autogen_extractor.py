@@ -5,7 +5,8 @@ import pandas as pd
 import pytest
 from dateutil.relativedelta import relativedelta  # type: ignore
 
-from fennel import meta, Count, featureset, feature as F, extractor
+from fennel import meta, Count, featureset, extractor
+from fennel.featuresets import feature as F
 from fennel.connectors import Webhook
 from fennel.connectors import source
 from fennel.datasets import dataset, field, pipeline, Dataset

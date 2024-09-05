@@ -6,12 +6,26 @@ from typing import Any, Optional, Dict, List
 
 import numpy as np
 import pandas as pd
+from fennel.expr.visitor import ExprPrinter
 import pyarrow as pa
 from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
-from fennel.datasets import Pipeline, Visitor, Dataset, Count
-from fennel.datasets.datasets import DSSchema, WINDOW_FIELD_NAME
+from fennel.datasets import Pipeline, Visitor, Dataset
+from fennel.datasets.datasets import DSSchema, UDFType, WINDOW_FIELD_NAME
+from fennel.datasets.aggregate import (
+    AggregateType,
+    Average,
+    Count,
+    Distinct,
+    ExpDecaySum,
+    Sum,
+    Min,
+    Max,
+    LastK,
+    Quantile,
+    Stddev,
+)
 from fennel.gen.schema_pb2 import Field
 from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
@@ -211,34 +225,53 @@ class Executor(Visitor):
 
     def visitFilter(self, obj) -> Optional[NodeRet]:
         input_ret = self.visit(obj.node)
-        if input_ret is None or input_ret.df is None:
+        if (
+            input_ret is None
+            or input_ret.df is None
+            or input_ret.df.shape[0] == 0
+        ):
             return None
+
         fields = obj.dsschema().to_fields_proto()
-        filter_func_pycode = to_includes_proto(obj.func)
-        mod = types.ModuleType(filter_func_pycode.entry_point)
-        gen_pycode = wrap_function(
-            self.serializer.dataset_name,
-            self.serializer.dataset_code,
-            self.serializer.lib_generated_code,
-            filter_func_pycode,
-            is_filter=True,
-        )
-        code = gen_pycode.imports + "\n" + gen_pycode.generated_code
-        exec(code, mod.__dict__)
-        func = mod.__dict__[gen_pycode.entry_point]
-        try:
-            df = cast_df_to_pandas_dtype(input_ret.df, fields)
-            f_df = func(df).sort_values(input_ret.timestamp_field)
-        except Exception as e:
-            raise Exception(
-                f"Error in filter function `{obj.func.__name__}` for pipeline "
-                f"`{self.cur_pipeline_name}`, {e}"
+        if obj.filter_type == UDFType.python:
+            filter_func_pycode = to_includes_proto(obj.func)
+            mod = types.ModuleType(filter_func_pycode.entry_point)
+            gen_pycode = wrap_function(
+                self.serializer.dataset_name,
+                self.serializer.dataset_code,
+                self.serializer.lib_generated_code,
+                filter_func_pycode,
+                is_filter=True,
             )
+            code = gen_pycode.imports + "\n" + gen_pycode.generated_code
+            exec(code, mod.__dict__)
+            func = mod.__dict__[gen_pycode.entry_point]
+            try:
+                df = cast_df_to_pandas_dtype(input_ret.df, fields)
+                f_df = func(df).sort_values(input_ret.timestamp_field)
+            except Exception as e:
+                raise Exception(
+                    f"Error in filter function `{obj.func.__name__}` for pipeline "
+                    f"`{self.cur_pipeline_name}`, {e}"
+                )
+        else:
+            input_df = copy.deepcopy(input_ret.df)
+            f_df = input_df.copy()
+            f_df.reset_index(drop=True, inplace=True)
+            try:
+                f_df = f_df[
+                    obj.filter_expr.eval(input_df, obj.dsschema().schema())
+                ]
+            except Exception as e:
+                printer = ExprPrinter()
+                raise Exception(
+                    f"Error in filter function `{printer.print(obj.filter_expr)}` for pipeline "
+                    f"`{self.cur_pipeline_name}`, {e}"
+                )
         sorted_df = cast_df_to_arrow_dtype(
             f_df,
             fields,
         )
-
         return NodeRet(
             sorted_df,
             input_ret.timestamp_field,
@@ -254,7 +287,9 @@ class Executor(Visitor):
 
     def visitAggregate(self, obj):
         def join_aggregated_dataset(
-            schema: DSSchema, column_wise_df: Dict[str, pd.DataFrame]
+            schema: DSSchema,
+            column_wise_df: Dict[str, pd.DataFrame],
+            aggregates: List[AggregateType],
         ) -> pd.DataFrame:
             """
             Internal function to join aggregated datasets, where each aggregated
@@ -304,6 +339,33 @@ class Executor(Visitor):
             # Delete FENNEL_TIMESTAMP column as this should be generated again
             if FENNEL_DELETE_TIMESTAMP in df.columns:  # type: ignore
                 final_df.drop(columns=[FENNEL_DELETE_TIMESTAMP], inplace=True)  # type: ignore
+
+            # During merging there can be multiple rows which has some columns as null, we need to fill them default
+            # values.
+            for aggregate in aggregates:
+                if isinstance(aggregate, (Count, Sum, ExpDecaySum)):
+                    final_df[aggregate.into_field] = final_df[
+                        aggregate.into_field
+                    ].fillna(0)
+                if isinstance(aggregate, (LastK, Distinct)):
+                    # final_df[aggregate.into_field] = final_df[
+                    #     aggregate.into_field
+                    # ].fillna([])
+                    # fillna doesn't work for list type or dict type :cols
+                    for row in final_df.loc[
+                        final_df[aggregate.into_field].isnull()
+                    ].index:
+                        final_df.loc[row, aggregate.into_field] = []
+                if isinstance(aggregate, (Average, Min, Max, Stddev, Quantile)):
+                    if pd.isna(aggregate.default):
+                        final_df[aggregate.into_field] = final_df[
+                            aggregate.into_field
+                        ].fillna(pd.NA)
+                    else:
+                        final_df[aggregate.into_field] = final_df[
+                            aggregate.into_field
+                        ].fillna(aggregate.default)
+
             return final_df
 
         input_ret = self.visit(obj.node)
@@ -342,7 +404,9 @@ class Executor(Visitor):
                     output_schema.values[aggregate.into_field],
                     True if obj.window_field else False,
                 )
-            final_df = join_aggregated_dataset(output_schema, result)
+            final_df = join_aggregated_dataset(
+                output_schema, result, obj.aggregates
+            )
         else:
             # this is the case where 'window' param in groupby is used
             if not obj.window_field:
@@ -712,38 +776,56 @@ class Executor(Visitor):
             or input_ret.df.shape[0] == 0
         ):
             return None
-        assign_func_pycode = to_includes_proto(obj.func)
-        mod = types.ModuleType(assign_func_pycode.entry_point)
-        gen_pycode = wrap_function(
-            self.serializer.dataset_name,
-            self.serializer.dataset_code,
-            self.serializer.lib_generated_code,
-            assign_func_pycode,
-            is_assign=True,
-            column_name=obj.column,
-        )
-        code = gen_pycode.imports + "\n" + gen_pycode.generated_code
-        exec(code, mod.__dict__)
-        func = mod.__dict__[gen_pycode.entry_point]
-        try:
-            df = cast_df_to_pandas_dtype(input_ret.df, input_ret.fields)
-            df = func(df)
-            field = schema_proto.Field(
-                name=obj.column, dtype=get_datatype(obj.output_type)
+
+        fields = obj.dsschema().to_fields_proto()
+        if obj.assign_type == UDFType.python:
+            assign_func_pycode = to_includes_proto(obj.func)
+            mod = types.ModuleType(assign_func_pycode.entry_point)
+            gen_pycode = wrap_function(
+                self.serializer.dataset_name,
+                self.serializer.dataset_code,
+                self.serializer.lib_generated_code,
+                assign_func_pycode,
+                is_assign=True,
+                column_name=obj.column,
             )
+            code = gen_pycode.imports + "\n" + gen_pycode.generated_code
+            exec(code, mod.__dict__)
+            func = mod.__dict__[gen_pycode.entry_point]
+            try:
+                df = cast_df_to_pandas_dtype(input_ret.df, input_ret.fields)
+                df = func(df)
+                field = schema_proto.Field(
+                    name=obj.column, dtype=get_datatype(obj.output_type)
+                )
 
-            # Check the schema of the column
-            validate_field_in_df(field, df, self.cur_pipeline_name)
+                # Check the schema of the column
+                validate_field_in_df(field, df, self.cur_pipeline_name)
 
-            fields = obj.dsschema().to_fields_proto()
-
-            # Cast to arrow dtype
-            df = cast_df_to_arrow_dtype(df, fields)
-        except Exception as e:
-            raise Exception(
-                f"Error in assign node for column `{obj.column}` for pipeline "
-                f"`{self.cur_pipeline_name}`, {e}"
-            )
+                # Cast to arrow dtype
+                df = cast_df_to_arrow_dtype(df, fields)
+            except Exception as e:
+                raise Exception(
+                    f"Error in assign node for column `{obj.column}` for pipeline "
+                    f"`{self.cur_pipeline_name}`, {e}"
+                )
+        else:
+            input_df = copy.deepcopy(input_ret.df)
+            df = copy.deepcopy(input_df)
+            df.reset_index(drop=True, inplace=True)
+            for col, typed_expr in obj.output_expressions.items():
+                if col in input_ret.df.columns:
+                    raise Exception(
+                        f"Column `{col}` already present in dataframe"
+                    )
+                input_dsschema = obj.node.dsschema().schema()
+                try:
+                    df[col] = typed_expr.expr.eval(input_df, input_dsschema)
+                except Exception as e:
+                    raise Exception(
+                        f"Error in assign node for column `{col}` for pipeline "
+                        f"`{self.cur_pipeline_name}`, {e}"
+                    )
         return NodeRet(
             df,
             input_ret.timestamp_field,

@@ -19,6 +19,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
+from fennel.expr import col
 from fennel.testing import mock, log
 
 ################################################################################
@@ -94,6 +95,8 @@ class UserInfoMultipleExtractor:
     is_name_common: bool
     age_reciprocal: float
     age_doubled: int
+    age_reciprocal_expr: float = F(1 / (col("age") / (3600.0 * 24)) + 0.01)
+    age_double_expr: int = F(col("age") * 2)
 
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
@@ -154,7 +157,6 @@ class UserInfoMultipleExtractor:
 class TestSimpleExtractor(unittest.TestCase):
     @pytest.mark.integration
     def test_get_age_and_name_features(self):
-        print("Running test_get_age_and_name_features")
         age = pd.Series([32, 24])
         name = pd.Series(["John", "Rahul"])
         assert UserInfoMultipleExtractor.all() == [
@@ -167,6 +169,8 @@ class TestSimpleExtractor(unittest.TestCase):
             "UserInfoMultipleExtractor.is_name_common",
             "UserInfoMultipleExtractor.age_reciprocal",
             "UserInfoMultipleExtractor.age_doubled",
+            "UserInfoMultipleExtractor.age_reciprocal_expr",
+            "UserInfoMultipleExtractor.age_double_expr",
         ]
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
@@ -234,6 +238,90 @@ class TestSimpleExtractor(unittest.TestCase):
         self.assertEqual(
             res["UserInfoMultipleExtractor.age_doubled"].tolist(), [64, 48]
         )
+
+    @pytest.mark.integration
+    @mock
+    def test_e2e_query(self, client):
+        client.commit(
+            message="some commit msg",
+            datasets=[UserInfoDataset],
+            featuresets=[UserInfoMultipleExtractor],
+        )
+        now = datetime.now(timezone.utc)
+        data = [
+            [18232, "John", 32, "USA", now],
+            [18234, "Monica", 24, "Chile", now],
+        ]
+        columns = ["user_id", "name", "age", "country", "timestamp"]
+        input_df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "UserInfoDataset", input_df)
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        feature_df = client.query(
+            outputs=[UserInfoMultipleExtractor],
+            inputs=[UserInfoMultipleExtractor.userid],
+            input_dataframe=pd.DataFrame(
+                {"UserInfoMultipleExtractor.userid": [18232, 18234]}
+            ),
+        )
+        assert feature_df.shape == (2, 11)
+        assert feature_df.columns.tolist() == [
+            "UserInfoMultipleExtractor.userid",
+            "UserInfoMultipleExtractor.name",
+            "UserInfoMultipleExtractor.country_geoid",
+            "UserInfoMultipleExtractor.age",
+            "UserInfoMultipleExtractor.age_squared",
+            "UserInfoMultipleExtractor.age_cubed",
+            "UserInfoMultipleExtractor.is_name_common",
+            "UserInfoMultipleExtractor.age_reciprocal",
+            "UserInfoMultipleExtractor.age_doubled",
+            "UserInfoMultipleExtractor.age_reciprocal_expr",
+            "UserInfoMultipleExtractor.age_double_expr",
+        ]
+        assert feature_df["UserInfoMultipleExtractor.userid"].tolist() == [
+            18232,
+            18234,
+        ]
+
+        assert feature_df["UserInfoMultipleExtractor.age"].tolist() == [32, 24]
+        assert feature_df["UserInfoMultipleExtractor.age_squared"].tolist() == [
+            1024,
+            576,
+        ]
+        assert feature_df["UserInfoMultipleExtractor.age_cubed"].tolist() == [
+            32768,
+            13824,
+        ]
+        assert feature_df[
+            "UserInfoMultipleExtractor.is_name_common"
+        ].tolist() == [
+            True,
+            False,
+        ]
+        expected_age_reciprocal = [2700.01, 3600.01]
+        assert (
+            feature_df["UserInfoMultipleExtractor.age_reciprocal"].tolist()
+            == expected_age_reciprocal
+        )
+        assert feature_df["UserInfoMultipleExtractor.age_doubled"].tolist() == [
+            64,
+            48,
+        ]
+        assert feature_df[
+            "UserInfoMultipleExtractor.country_geoid"
+        ].tolist() == [5, 3]
+        assert feature_df["UserInfoMultipleExtractor.name"].tolist() == [
+            "John",
+            "Monica",
+        ]
+        assert (
+            feature_df["UserInfoMultipleExtractor.age_reciprocal_expr"].tolist()
+            == expected_age_reciprocal
+        )
+        assert feature_df[
+            "UserInfoMultipleExtractor.age_double_expr"
+        ].tolist() == [64, 48]
 
 
 @struct
@@ -420,10 +508,22 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 9))
+        self.assertEqual(feature_df.shape, (2, 11))
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
             [2700.01, 3600.01],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_doubled"]),
+            [64, 48],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_reciprocal_expr"]),
+            [2700.01, 3600.01],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_double_expr"]),
+            [64, 48],
         )
 
 
@@ -872,7 +972,11 @@ def test_embedding_features(client):
             {
                 "image_id": [1, 2, 3],
                 "embedding": [[1.0, 2.0], [2.0, 3.0], [3.0, 4.0]],
-                "ts": [datetime.now(), datetime.now(), datetime.now()],
+                "ts": [
+                    datetime.now(timezone.utc),
+                    datetime.now(timezone.utc),
+                    datetime.now(timezone.utc),
+                ],
             }
         ),
     )
@@ -893,3 +997,223 @@ def test_embedding_features(client):
         [2.0, 3.0],
         [11.0, 13.2],
     ]
+
+
+@featureset
+class Request:
+    user_id: int
+
+
+@source(webhook.endpoint("CountryInfo"), disorder="14d", cdc="upsert")
+@dataset(index=True)
+class CountryInfo:
+    country: str = field(key=True)
+    national_sport: str
+    ts: datetime
+
+
+@source(webhook.endpoint("Sport"), disorder="14d", cdc="upsert")
+@dataset(index=True)
+class Sport:
+    sport: str = field(key=True)
+    num_players: int
+    ts: datetime
+
+
+@featureset
+class UserInfo:
+    user_id: int = F(Request.user_id)
+    country: Optional[str] = F(UserInfoDataset.country)
+    sport: Optional[str] = F(CountryInfo.national_sport)
+    num_players: Optional[int] = F(Sport.num_players)
+
+
+@featureset
+class UserInfo2:
+    user_id: int = F(Request.user_id)
+    country: Optional[str] = F(UserInfoDataset.country)
+    sport: str = F(CountryInfo.national_sport, default="Cricket")
+    num_players: Optional[int] = F(Sport.num_players)
+
+
+@featureset
+class UserInfo3:
+    user_id: int = F(Request.user_id)
+    country: Optional[str] = F(UserInfoDataset.country)
+    sport: str = F(CountryInfo.national_sport, default="Rugby")
+    num_players: Optional[int] = F(Sport.num_players)
+
+
+@pytest.mark.integration
+@mock
+def test_chained_lookups(client):
+    client.commit(
+        datasets=[CountryInfo, Sport, UserInfoDataset],
+        featuresets=[Request, UserInfo, UserInfo2, UserInfo3],
+        message="Initial commit",
+    )
+
+    now = datetime.now(timezone.utc)
+    data = [
+        [18232, "John", 32, "USA", now],
+        [18234, "Monica", 24, "Chile", now],
+        [18235, "Rahul", 28, "India", now],
+    ]
+    columns = ["user_id", "name", "age", "country", "timestamp"]
+    input_df = pd.DataFrame(data, columns=columns)
+    client.log("fennel_webhook", "UserInfoDataset", input_df)
+
+    client.log(
+        "fennel_webhook",
+        "CountryInfo",
+        pd.DataFrame(
+            {
+                "country": ["USA", "Chile", "India"],
+                "national_sport": ["Baseball", "Football", "Hockey"],
+                "ts": [now, now, now],
+            }
+        ),
+    )
+
+    client.log(
+        "fennel_webhook",
+        "Sport",
+        pd.DataFrame(
+            {
+                "sport": ["Baseball", "Football", "Hockey", "Cricket"],
+                "num_players": [9, 11, 6, 20],
+                "ts": [now, now, now, now],
+            }
+        ),
+    )
+
+    client.sleep()
+
+    feature_df = client.query(
+        outputs=[UserInfo],
+        inputs=[Request.user_id],
+        input_dataframe=pd.DataFrame(
+            {"Request.user_id": [18232, 18234, 18235, 19000]}
+        ),
+    )
+
+    print(feature_df)
+
+    assert feature_df.shape == (4, 4)
+    assert feature_df["UserInfo.country"].tolist() == [
+        "USA",
+        "Chile",
+        "India",
+        pd.NA,
+    ]
+    assert feature_df["UserInfo.sport"].tolist() == [
+        "Baseball",
+        "Football",
+        "Hockey",
+        pd.NA,
+    ]
+    assert feature_df["UserInfo.num_players"].tolist() == [9, 11, 6, pd.NA]
+
+    feature_df = client.query(
+        outputs=[UserInfo2],
+        inputs=[Request.user_id],
+        input_dataframe=pd.DataFrame(
+            {"Request.user_id": [18232, 18234, 18235, 19000]}
+        ),
+    )
+    print(feature_df)
+
+    assert feature_df.shape == (4, 4)
+    assert feature_df["UserInfo2.country"].tolist() == [
+        "USA",
+        "Chile",
+        "India",
+        pd.NA,
+    ]
+    assert feature_df["UserInfo2.sport"].tolist() == [
+        "Baseball",
+        "Football",
+        "Hockey",
+        "Cricket",
+    ]
+    assert feature_df["UserInfo2.num_players"].tolist() == [9, 11, 6, 20]
+
+    feature_df = client.query(
+        outputs=[UserInfo3],
+        inputs=[Request.user_id],
+        input_dataframe=pd.DataFrame(
+            {"Request.user_id": [18232, 18234, 18235, 19000]}
+        ),
+    )
+
+    assert feature_df.shape == (4, 4)
+    assert feature_df["UserInfo3.country"].tolist() == [
+        "USA",
+        "Chile",
+        "India",
+        pd.NA,
+    ]
+    assert feature_df["UserInfo3.sport"].tolist() == [
+        "Baseball",
+        "Football",
+        "Hockey",
+        "Rugby",
+    ]
+    assert feature_df["UserInfo3.num_players"].tolist() == [9, 11, 6, pd.NA]
+
+
+@pytest.mark.integration
+@mock
+def test_auto_extractor_removal(client):
+    @source(webhook.endpoint("IndexDataset"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class IndexDataset:
+        user_id: int = field(key=True)
+        name: str
+        age: int
+        timestamp: datetime
+
+    @featureset
+    class IndexFeatures:
+        user_id: int
+        name: Optional[str] = F(IndexDataset.name)
+        age: Optional[int] = F(IndexDataset.age)
+
+    response = client.commit(
+        datasets=[IndexDataset],
+        featuresets=[IndexFeatures],
+        message="first_commit",
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+
+    # Try removing one auto extractor from incremental mode
+    def remove_age():
+        @featureset
+        class IndexFeatures:
+            user_id: int
+            name: Optional[str] = F(IndexDataset.name)
+            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
+
+        return IndexFeatures
+
+    client.commit(
+        featuresets=[remove_age()], message="second_commit", incremental=True
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+
+    # Try removing one auto extractor from normal commit
+    def remove_name():
+        @featureset
+        class IndexFeatures:
+            user_id: int
+            name: Optional[str] = F(IndexDataset.name).meta(deleted=True)
+            age: Optional[int] = F(IndexDataset.age).meta(deleted=True)
+
+        return IndexFeatures
+
+    client.commit(
+        datasets=[IndexDataset],
+        featuresets=[remove_name()],
+        message="third_commit",
+    )
+    assert response.status_code == requests.codes.OK, response.json()

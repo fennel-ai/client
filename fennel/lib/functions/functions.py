@@ -35,12 +35,9 @@ def bucketize(
     elif isinstance(window, tuple):
         duration = int(duration_to_timedelta(window[0]).total_seconds())
         stride = int(duration_to_timedelta(window[1]).total_seconds())
-    elif isinstance(window, Tumbling):
-        duration = int(duration_to_timedelta(window.duration).total_seconds())
-        stride = int(duration_to_timedelta(window.duration).total_seconds())
-    elif isinstance(window, Hopping):
-        duration = int(duration_to_timedelta(window.duration).total_seconds())
-        stride = int(duration_to_timedelta(window.stride).total_seconds())
+    elif isinstance(window, (Tumbling, Hopping)):
+        duration = window.duration_total_seconds()
+        stride = window.stride_total_seconds()
     else:
         raise ValueError("Unsupported window type")
 

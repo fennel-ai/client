@@ -1,5 +1,47 @@
 # Changelog
 
+## [1.5.17] - 2024-09-04
+- Add support for several more expressions
+
+## [1.5.16] - 2024-08-29
+- Add assign in preproc.
+
+## [1.5.15] - 2024-09-01
+- Allow version to be used as field in dataset
+
+## [1.5.14] - 2024-08-29
+- Add support for S3 batch sink
+
+## [1.5.13] - 2024-08-29
+- Allow not passing a column for optional types in struct
+
+## [1.5.12] - 2024-08-29
+- Add support for timestamp dtype parsing in case of non timestamp field.
+
+## [1.5.8] - 2024-08-23
+- Fix selection of indexes from dataset decorator
+
+## [1.5.7] - 2024-08-21
+- Fix proto for lookback
+
+## [1.5.6] - 2024-08-20
+- Add support for expression based extractors
+
+## [1.5.5] - 2024-08-20
+- Enable discrete aggregation with lookback
+
+## [1.5.4] - 2024-08-14
+- Add support for removal of auto extractors
+
+## [1.5.1] - 2024-08-05
+- Support chained lookup extractors 
+
+## [1.5.0] - 2024-08-04
+- Rust based expressions
+
+## [1.4.6] - 2024-07-30
+- Add support for indirections in preproc ref type for Protobuf format
+
 ## [1.4.4] - 2024-07-19
 - Increase default timeout to 180 seconds.
 
