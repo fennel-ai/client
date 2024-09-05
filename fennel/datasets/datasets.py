@@ -38,6 +38,7 @@ from fennel.datasets.aggregate import (
     Count,
     Distinct,
     LastK,
+    FirstK,
     Sum,
     Min,
     Max,
@@ -689,6 +690,10 @@ class Aggregate(_Node):
                 dtype = input_schema.get_type(agg.of)
                 if agg.dropnull:
                     dtype = fennel_get_optional_inner(dtype)
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
+            elif isinstance(agg, FirstK):
+                dtype = input_schema.get_type(agg.of)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Stddev):
@@ -2737,6 +2742,10 @@ class SchemaValidator(Visitor):
                         )
                 if agg.dropnull:
                     dtype = fennel_get_optional_inner(dtype)
+                list_type = get_python_type_from_pd(dtype)
+                values[agg.into_field] = List[list_type]  # type: ignore
+            elif isinstance(agg, FirstK):
+                dtype = input_schema.get_type(agg.of)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
