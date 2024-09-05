@@ -1,0 +1,7 @@
+.env
+examples/**.json
+.vscode
+venv/
+**/__pycache__/*
+.idea/
+wordlist.dic
