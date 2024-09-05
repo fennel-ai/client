@@ -352,19 +352,32 @@ class Expr(object):
                         f"column : {column} not found in input dataframe but defined in schema."
                     )
                 new_df[column] = cast_col_to_arrow_dtype(new_df[column], dtype)
+                print("NEw DF: ", column, new_df[column])
             new_df = new_df.loc[:, list(schema.keys())]
             fields = []
             for column, dtype in schema.items():
                 proto_dtype = get_datatype(dtype)
-                pa_type, nullable = convert_dtype_to_arrow_type_with_nullable(
+                pa_type = convert_dtype_to_arrow_type_with_nullable(
                     proto_dtype
                 )
+                print(f"column: {column}, dtype: {dtype}, pa_type: {pa_type}")
+                print("proto_dtype: ", proto_dtype)
+                if proto_dtype.HasField("optional_type"):
+                    nullable = True
+                else:
+                    nullable = False
                 field = pa.field(column, type=pa_type, nullable=nullable)
+                print(f"field: {field.name}, type: {field.type}", "nullable: ", field.nullable)
                 fields.append(field)
             pa_schema = pa.schema(fields)
-            return pa.RecordBatch.from_pandas(
+            # Replace pd.NA with None
+            new_df = new_df.where(pd.notna(new_df), None)
+            print("New DF: ", new_df)
+            x = pa.RecordBatch.from_pandas(
                 new_df, preserve_index=False, schema=pa_schema
             )
+            print("RecordBatch: ", x)
+            return x
 
         def pa_to_pd(pa_data, ret_type):
             ret = pa_data.to_pandas(types_mapper=pd.ArrowDtype)

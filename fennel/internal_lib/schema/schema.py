@@ -268,70 +268,60 @@ def get_python_type_from_pd(type):
 
 
 def convert_dtype_to_arrow_type_with_nullable(
-    dtype: schema_proto.DataType,
-) -> Tuple[pa.DataType, bool]:
+    dtype: schema_proto.DataType, nullable: bool = False
+) -> pa.DataType:
     if dtype.HasField("optional_type"):
-        inner, _ = convert_dtype_to_arrow_type_with_nullable(
-            dtype.optional_type.of
+        return convert_dtype_to_arrow_type_with_nullable(
+            dtype.optional_type.of, True
         )
-        return inner, True
     elif dtype.HasField("int_type"):
-        return pa.int64(), False
+        return pa.int64()
     elif dtype.HasField("double_type"):
-        return pa.float64(), False
+        return pa.float64()
     elif dtype.HasField("string_type") or dtype.HasField("regex_type"):
-        return pa.string(), False
+        return pa.string()
     elif dtype.HasField("bytes_type"):
-        return pa.binary(), False
+        return pa.binary()
     elif dtype.HasField("bool_type"):
-        return pa.bool_(), False
+        return pa.bool_()
     elif dtype.HasField("timestamp_type"):
-        return pa.timestamp("ns", "UTC"), False
+        return pa.timestamp("ns", "UTC")
     elif dtype.HasField("date_type"):
-        return pa.date32(), False
+        return pa.date32()
     elif dtype.HasField("decimal_type"):
-        return pa.decimal128(28, dtype.decimal_type.scale), False
+        return pa.decimal128(28, dtype.decimal_type.scale)
     elif dtype.HasField("array_type"):
-        inner, nullable = convert_dtype_to_arrow_type_with_nullable(
-            dtype.array_type.of
+        return pa.list_(
+            value_type=convert_dtype_to_arrow_type_with_nullable(dtype.array_type.of, nullable)
         )
-        field = pa.field("item", inner, nullable)
-        return pa.list_(field), False
     elif dtype.HasField("map_type"):
-        key_pa_type, nullable = convert_dtype_to_arrow_type_with_nullable(
-            dtype.map_type.key
-        )
-        key_field = pa.field("key", key_pa_type, nullable)
-        value_pa_type, nullable = convert_dtype_to_arrow_type_with_nullable(
-            dtype.map_type.value
-        )
-        value_field = pa.field("value", value_pa_type, nullable)
-        return pa.map_(key_field, value_field, False), False
+        key_pa_type = convert_dtype_to_arrow_type_with_nullable(dtype.map_type.key, nullable=False)
+        value_pa_type = convert_dtype_to_arrow_type_with_nullable(dtype.map_type.value, nullable)
+        return pa.map_(key_pa_type, value_pa_type, False)
     elif dtype.HasField("embedding_type"):
         embedding_size = dtype.embedding_type.embedding_size
-        return pa.list_(pa.float64(), embedding_size), False
+        return pa.list_(pa.float64(), embedding_size)
     elif dtype.HasField("one_of_type"):
-        return convert_dtype_to_arrow_type_with_nullable(dtype.one_of_type.of)
+        return convert_dtype_to_arrow_type_with_nullable(dtype.one_of_type.of, nullable)
     elif dtype.HasField("between_type"):
         return convert_dtype_to_arrow_type_with_nullable(
-            dtype.between_type.dtype
+            dtype.between_type.dtype, nullable
         )
     elif dtype.HasField("struct_type"):
         fields: List[Tuple[str, pa.DataType]] = []
         for field in dtype.struct_type.fields:
-            inner, nullable = convert_dtype_to_arrow_type_with_nullable(
-                field.dtype
+            inner = convert_dtype_to_arrow_type_with_nullable(
+                field.dtype, nullable
             )
             field = pa.field(field.name, inner, nullable)
             fields.append(field)
-        return pa.struct(fields), False
+        return pa.struct(fields)
     else:
         raise TypeError(f"Invalid dtype: {dtype}.")
 
 
 def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
-    atype, nullable = convert_dtype_to_arrow_type_with_nullable(dtype)
-    return atype
+    return convert_dtype_to_arrow_type_with_nullable(dtype)
 
 
 def check_val_is_null(val: Any) -> bool:
@@ -527,6 +517,9 @@ def validate_field_in_df(
     name = field.name
     dtype = field.dtype
     arrow_type = convert_dtype_to_arrow_type(dtype)
+    for col in df.columns:
+        print("Type of column: ", col, df[col].dtype)
+    print("Dtype: ", dtype)
     if df.shape[0] == 0:
         return
     if name not in df.columns:
@@ -863,6 +856,7 @@ def is_hashable(dtype: Any) -> bool:
 def data_schema_check(
     schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name=""
 ) -> List[ValueError]:
+    print("Checkung schema", df.dtypes) 
     exceptions = []
     fields = []
     for key in schema.keys.fields:
@@ -968,8 +962,9 @@ def cast_col_to_arrow_dtype(
     # Parse datetime values
     series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
     if check_dtype_has_struct_type(dtype):
-        series = series.apply(lambda x: parse_struct_into_dict(x))
-    arrow_type, _nullable = convert_dtype_to_arrow_type_with_nullable(dtype)
+        series = series.apply(lambda x: parse_struct_into_dict(x, dtype))
+    arrow_type = convert_dtype_to_arrow_type_with_nullable(dtype)
+    print("cast_col_to_arrow_dtype Arrow type: ", arrow_type, "dtype: ", dtype)
     return series.astype(pd.ArrowDtype(arrow_type))
 
 

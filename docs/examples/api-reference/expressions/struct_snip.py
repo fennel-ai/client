@@ -30,5 +30,5 @@ def test_get():
     )
     schema = {"x": Optional[MyStruct]}
     expr = col("x").struct.get("f1")
-    assert expr.eval(df, schema=schema).tolist() == [1, 2, 0]
+    assert expr.eval(df, schema=schema).tolist() == [1, 2, pd.NA]
     # /docsnip

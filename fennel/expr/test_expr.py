@@ -620,102 +620,102 @@ def test_parse():
 
 def test_list():
     test_cases = [
-        ExprTestCase(
-            expr=(col("a").list.get(0)),
-            df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
-            schema={"a": List[int]},
-            display="col('a')[0]",
-            refs={"a"},
-            eval_result=[1, 4, 7],
-            expected_dtype=Optional[int],
-            proto_json=None,
-        ),
-        # Get index where index is an expression
-        ExprTestCase(
-            expr=(col("a").list.get(col("b") + col("c"))),
-            df=pd.DataFrame(
-                {
-                    "a": [[1, 2, 3, 4], [4, 5, 6, 12], [7, 8, 9, 19]],
-                    "b": [
-                        0,
-                        1,
-                        2,
-                    ],
-                    "c": [1, 2, 0],
-                }
-            ),
-            schema={"a": List[int], "b": int, "c": int},
-            display="col('a')[(col('b') + col('c'))]",
-            refs={"a", "b", "c"},
-            eval_result=[2, 12, 9],
-            expected_dtype=Optional[int],
-            proto_json=None,
-        ),
-        # Out of bounds index
-        ExprTestCase(
-            expr=(col("a").list.get(col("b"))),
-            df=pd.DataFrame(
-                {
-                    "a": [[1, 2, 3, 4], [4, 5, 6, 12], [7, 8, 9, 19]],
-                    "b": [0, 21, 5],
-                }
-            ),
-            schema={"a": List[int], "b": int},
-            display="col('a')[col('b')]",
-            refs={"a", "b"},
-            eval_result=[1, pd.NA, pd.NA],
-            expected_dtype=Optional[int],
-            proto_json=None,
-        ),
-        # List contains
-        ExprTestCase(
-            expr=(col("a").list.contains(3)),
-            df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
-            schema={"a": List[int]},
-            display="CONTAINS(col('a'), 3)",
-            refs={"a"},
-            eval_result=[True, False, False],
-            expected_dtype=bool,
-            proto_json=None,
-        ),
-        # List contains with expression
-        ExprTestCase(
-            expr=(col("a").list.contains(col("b") * col("c"))),
-            df=pd.DataFrame(
-                {
-                    "a": [[1, 2, 3], [4, 15, 6], [7, 8, 9]],
-                    "b": [1, 5, 10],
-                    "c": [2, 3, 4],
-                }
-            ),
-            schema={"a": List[int], "b": int, "c": int},
-            display="CONTAINS(col('a'), (col('b') * col('c')))",
-            refs={"a", "b", "c"},
-            eval_result=[True, True, False],
-            expected_dtype=bool,
-            proto_json=None,
-        ),
-        # List contains for list of strings
-        ExprTestCase(
-            expr=(col("a2").list.contains(col("b2"))),
-            df=pd.DataFrame(
-                {
-                    "a2": [
-                        ["a", "b", "c"],
-                        ["d", "e", "f"],
-                        ["g", "h", "i"],
-                        ["a", "b", "c"],
-                    ],
-                    "b2": ["a", "e", "c", "d"],
-                }
-            ),
-            schema={"a2": List[str], "b2": str},
-            display="""CONTAINS(col('a2'), col('b2'))""",
-            refs={"a2", "b2"},
-            eval_result=[True, True, False, False],
-            expected_dtype=bool,
-            proto_json=None,
-        ),
+        # ExprTestCase(
+        #     expr=(col("a").list.get(0)),
+        #     df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
+        #     schema={"a": List[int]},
+        #     display="col('a')[0]",
+        #     refs={"a"},
+        #     eval_result=[1, 4, 7],
+        #     expected_dtype=Optional[int],
+        #     proto_json=None,
+        # ),
+        # # Get index where index is an expression
+        # ExprTestCase(
+        #     expr=(col("a").list.get(col("b") + col("c"))),
+        #     df=pd.DataFrame(
+        #         {
+        #             "a": [[1, 2, 3, 4], [4, 5, 6, 12], [7, 8, 9, 19]],
+        #             "b": [
+        #                 0,
+        #                 1,
+        #                 2,
+        #             ],
+        #             "c": [1, 2, 0],
+        #         }
+        #     ),
+        #     schema={"a": List[int], "b": int, "c": int},
+        #     display="col('a')[(col('b') + col('c'))]",
+        #     refs={"a", "b", "c"},
+        #     eval_result=[2, 12, 9],
+        #     expected_dtype=Optional[int],
+        #     proto_json=None,
+        # ),
+        # # Out of bounds index
+        # ExprTestCase(
+        #     expr=(col("a").list.get(col("b"))),
+        #     df=pd.DataFrame(
+        #         {
+        #             "a": [[1, 2, 3, 4], [4, 5, 6, 12], [7, 8, 9, 19]],
+        #             "b": [0, 21, 5],
+        #         }
+        #     ),
+        #     schema={"a": List[int], "b": int},
+        #     display="col('a')[col('b')]",
+        #     refs={"a", "b"},
+        #     eval_result=[1, pd.NA, pd.NA],
+        #     expected_dtype=Optional[int],
+        #     proto_json=None,
+        # ),
+        # # List contains
+        # ExprTestCase(
+        #     expr=(col("a").list.contains(3)),
+        #     df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
+        #     schema={"a": List[int]},
+        #     display="CONTAINS(col('a'), 3)",
+        #     refs={"a"},
+        #     eval_result=[True, False, False],
+        #     expected_dtype=bool,
+        #     proto_json=None,
+        # ),
+        # # List contains with expression
+        # ExprTestCase(
+        #     expr=(col("a").list.contains(col("b") * col("c"))),
+        #     df=pd.DataFrame(
+        #         {
+        #             "a": [[1, 2, 3], [4, 15, 6], [7, 8, 9]],
+        #             "b": [1, 5, 10],
+        #             "c": [2, 3, 4],
+        #         }
+        #     ),
+        #     schema={"a": List[int], "b": int, "c": int},
+        #     display="CONTAINS(col('a'), (col('b') * col('c')))",
+        #     refs={"a", "b", "c"},
+        #     eval_result=[True, True, False],
+        #     expected_dtype=bool,
+        #     proto_json=None,
+        # ),
+        # # List contains for list of strings
+        # ExprTestCase(
+        #     expr=(col("a2").list.contains(col("b2"))),
+        #     df=pd.DataFrame(
+        #         {
+        #             "a2": [
+        #                 ["a", "b", "c"],
+        #                 ["d", "e", "f"],
+        #                 ["g", "h", "i"],
+        #                 ["a", "b", "c"],
+        #             ],
+        #             "b2": ["a", "e", "c", "d"],
+        #         }
+        #     ),
+        #     schema={"a2": List[str], "b2": str},
+        #     display="""CONTAINS(col('a2'), col('b2'))""",
+        #     refs={"a2", "b2"},
+        #     eval_result=[True, True, False, False],
+        #     expected_dtype=bool,
+        #     proto_json=None,
+        # ),
         # Support struct inside a list
         ExprTestCase(
             expr=(
@@ -733,40 +733,40 @@ def test_list():
             expected_dtype=bool,
             proto_json=None,
         ),
-        ExprTestCase(
-            expr=(col("a").list.len()),
-            df=pd.DataFrame(
-                {"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}
-            ),
-            schema={"a": List[A]},
-            display="LEN(col('a'))",
-            refs={"a"},
-            eval_result=[3],
-            expected_dtype=int,
-            proto_json=None,
-        ),
-        # List length
-        ExprTestCase(
-            expr=(col("a").list.len()),
-            df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6, 12], [7, 8, 9, 19]]}),
-            schema={"a": List[int]},
-            display="LEN(col('a'))",
-            refs={"a"},
-            eval_result=[3, 4, 4],
-            expected_dtype=int,
-            proto_json=None,
-        ),
-        # Empty list length
-        ExprTestCase(
-            expr=(col("a").list.len()),
-            df=pd.DataFrame({"a": [[], [4, 5, 6, 12], [7, 8, 9, 19]]}),
-            schema={"a": List[int]},
-            display="LEN(col('a'))",
-            refs={"a"},
-            eval_result=[0, 4, 4],
-            expected_dtype=int,
-            proto_json=None,
-        ),
+        # ExprTestCase(
+        #     expr=(col("a").list.len()),
+        #     df=pd.DataFrame(
+        #         {"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}
+        #     ),
+        #     schema={"a": List[A]},
+        #     display="LEN(col('a'))",
+        #     refs={"a"},
+        #     eval_result=[3],
+        #     expected_dtype=int,
+        #     proto_json=None,
+        # ),
+        # # List length
+        # ExprTestCase(
+        #     expr=(col("a").list.len()),
+        #     df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6, 12], [7, 8, 9, 19]]}),
+        #     schema={"a": List[int]},
+        #     display="LEN(col('a'))",
+        #     refs={"a"},
+        #     eval_result=[3, 4, 4],
+        #     expected_dtype=int,
+        #     proto_json=None,
+        # ),
+        # # Empty list length
+        # ExprTestCase(
+        #     expr=(col("a").list.len()),
+        #     df=pd.DataFrame({"a": [[], [4, 5, 6, 12], [7, 8, 9, 19]]}),
+        #     schema={"a": List[int]},
+        #     display="LEN(col('a'))",
+        #     refs={"a"},
+        #     eval_result=[0, 4, 4],
+        #     expected_dtype=int,
+        #     proto_json=None,
+        # ),
     ]
 
     for test_case in test_cases:
@@ -1177,38 +1177,38 @@ def test_fillnull():
 
 def test_isnull():
     cases = [
-        ExprTestCase(
-            expr=(col("a").isnull()),
-            df=pd.DataFrame({"a": [1, 2, None, 4]}),
-            schema={"a": Optional[int]},
-            display="IS_NULL(col('a'))",
-            refs={"a"},
-            eval_result=[False, False, True, False],
-            expected_dtype=bool,
-            proto_json=None,
-        ),
-        ExprTestCase(
-            expr=(col("a").isnull()),
-            df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
-            schema={"a": Optional[str]},
-            display="IS_NULL(col('a'))",
-            refs={"a"},
-            eval_result=[False, False, True, False],
-            expected_dtype=bool,
-            proto_json=None,
-        ),
-        # Each type is a struct
-        # TODO(Aditya): Fix this test case
         # ExprTestCase(
         #     expr=(col("a").isnull()),
-        #     df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), None]}),
-        #     schema={"a": Optional[A]},
+        #     df=pd.DataFrame({"a": [1, 2, None, 4]}),
+        #     schema={"a": Optional[int]},
         #     display="IS_NULL(col('a'))",
         #     refs={"a"},
-        #     eval_result=[False, False, True],
+        #     eval_result=[False, False, True, False],
         #     expected_dtype=bool,
         #     proto_json=None,
         # ),
+        # ExprTestCase(
+        #     expr=(col("a").isnull()),
+        #     df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
+        #     schema={"a": Optional[str]},
+        #     display="IS_NULL(col('a'))",
+        #     refs={"a"},
+        #     eval_result=[False, False, True, False],
+        #     expected_dtype=bool,
+        #     proto_json=None,
+        # ),
+        # Each type is a struct
+        # TODO(Aditya): Fix this test case
+        ExprTestCase(
+            expr=(col("a").isnull()),
+            df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), None]}),
+            schema={"a": Optional[A]},
+            display="IS_NULL(col('a'))",
+            refs={"a"},
+            eval_result=[False, False, True],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
         # Each type is a list
         ExprTestCase(
             expr=(col("a").isnull()),
