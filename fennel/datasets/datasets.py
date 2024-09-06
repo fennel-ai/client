@@ -1043,7 +1043,9 @@ class Join(_Node):
 
         # If fields is set, check that it contains elements from right schema values and timestamp only
         if self.fields is not None and len(self.fields) > 0:
-            allowed_col_names = [x for x in right_value_schema.keys()] + [right_ts]
+            allowed_col_names = [x for x in right_value_schema.keys()] + [
+                right_ts
+            ]
             for col_name in self.fields:
                 if col_name not in allowed_col_names:
                     raise ValueError(
@@ -1058,13 +1060,22 @@ class Join(_Node):
                 raise ValueError(
                     f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
-            if self.fields is not None and len(self.fields) > 0 and col not in self.fields:
+            if (
+                self.fields is not None
+                and len(self.fields) > 0
+                and col not in self.fields
+            ):
                 continue
             joined_dsschema.append_value_column(col, dtype)
 
         # Add timestamp column if present in fields
         if self.fields is not None and right_ts in self.fields:
-            joined_dsschema.append_value_column(right_ts, datetime.datetime)
+            if self.how == "left":
+                joined_dsschema.append_value_column(
+                    right_ts, Optional[datetime.datetime]
+                )
+            else:
+                joined_dsschema.append_value_column(right_ts, datetime.datetime)
 
         return joined_dsschema
 
@@ -2866,7 +2877,9 @@ class SchemaValidator(Visitor):
             )
 
         if obj.fields is not None and len(obj.fields) > 0:
-            allowed_fields = [x for x in right_schema.values.keys()] + [right_schema.timestamp]
+            allowed_fields = [x for x in right_schema.values.keys()] + [
+                right_schema.timestamp
+            ]
             for field in obj.fields:
                 if field not in allowed_fields:
                     raise ValueError(
@@ -2875,7 +2888,10 @@ class SchemaValidator(Visitor):
                         f"right schema of {output_schema_name}."
                     )
 
-            if right_schema.timestamp in obj.fields and right_schema.timestamp in left_schema.fields():
+            if (
+                right_schema.timestamp in obj.fields
+                and right_schema.timestamp in left_schema.fields()
+            ):
                 raise ValueError(
                     f"Field `{right_schema.timestamp}` specified in fields {obj.fields} "
                     f"already exists in left schema of {output_schema_name}."

@@ -1398,7 +1398,11 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
 
 
 @meta(owner="test@test.com")
-@source(webhook.endpoint("MovieRevenueWithRightFields"), disorder="14d", cdc="upsert")
+@source(
+    webhook.endpoint("MovieRevenueWithRightFields"),
+    disorder="14d",
+    cdc="upsert",
+)
 @dataset(index=True)
 class MovieRevenueWithRightFields:
     movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
@@ -1417,7 +1421,8 @@ class MovieStatsWithRightFields:
     )
     rating: float
     revenue_in_millions: float
-    t: datetime
+    t: Optional[datetime]
+    ts: datetime = field(timestamp=True)
 
     @pipeline
     @inputs(MovieRating, MovieRevenueWithRightFields)
@@ -1429,12 +1434,16 @@ class MovieStatsWithRightFields:
                 [
                     str(cls.movie),
                     str(cls.t),
+                    str(cls.ts),
                     str(cls.revenue_in_millions),
                     str(cls.rating),
                 ]
             ]
 
-        c = rating.join(revenue, how="left", on=[str(cls.movie)], fields=["revenue"])
+        rating = rating.rename({"t": "ts"})  # type: ignore
+        c = rating.join(
+            revenue, how="left", on=[str(cls.movie)], fields=["revenue", "t"]
+        )
         # Transform provides additional columns which will be filtered out.
         return c.transform(
             to_millions,
@@ -1443,7 +1452,8 @@ class MovieStatsWithRightFields:
                     str, ["Jumanji", "Titanic", "RaOne", "ABC"]
                 ),
                 str(cls.rating): float,
-                str(cls.t): datetime,
+                str(cls.t): Optional[datetime],
+                str(cls.ts): datetime,
                 str(cls.revenue_in_millions): float,
             },
         )
@@ -1456,7 +1466,12 @@ class TestBasicJoinWithRightFields(unittest.TestCase):
         # # Sync the dataset
         client.commit(
             message="msg",
-            datasets=[MovieRating, MovieRevenueWithRightFields, MovieStatsWithRightFields, RatingActivity],
+            datasets=[
+                MovieRating,
+                MovieRevenueWithRightFields,
+                MovieStatsWithRightFields,
+                RatingActivity,
+            ],
         )
         now = datetime.now(timezone.utc)
         one_hour_ago = now - timedelta(hours=1)
@@ -1470,10 +1485,15 @@ class TestBasicJoinWithRightFields(unittest.TestCase):
         assert response.status_code == requests.codes.OK, response.json()
 
         two_hours_ago = now - timedelta(hours=2)
-        data = [["Jumanji", 2000000, 1, two_hours_ago], ["Titanic", 50000000, 2, now]]
+        data = [
+            ["Jumanji", 2000000, 1, two_hours_ago],
+            ["Titanic", 50000000, 2, now],
+        ]
         columns = ["movie", "revenue", "extra_field", "t"]
         df = pd.DataFrame(data, columns=columns)
-        response = client.log("fennel_webhook", "MovieRevenueWithRightFields", df)
+        response = client.log(
+            "fennel_webhook", "MovieRevenueWithRightFields", df
+        )
         assert response.status_code == requests.codes.OK, response.json()
         client.sleep()
 
@@ -1483,10 +1503,11 @@ class TestBasicJoinWithRightFields(unittest.TestCase):
             "MovieStatsWithRightFields",
             keys=keys,
         )
-        assert df.shape == (2, 4)
+        assert df.shape == (2, 5)
         assert df["movie"].tolist() == ["Jumanji", "Titanic"]
         assert df["rating"].tolist() == [4, 5]
         assert df["revenue_in_millions"].tolist() == [2, 50]
+        assert df["t"].tolist() == [two_hours_ago, now]
         assert "extra_field" not in df.columns
 
         # Do some lookup at various timestamps in the past
@@ -1499,7 +1520,7 @@ class TestBasicJoinWithRightFields(unittest.TestCase):
             timestamps=ts,
             keys=keys,
         )
-        assert df.shape == (4, 4)
+        assert df.shape == (4, 5)
         assert df["movie"].tolist() == [
             "Jumanji",
             "Jumanji",
@@ -1514,6 +1535,10 @@ class TestBasicJoinWithRightFields(unittest.TestCase):
         assert df["revenue_in_millions"].tolist()[1] == 2
         assert pd.isna(df["revenue_in_millions"].tolist()[2])
         assert df["revenue_in_millions"].tolist()[3] == 50
+        assert pd.isna(df["t"].tolist()[0])
+        assert df["t"].tolist()[1] == two_hours_ago
+        assert pd.isna(df["t"].tolist()[2])
+        assert df["t"].tolist()[3] == now
         assert "extra_field" not in df.columns
 
 

@@ -496,6 +496,13 @@ class Executor(Visitor):
         right_df = right_df.rename(
             columns={right_timestamp_field: tmp_right_ts}
         )
+        # Conserve the rhs timestamp field if the join demands it
+        if (
+            obj.fields is not None
+            and len(obj.fields) > 0
+            and right_timestamp_field in obj.fields
+        ):
+            right_df[right_timestamp_field] = right_df[tmp_right_ts]
 
         # Set the value of the left timestamp - this is the timestamp that will be used for the join
         # - to be the upper bound of the join query (this is the max ts of a valid right dataset entry)
@@ -658,36 +665,30 @@ class Executor(Visitor):
         )
 
         if obj.fields is not None and len(obj.fields) > 0:
-            all_right_fields = [f.name for f in right_ret.fields]
+            all_right_fields = [f.name for f in right_ret.fields]  # type: ignore
             for col_name in obj.fields:
-                if col_name in right_ret.key_fields:
+                if col_name in right_ret.key_fields:  # type: ignore
                     raise Exception(
                         f"fields member {col_name} cannot be one of right dataframe's "
-                        f"key fields {right_ret.key_fields}"
+                        f"key fields {right_ret.key_fields}"  # type: ignore
                     )
                 if col_name not in all_right_fields:
                     raise Exception(
-                        f"fields member {col_name} not present in right dataframe's "
+                        f"fields member {col_name} not present in right dataframe's "  # type: ignore
                         f"fields {right_ret.fields}"
                     )
 
             cols_to_drop = []
-            for field in right_ret.fields:
+            for field in right_ret.fields:  # type: ignore
                 col_name = field.name
-                if col_name not in right_ret.key_fields and col_name != right_ret.timestamp_field \
-                    and col_name not in obj.fields:
+                if (
+                    col_name not in right_ret.key_fields  # type: ignore
+                    and col_name != right_ret.timestamp_field  # type: ignore
+                    and col_name not in obj.fields
+                ):
                     cols_to_drop.append(col_name)
 
             merged_df.drop(columns=cols_to_drop, inplace=True)
-
-            # Add timestamp column if present in fields
-            if right_timestamp_field in obj.fields:
-                if right_timestamp_field in merged_df.columns:
-                    raise Exception(
-                        f"fields member {right_timestamp_field} already present in "
-                        f"merged dataframe"
-                    )
-                merged_df[right_timestamp_field] = right_df[right_timestamp_field]
 
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)

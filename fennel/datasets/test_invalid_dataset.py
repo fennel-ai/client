@@ -792,7 +792,7 @@ def test_dataset_incorrect_join_fields():
                 c = a.join(b, how="inner", on=["user_id"], fields=["rank"])  # type: ignore
                 return c
 
-    assert(
+    assert (
         str(e.value)
         == "Field `rank` specified in fields ['rank'] doesn't exist in "
         "allowed fields ['age', 'timestamp'] of right schema of "
@@ -814,7 +814,7 @@ def test_dataset_incorrect_join_fields():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC1:
             user_id: int
             name: str
             age: int
@@ -826,7 +826,7 @@ def test_dataset_incorrect_join_fields():
                 c = a.join(b, how="inner", on=["user_id"], fields=["user_id"])  # type: ignore
                 return c
 
-    assert(
+    assert (
         str(e.value)
         == "Field `user_id` specified in fields ['user_id'] doesn't exist in "
         "allowed fields ['age', 'timestamp'] of right schema of "
@@ -848,7 +848,7 @@ def test_dataset_incorrect_join_fields():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC2:
             user_id: int
             name: str
             age: int
@@ -860,7 +860,7 @@ def test_dataset_incorrect_join_fields():
                 c = a.join(b, how="inner", on=["user_id"], fields=["timestamp"])  # type: ignore
                 return c
 
-    assert(
+    assert (
         str(e.value)
         == "Field `timestamp` specified in fields ['timestamp'] already "
         "exists in left schema of '[Pipeline:create_pipeline]->join node'."

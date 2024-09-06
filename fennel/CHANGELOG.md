@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.19] - 2024-09-06
+- Add ability to specify fields in join
+
 ## [1.5.18] - 2024-09-05
 - Struct initializer + arrow fixes + type promotion in assign
 

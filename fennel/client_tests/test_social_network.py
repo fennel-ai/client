@@ -41,7 +41,9 @@ class PostInfo:
     timestamp: datetime
 
 
-@source(webhook.endpoint("PostInfoWithRightFields"), disorder="14d", cdc="upsert")
+@source(
+    webhook.endpoint("PostInfoWithRightFields"), disorder="14d", cdc="upsert"
+)
 @dataset(index=True)
 @meta(owner="data-eng@myspace.com")
 class PostInfoWithRightFields:
@@ -393,9 +395,14 @@ def test_social_network_with_fields(client):
     ) == ([2, 4], [0, 1], [0.0, 0.25])
 
     # Assert that both the last_viewed_post and last_viewed_post2 features are extracted correctly
-    last_post_viewed = feature_df["UserFeaturesWithRightFields.last_viewed_post"].to_list()
+    last_post_viewed = feature_df[
+        "UserFeaturesWithRightFields.last_viewed_post"
+    ].to_list()
     last_post_viewed2 = [
-        x[0] for x in feature_df["UserFeaturesWithRightFields.last_viewed_post2"].to_list()
+        x[0]
+        for x in feature_df[
+            "UserFeaturesWithRightFields.last_viewed_post2"
+        ].to_list()
     ]
     assert last_post_viewed == [936609766, 735291550]
     assert last_post_viewed2 == last_post_viewed
