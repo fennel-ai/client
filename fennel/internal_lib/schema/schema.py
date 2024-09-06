@@ -292,17 +292,25 @@ def convert_dtype_to_arrow_type_with_nullable(
         return pa.decimal128(28, dtype.decimal_type.scale)
     elif dtype.HasField("array_type"):
         return pa.list_(
-            value_type=convert_dtype_to_arrow_type_with_nullable(dtype.array_type.of, nullable)
+            value_type=convert_dtype_to_arrow_type_with_nullable(
+                dtype.array_type.of, nullable
+            )
         )
     elif dtype.HasField("map_type"):
-        key_pa_type = convert_dtype_to_arrow_type_with_nullable(dtype.map_type.key, nullable=False)
-        value_pa_type = convert_dtype_to_arrow_type_with_nullable(dtype.map_type.value, nullable)
+        key_pa_type = convert_dtype_to_arrow_type_with_nullable(
+            dtype.map_type.key, nullable=False
+        )
+        value_pa_type = convert_dtype_to_arrow_type_with_nullable(
+            dtype.map_type.value, nullable
+        )
         return pa.map_(key_pa_type, value_pa_type, False)
     elif dtype.HasField("embedding_type"):
         embedding_size = dtype.embedding_type.embedding_size
         return pa.list_(pa.float64(), embedding_size)
     elif dtype.HasField("one_of_type"):
-        return convert_dtype_to_arrow_type_with_nullable(dtype.one_of_type.of, nullable)
+        return convert_dtype_to_arrow_type_with_nullable(
+            dtype.one_of_type.of, nullable
+        )
     elif dtype.HasField("between_type"):
         return convert_dtype_to_arrow_type_with_nullable(
             dtype.between_type.dtype, nullable
@@ -517,9 +525,6 @@ def validate_field_in_df(
     name = field.name
     dtype = field.dtype
     arrow_type = convert_dtype_to_arrow_type(dtype)
-    for col in df.columns:
-        print("Type of column: ", col, df[col].dtype)
-    print("Dtype: ", dtype)
     if df.shape[0] == 0:
         return
     if name not in df.columns:
@@ -856,7 +861,6 @@ def is_hashable(dtype: Any) -> bool:
 def data_schema_check(
     schema: schema_proto.DSSchema, df: pd.DataFrame, dataset_name=""
 ) -> List[ValueError]:
-    print("Checkung schema", df.dtypes) 
     exceptions = []
     fields = []
     for key in schema.keys.fields:
@@ -960,11 +964,10 @@ def cast_col_to_arrow_dtype(
     # Let's convert structs into json, this is done because arrow
     # dtype conversion fails with fennel struct
     # Parse datetime values
-    series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
     if check_dtype_has_struct_type(dtype):
         series = series.apply(lambda x: parse_struct_into_dict(x, dtype))
+    series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
     arrow_type = convert_dtype_to_arrow_type_with_nullable(dtype)
-    print("cast_col_to_arrow_dtype Arrow type: ", arrow_type, "dtype: ", dtype)
     return series.astype(pd.ArrowDtype(arrow_type))
 
 

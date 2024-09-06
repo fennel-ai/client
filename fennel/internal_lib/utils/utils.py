@@ -129,7 +129,9 @@ def cast_col_to_pandas(
         return series.fillna(pd.NA)
 
 
-def parse_struct_into_dict(value: Any, dtype: schema_proto.DataType) -> Optional[Union[dict, list]]:
+def parse_struct_into_dict(
+    value: Any, dtype: schema_proto.DataType
+) -> Optional[Union[dict, list]]:
     """
     This function assumes that there's a struct somewhere in the value that needs to be converted into json.
     """
@@ -143,11 +145,19 @@ def parse_struct_into_dict(value: Any, dtype: schema_proto.DataType) -> Optional
     elif isinstance(value, list) or isinstance(value, np.ndarray):
         return [parse_struct_into_dict(x, dtype.array_type.of) for x in value]
     elif isinstance(value, dict) or isinstance(value, frozendict):
-        return {key: parse_struct_into_dict(val, dtype.map_type.value) for key, val in value.items()}
+        return {
+            key: parse_struct_into_dict(val, dtype.map_type.value)
+            for key, val in value.items()
+        }
     elif value is None or pd.isna(value):
         # If dtype is an optional struct type return, a dict with all fields as None
-        if dtype.HasField("optional_type") and dtype.optional_type.of.HasField("struct_type"):
-            return {field.name: None for field in dtype.optional_type.of.struct_type.fields}
+        if dtype.HasField("optional_type") and dtype.optional_type.of.HasField(
+            "struct_type"
+        ):
+            return {
+                field.name: None
+                for field in dtype.optional_type.of.struct_type.fields
+            }
         else:
             return None
     else:

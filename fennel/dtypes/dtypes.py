@@ -1,4 +1,5 @@
 import dataclasses
+from functools import partial
 import inspect
 import sys
 from dataclasses import dataclass
@@ -75,6 +76,16 @@ def get_fennel_struct(annotation) -> Any:
         return None
 
 
+def make_struct_expr(cls, **kwargs):
+    from fennel.expr.expr import Expr, make_expr, make_struct
+
+    fields = {}
+    for name, value in kwargs.items():
+        fields[name] = make_expr(value)
+
+    return make_struct(fields, cls)
+
+
 def struct(cls):
     for name, member in inspect.getmembers(cls):
         if inspect.isfunction(member) and name in cls.__dict__:
@@ -131,6 +142,7 @@ def struct(cls):
         setattr(cls, FENNEL_STRUCT_SRC_CODE, "")
     setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
     cls.as_json = as_json
+    cls.expr = partial(make_struct_expr, cls)
     return dataclasses.dataclass(cls)
 
 

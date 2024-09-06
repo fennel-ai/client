@@ -814,13 +814,11 @@ class Executor(Visitor):
             df = copy.deepcopy(input_df)
             df.reset_index(drop=True, inplace=True)
             for col, typed_expr in obj.output_expressions.items():
-                if col in input_ret.df.columns:
-                    raise Exception(
-                        f"Column `{col}` already present in dataframe"
-                    )
                 input_dsschema = obj.node.dsschema().schema()
                 try:
-                    df[col] = typed_expr.expr.eval(input_df, input_dsschema)
+                    df[col] = typed_expr.expr.eval(
+                        input_df, input_dsschema, typed_expr.dtype, parse=False
+                    )
                 except Exception as e:
                     raise Exception(
                         f"Error in assign node for column `{col}` for pipeline "

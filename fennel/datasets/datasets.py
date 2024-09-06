@@ -2935,7 +2935,9 @@ class SchemaValidator(Visitor):
                     raise ValueError(
                         f"invalid assign - {output_schema_name} error in expression for column `{col}`: {str(e)}"
                     )
-                if typed_expr.dtype != expr_type:
+                if not typed_expr.expr.matches_type(
+                    typed_expr.dtype, input_schema.schema()
+                ):
                     printer = ExprPrinter()
                     type_errors.append(
                         f"'{col}' is expected to be of type `{dtype_to_string(typed_expr.dtype)}`, but evaluates to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(typed_expr.expr.root)}`"
@@ -2943,7 +2945,6 @@ class SchemaValidator(Visitor):
 
             if len(type_errors) > 0:
                 joined_errors = "\n\t".join(type_errors)
-                print(joined_errors)
                 raise TypeError(
                     f"found type errors in assign node of `{self.dsname}.{self.pipeline_name}`:\n\t{joined_errors}"
                 )
