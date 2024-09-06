@@ -595,7 +595,7 @@ def test_dataset_with_pipes():
         @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+            return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient()
     view.add(ABCDataset)
@@ -637,14 +637,14 @@ def add_one(x: int):
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
     expected_source_code = """@pipeline
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 """
     assert expected_source_code == pipeline_req.pycode.source_code
     p = {
@@ -696,7 +696,7 @@ def pipeline1(cls, a: Dataset, b: Dataset):
     )
     operator_req = sync_request.operators[2]
     o = {
-	    "id":"3338ee30aac1dc899789da9fc78fa025",
+	    "id":"b8a998fc5e47160f2ef4d3e4570d6bab",
 	    "isRoot":True,
 	    "pipelineName":"pipeline1",
 	    "datasetName":"ABCDataset",
@@ -705,7 +705,8 @@ def pipeline1(cls, a: Dataset, b: Dataset):
 	        "rhsDsrefOperandId":"B",
 	        "on":{
 	            "a1":"b1"
-	        }
+	        },
+            "how":"Inner"
 	    },
 	    "dsVersion":1
 	}
