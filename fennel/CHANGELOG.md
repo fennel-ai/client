@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.18] - 2024-09-05
+- Struct initializer + arrow fixes + type promotion in assign
+
 ## [1.5.17] - 2024-09-04
 - Add support for several more expressions
 

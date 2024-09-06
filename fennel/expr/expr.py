@@ -13,7 +13,7 @@ from fennel.internal_lib.schema.schema import (
     parse_json,
 )
 import pyarrow as pa
-from fennel_data_lib import eval, type_of
+from fennel_data_lib import assign, type_of, matches
 
 import fennel.gen.schema_pb2 as schema_proto
 from fennel.internal_lib.schema import (
@@ -340,7 +340,26 @@ class Expr(object):
         datatype.ParseFromString(type_bytes)
         return from_proto(datatype)
 
-    def eval(self, input_df: pd.DataFrame, schema: Dict) -> pd.Series:
+    def matches_type(self, dtype: Type, schema: Dict) -> bool:
+        schema = schema or {}
+        from fennel.expr.serializer import ExprSerializer
+
+        serializer = ExprSerializer()
+        proto_expr = serializer.serialize(self.root)
+        proto_bytes = proto_expr.SerializeToString()
+        proto_schema = {}
+        for key, value in schema.items():
+            proto_schema[key] = get_datatype(value).SerializeToString()
+        proto_type_bytes = get_datatype(dtype).SerializeToString()
+        return matches(proto_bytes, proto_schema, proto_type_bytes)
+
+    def eval(
+        self,
+        input_df: pd.DataFrame,
+        schema: Dict,
+        output_dtype: Optional[Type] = None,
+        parse=True,
+    ) -> pd.Series:
         from fennel.expr.serializer import ExprSerializer
 
         def pd_to_pa(pd_data: pd.DataFrame, schema: Dict[str, Type]):
@@ -352,37 +371,29 @@ class Expr(object):
                         f"column : {column} not found in input dataframe but defined in schema."
                     )
                 new_df[column] = cast_col_to_arrow_dtype(new_df[column], dtype)
-                print("NEw DF: ", column, new_df[column])
             new_df = new_df.loc[:, list(schema.keys())]
             fields = []
             for column, dtype in schema.items():
                 proto_dtype = get_datatype(dtype)
-                pa_type = convert_dtype_to_arrow_type_with_nullable(
-                    proto_dtype
-                )
-                print(f"column: {column}, dtype: {dtype}, pa_type: {pa_type}")
-                print("proto_dtype: ", proto_dtype)
+                pa_type = convert_dtype_to_arrow_type_with_nullable(proto_dtype)
                 if proto_dtype.HasField("optional_type"):
                     nullable = True
                 else:
                     nullable = False
                 field = pa.field(column, type=pa_type, nullable=nullable)
-                print(f"field: {field.name}, type: {field.type}", "nullable: ", field.nullable)
                 fields.append(field)
             pa_schema = pa.schema(fields)
             # Replace pd.NA with None
             new_df = new_df.where(pd.notna(new_df), None)
-            print("New DF: ", new_df)
-            x = pa.RecordBatch.from_pandas(
+            return pa.RecordBatch.from_pandas(
                 new_df, preserve_index=False, schema=pa_schema
             )
-            print("RecordBatch: ", x)
-            return x
 
-        def pa_to_pd(pa_data, ret_type):
+        def pa_to_pd(pa_data, ret_type, parse=True):
             ret = pa_data.to_pandas(types_mapper=pd.ArrowDtype)
             ret = cast_col_to_pandas(ret, get_datatype(ret_type))
-            ret = ret.apply(lambda x: parse_json(ret_type, x))
+            if parse:
+                ret = ret.apply(lambda x: parse_json(ret_type, x))
             return ret
 
         serializer = ExprSerializer()
@@ -392,9 +403,16 @@ class Expr(object):
         proto_schema = {}
         for key, value in schema.items():
             proto_schema[key] = get_datatype(value).SerializeToString()
-        ret_type = self.typeof(schema)
-        arrow_col = eval(proto_bytes, df_pa, proto_schema)
-        return pa_to_pd(arrow_col, ret_type)
+        if output_dtype is None:
+            ret_type = self.typeof(schema)
+        else:
+            ret_type = output_dtype
+
+        serialized_ret_type = get_datatype(ret_type).SerializeToString()
+        arrow_col = assign(
+            proto_bytes, df_pa, proto_schema, serialized_ret_type
+        )
+        return pa_to_pd(arrow_col, ret_type, parse)
 
     def __str__(self) -> str:  # type: ignore
         from fennel.expr.visitor import ExprPrinter

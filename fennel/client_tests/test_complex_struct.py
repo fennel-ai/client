@@ -8,6 +8,7 @@ import fennel._vendor.requests as requests
 from fennel.connectors import Webhook, source
 from fennel.datasets import dataset, Dataset, field, pipeline, LastK
 from fennel.dtypes import struct, Continuous
+from fennel.expr.expr import col, make_struct
 from fennel.featuresets import featureset, feature as F, extractor
 from fennel.lib import inputs, outputs
 from fennel.testing import mock
@@ -72,6 +73,118 @@ class MovieInfo:
                     ),
                     axis=1,
                 ),
+            )
+            .drop(columns=["role_id", "name", "cost"])
+            .groupby("director_id", "movie_id")
+            .aggregate(
+                LastK(
+                    into_field="role_list",
+                    of="role",
+                    window=Continuous("forever"),
+                    limit=3,
+                    dedup=False,
+                ),
+            )
+        )
+
+
+@dataset(index=True)
+class MovieInfoExpr:
+    director_id: int = field(key=True)
+    movie_id: int = field(key=True)
+    role_list: List[Role]
+    timestamp: datetime = field(timestamp=True)
+
+    @pipeline
+    @inputs(MovieDS)
+    def movie_info(cls, movie: Dataset):
+        return (
+            movie.assign(
+                role=make_struct(
+                    {
+                        "role_id": col("role_id"),
+                        "name": col("name"),
+                        "cost": col("cost"),
+                    },
+                    Role,
+                ).astype(Role)
+            )
+            .drop(columns=["role_id", "name", "cost"])
+            .groupby("director_id", "movie_id")
+            .aggregate(
+                LastK(
+                    into_field="role_list",
+                    of="role",
+                    window=Continuous("forever"),
+                    limit=3,
+                    dedup=False,
+                ),
+            )
+        )
+
+
+@dataset(index=True)
+class MovieInfoExpr2:
+    director_id: int = field(key=True)
+    movie_id: int = field(key=True)
+    role_list: List[Role]
+    timestamp: datetime = field(timestamp=True)
+
+    @pipeline
+    @inputs(MovieDS)
+    def movie_info(cls, movie: Dataset):
+        return (
+            movie.assign(
+                role=Role.expr(  # type: ignore
+                    role_id=col("role_id"), name=col("name"), cost=col("cost")
+                ).astype(Role)
+            )
+            .drop(columns=["role_id", "name", "cost"])
+            .groupby("director_id", "movie_id")
+            .aggregate(
+                LastK(
+                    into_field="role_list",
+                    of="role",
+                    window=Continuous("forever"),
+                    limit=3,
+                    dedup=False,
+                ),
+            )
+        )
+
+
+@struct
+class FullName:
+    first_name: str
+    last_name: str
+
+
+@struct
+class RoleExtended:
+    role_id: int
+    name: FullName
+    cost: int
+
+
+@dataset(index=True)
+class MovieInfoExprNested:
+    director_id: int = field(key=True)
+    movie_id: int = field(key=True)
+    role_list: List[RoleExtended]
+    timestamp: datetime = field(timestamp=True)
+
+    @pipeline
+    @inputs(MovieDS)
+    def movie_info(cls, movie: Dataset):
+        return (
+            movie.assign(
+                role=RoleExtended.expr(  # type: ignore
+                    role_id=col("role_id"),
+                    name=FullName.expr(  # type: ignore
+                        first_name=col("name"), last_name="rando"
+                    ),
+                    cost=col("cost"),
+                ).astype(RoleExtended)
             )
             .drop(columns=["role_id", "name", "cost"])
             .groupby("director_id", "movie_id")
@@ -218,7 +331,13 @@ def test_complex_struct(client):
 
     client.commit(
         message="msg",
-        datasets=[MovieDS, MovieInfo],
+        datasets=[
+            MovieDS,
+            MovieInfo,
+            MovieInfoExpr,
+            MovieInfoExpr2,
+            MovieInfoExprNested,
+        ],
         featuresets=[Request, MovieFeatures],
     )
 
@@ -254,6 +373,36 @@ def test_complex_struct(client):
         ],
         input_dataframe=input_df,
     )
+
+    res1, found1 = client.lookup(
+        "MovieInfo",
+        keys=pd.DataFrame({"director_id": [1, 2], "movie_id": [1, 3]}),
+    )
+    res2, found2 = client.lookup(
+        "MovieInfoExpr",
+        keys=pd.DataFrame({"director_id": [1, 2], "movie_id": [1, 3]}),
+    )
+    res3, found3 = client.lookup(
+        "MovieInfoExpr2",
+        keys=pd.DataFrame({"director_id": [1, 2], "movie_id": [1, 3]}),
+    )
+    assert res1.shape == res2.shape
+    assert res1.shape == res3.shape
+    for c in res1.columns:
+        assert res1[c].equals(res2[c])
+        assert res1[c].equals(res3[c])
+    assert list(found1) == list(found2)
+    assert list(found1) == list(found3)
+
+    res4, found4 = client.lookup(
+        "MovieInfoExprNested",
+        keys=pd.DataFrame({"director_id": [1, 2], "movie_id": [1, 3]}),
+    )
+    assert res1.shape == res4.shape
+    assert list(found1) == list(found4)
+    for r in res4["role_list"]:
+        for role in r:
+            assert role.name.last_name == "rando"
 
     assert df.shape[0] == 4
     assert len(df["MovieFeatures.role_list_py"].tolist()[0]) == 3
