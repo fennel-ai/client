@@ -1397,6 +1397,151 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
             ]
 
 
+@meta(owner="test@test.com")
+@source(
+    webhook.endpoint("MovieRevenueWithRightFields"),
+    disorder="14d",
+    cdc="upsert",
+)
+@dataset(index=True)
+class MovieRevenueWithRightFields:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
+        key=True
+    )
+    revenue: int
+    extra_field: int
+    t: datetime
+
+
+@meta(owner="satwant@fennel.ai")
+@dataset(index=True)
+class MovieStatsWithRightFields:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
+        key=True
+    )
+    rating: float
+    revenue_in_millions: float
+    t: Optional[datetime]
+    ts: datetime = field(timestamp=True)
+
+    @pipeline
+    @inputs(MovieRating, MovieRevenueWithRightFields)
+    def pipeline_join(cls, rating: Dataset, revenue: Dataset):
+        def to_millions(df: pd.DataFrame) -> pd.DataFrame:
+            df[str(cls.revenue_in_millions)] = df["revenue"] / 1000000
+            df[str(cls.revenue_in_millions)].fillna(-1, inplace=True)
+            return df[
+                [
+                    str(cls.movie),
+                    str(cls.t),
+                    str(cls.ts),
+                    str(cls.revenue_in_millions),
+                    str(cls.rating),
+                ]
+            ]
+
+        rating = rating.rename({"t": "ts"})  # type: ignore
+        c = rating.join(
+            revenue, how="left", on=[str(cls.movie)], fields=["revenue", "t"]
+        )
+        # Transform provides additional columns which will be filtered out.
+        return c.transform(
+            to_millions,
+            schema={
+                str(cls.movie): oneof(
+                    str, ["Jumanji", "Titanic", "RaOne", "ABC"]
+                ),
+                str(cls.rating): float,
+                str(cls.t): Optional[datetime],
+                str(cls.ts): datetime,
+                str(cls.revenue_in_millions): float,
+            },
+        )
+
+
+class TestBasicJoinWithRightFields(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_join_with_fields(self, client):
+        # # Sync the dataset
+        client.commit(
+            message="msg",
+            datasets=[
+                MovieRating,
+                MovieRevenueWithRightFields,
+                MovieStatsWithRightFields,
+                RatingActivity,
+            ],
+        )
+        now = datetime.now(timezone.utc)
+        one_hour_ago = now - timedelta(hours=1)
+        data = [
+            ["Jumanji", 4, 343, 789, one_hour_ago],
+            ["Titanic", 5, 729, 1232, now],
+        ]
+        columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieRating", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        two_hours_ago = now - timedelta(hours=2)
+        data = [
+            ["Jumanji", 2000000, 1, two_hours_ago],
+            ["Titanic", 50000000, 2, now],
+        ]
+        columns = ["movie", "revenue", "extra_field", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log(
+            "fennel_webhook", "MovieRevenueWithRightFields", df
+        )
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        # Do some lookups to verify pipeline_join is working as expected
+        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+        df, _ = client.lookup(
+            "MovieStatsWithRightFields",
+            keys=keys,
+        )
+        assert df.shape == (2, 5)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating"].tolist() == [4, 5]
+        assert df["revenue_in_millions"].tolist() == [2, 50]
+        assert df["t"].tolist() == [two_hours_ago, now]
+        assert "extra_field" not in df.columns
+
+        # Do some lookup at various timestamps in the past
+        ts = pd.Series([two_hours_ago, one_hour_ago, one_hour_ago, now])
+        keys = pd.DataFrame(
+            {"movie": ["Jumanji", "Jumanji", "Titanic", "Titanic"]}
+        )
+        df, _ = client.lookup(
+            "MovieStatsWithRightFields",
+            timestamps=ts,
+            keys=keys,
+        )
+        assert df.shape == (4, 5)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+            "Jumanji",
+            "Titanic",
+            "Titanic",
+        ]
+        assert pd.isna(df["rating"].tolist()[0])
+        assert df["rating"].tolist()[1] == 4
+        assert pd.isna(df["rating"].tolist()[2])
+        assert df["rating"].tolist()[3] == 5
+        assert pd.isna(df["revenue_in_millions"].tolist()[0])
+        assert df["revenue_in_millions"].tolist()[1] == 2
+        assert pd.isna(df["revenue_in_millions"].tolist()[2])
+        assert df["revenue_in_millions"].tolist()[3] == 50
+        assert pd.isna(df["t"].tolist()[0])
+        assert df["t"].tolist()[1] == two_hours_ago
+        assert pd.isna(df["t"].tolist()[2])
+        assert df["t"].tolist()[3] == now
+        assert "extra_field" not in df.columns
+
+
 class TestBasicAggregate(unittest.TestCase):
     @pytest.mark.integration
     @mock
