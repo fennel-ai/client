@@ -325,8 +325,10 @@ class Webhook(DataSource):
 class SQLSource(DataSource):
     host: str
     db_name: str
-    username: str
-    password: str
+    username: Optional[str]
+    password: Optional[str]
+    username_password_secret_id: Optional[str]
+    username_password_secret_mapping: Optional[Dict[str, str]]
     jdbc_params: Optional[str] = None
     _get: bool = False
 
@@ -384,7 +386,8 @@ class S3(DataSource):
 class BigQuery(DataSource):
     project_id: str
     dataset_id: str
-    service_account_key: dict[str, str]
+    service_account_key: Optional[Dict[str, str]]
+    service_account_key_secret_id: Optional[str]
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -399,7 +402,8 @@ class BigQuery(DataSource):
             _get=True,
             project_id="",
             dataset_id="",
-            service_account_key={},
+            service_account_key=None,
+            service_account_key_secret_id=None,
         )
 
     def identifier(self) -> str:
@@ -455,6 +459,8 @@ class Kafka(DataSource):
     sasl_mechanism: Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "GSSAPI"]
     sasl_plain_username: Optional[str]
     sasl_plain_password: Optional[str]
+    username_password_secret_id: Optional[str]
+    username_password_secret_mapping: Optional[Dict[str, str]]
 
     def required_fields(self) -> List[str]:
         return ["topic"]
@@ -474,6 +480,8 @@ class Kafka(DataSource):
             sasl_mechanism="PLAIN",
             sasl_plain_username=None,
             sasl_plain_password=None,
+            username_password_secret_id=None,
+            username_password_secret_mapping=None,
         )
 
     def identifier(self) -> str:
@@ -493,8 +501,10 @@ class Postgres(SQLSource):
             _get=True,
             host="",
             db_name="",
-            username="",
-            password="",
+            username=None,
+            password=None,
+            username_password_secret_id=None,
+            username_password_secret_mapping=None,
         )
 
     def identifier(self) -> str:
@@ -514,8 +524,10 @@ class MySQL(SQLSource):
             _get=True,
             host="",
             db_name="",
-            username="",
-            password="",
+            username=None,
+            password=None,
+            username_password_secret_id=None,
+            username_password_secret_mapping=None,
         )
 
     def identifier(self) -> str:
@@ -525,8 +537,10 @@ class MySQL(SQLSource):
 class Snowflake(DataSource):
     account: str
     db_name: str
-    username: str
-    password: str
+    username: Optional[str]
+    password: Optional[str]
+    username_password_secret_id: Optional[str]
+    username_password_secret_mapping: Optional[Dict[str, str]]
     warehouse: str
     src_schema: str = Field(alias="schema")
     role: str
@@ -544,8 +558,10 @@ class Snowflake(DataSource):
             _get=True,
             account="",
             db_name="",
-            username="",
-            password="",
+            username=None,
+            password=None,
+            username_password_secret_id=None,
+            username_password_secret_mapping=None,
             warehouse="",
             schema="",
             role="",
@@ -590,6 +606,8 @@ class Redshift(DataSource):
     host: str
     port: int = 5439
     src_schema: str = Field(alias="schema")
+    username_password_secret_id: Optional[str]
+    username_password_secret_mapping: Optional[Dict[str, str]]
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -608,6 +626,8 @@ class Redshift(DataSource):
             schema="",
             username=None,
             password=None,
+            username_password_secret_id=None,
+            username_password_secret_mapping=None,
         )
 
     def identifier(self) -> str:
@@ -617,8 +637,10 @@ class Redshift(DataSource):
 class Mongo(DataSource):
     host: str
     db_name: str
-    username: str
-    password: str
+    username: Optional[str]
+    password: Optional[str]
+    username_password_secret_id: Optional[str]
+    username_password_secret_mapping: Optional[Dict[str, str]]
 
     def collection(self, collection_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name=collection_name, cursor=cursor)
@@ -633,8 +655,10 @@ class Mongo(DataSource):
             _get=True,
             host="",
             db_name="",
-            username="",
-            password="",
+            username=None,
+            password=None,
+            username_password_secret_id=None,
+            username_password_secret_mapping=None,
         )
 
     def identifier(self) -> str:
@@ -643,7 +667,8 @@ class Mongo(DataSource):
 
 class PubSub(DataSource):
     project_id: str
-    service_account_key: dict[str, str]
+    service_account_key: Optional[Dict[str, str]]
+    service_account_key_secret_id: Optional[str]
 
     def required_fields(self) -> List[str]:
         return ["topic_id", "format"]
@@ -657,7 +682,8 @@ class PubSub(DataSource):
             name=name,
             _get=True,
             project_id="",
-            service_account_key={},
+            service_account_key=None,
+            service_account_key_secret_id=None,
         )
 
     def identifier(self) -> str:
@@ -721,20 +747,6 @@ class TableConnector(DataConnector):
     cursor: str
 
     def __init__(self, source, table_name, cursor):
-        if isinstance(source, Redshift):
-            if source.s3_access_role_arn and (
-                source.username or source.password
-            ):
-                raise AttributeError(
-                    "username/password shouldn't be set when s3_access_role_arn is set"
-                )
-            if not source.s3_access_role_arn and (
-                not source.username or not source.password
-            ):
-                raise AttributeError(
-                    "username/password should be set when s3_access_role_arn is not set"
-                )
-
         self.data_source = source
         self.table_name = table_name
         self.cursor = cursor

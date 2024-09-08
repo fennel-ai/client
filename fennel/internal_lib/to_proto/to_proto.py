@@ -959,6 +959,8 @@ def _kafka_conn_to_source_proto(
         data_source.sasl_mechanism,
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
+        data_source.username_password_secret_id,
+        data_source.username_password_secret_mapping,
     )
     source = connector_proto.Source(
         table=connector_proto.ExtTable(
@@ -1003,6 +1005,8 @@ def _kafka_conn_to_sink_proto(
         data_source.sasl_mechanism,
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
+        data_source.username_password_secret_id,
+        data_source.username_password_secret_mapping,
     )
     sink = connector_proto.Sink(
         table=connector_proto.ExtTable(
@@ -1026,7 +1030,35 @@ def _kafka_to_ext_db_proto(
     sasl_mechanism: str,
     sasl_plain_username: Optional[str],
     sasl_plain_password: Optional[str],
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
 ) -> connector_proto.ExtDatabase:
+    username_password_secret = None
+    if username_password_secret_id:
+        if username_password_secret_mapping is None:
+            raise ValueError(
+                "username_password_secret_mapping must be specified when username_password_secret_id is specified"
+            )
+        if "username" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a username key"
+            )
+        if "password" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a password key"
+            )
+        if len(username_password_secret_mapping.keys()) != 2:
+            raise ValueError(
+                "username_password_secret_mapping must only contain username and password keys"
+            )
+        username_password_secret = connector_proto.SecretsManagerSecret(
+            secret_id=username_password_secret_id,
+            key_mapping=username_password_secret_mapping,
+        )
+    if (sasl_plain_username is None or sasl_plain_password is None) and username_password_secret_id is None:
+        raise ValueError(
+            "(sasl_plain_username and sasl_plain_password) or username_password_secret_id must be specified"
+        )
     return connector_proto.ExtDatabase(
         name=name,
         kafka=connector_proto.Kafka(
@@ -1036,6 +1068,7 @@ def _kafka_to_ext_db_proto(
             sasl_plain_username=sasl_plain_username,
             sasl_plain_password=sasl_plain_password,
             sasl_jaas_config="",
+            sasl_username_password_secret=username_password_secret,
         ),
     )
 
@@ -1173,6 +1206,7 @@ def _s3_to_ext_db_proto(
             aws_access_key_id=aws_access_key_id or "",
             aws_secret_access_key=aws_secret_access_key or "",
             role_arn=role_arn,
+            access_key_secret_key_creds=None,
         ),
     )
 
@@ -1246,12 +1280,16 @@ def _bigquery_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for BigQuery source")
+    service_account_key = None
+    if data_source.service_account_key:
+        # Convert service_account_key to str defined in proto
+        service_account_key = json.dumps(data_source.service_account_key)
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
         data_source.project_id,
         data_source.dataset_id,
-        # Convert service_account_key to str defined in proto
-        json.dumps(data_source.service_account_key),
+        service_account_key,
+        data_source.service_account_key_secret_id,
     )
     ext_table = _bigquery_to_ext_table_proto(
         ext_db,
@@ -1286,14 +1324,25 @@ def _bigquery_to_ext_db_proto(
     name: str,
     project_id: str,
     dataset_id: str,
-    service_account_key: str,
+    service_account_key: Optional[str],
+    service_account_key_secret_id: Optional[str],
 ) -> connector_proto.ExtDatabase:
+    if service_account_key is None and service_account_key_secret_id is None:
+        raise ValueError(
+            "service_account_key or service_account_key_secret_id must be specified"
+        )
+    service_account_key_secret = None
+    if service_account_key_secret_id:
+        service_account_key_secret = connector_proto.SecretsManagerSecret(
+            secret_id=service_account_key_secret_id,
+        )
     return connector_proto.ExtDatabase(
         name=name,
         bigquery=connector_proto.Bigquery(
             project_id=project_id,
             dataset_id=dataset_id,
             service_account_key=service_account_key,
+            service_account_key_secret=service_account_key_secret,
         ),
     )
 
@@ -1325,6 +1374,8 @@ def _redshift_conn_to_source_proto(
         port=data_source.port,
         database=data_source.db_name,
         schema=data_source.src_schema,
+        username_password_secret_id=data_source.username_password_secret_id,
+        username_password_secret_mapping=data_source.username_password_secret_mapping,
     )
 
     ext_table = _redshift_to_ext_table_proto(
@@ -1360,7 +1411,48 @@ def _redshift_to_authentication_proto(
     s3_access_role_arn: Optional[str],
     username: Optional[str],
     password: Optional[str],
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
 ):
+    username_password_secret = None
+    if username_password_secret_id:
+        if username_password_secret_mapping is None:
+            raise ValueError(
+                "username_password_secret_mapping must be specified when username_password_secret_id is specified"
+            )
+        if "username" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a username key"
+            )
+        if "password" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a password key"
+            )
+        if len(username_password_secret_mapping.keys()) != 2:
+            raise ValueError(
+                "username_password_secret_mapping must only contain username and password keys"
+            )
+        username_password_secret = connector_proto.SecretsManagerSecret(
+            secret_id=username_password_secret_id,
+            key_mapping=username_password_secret_mapping,
+        )
+        if s3_access_role_arn:
+            raise ValueError(
+                "s3_access_role_arn must not be specified when username_password_secret_id is specified"
+            )
+        if username or password:
+            raise ValueError(
+                "username and password must not be specified when username_password_secret_id is specified"
+            )
+    if s3_access_role_arn is not None:
+        if username or password:
+            raise ValueError(
+                "username and password must not be specified when s3_access_role_arn is specified"
+            )
+    if (username is None or password is None) and username_password_secret_id is None and s3_access_role_arn is None:
+        raise ValueError(
+            "(username and password) or username_password_secret_id or s3_access_role_arn must be specified"
+        )
     if s3_access_role_arn:
         return connector_proto.RedshiftAuthentication(
             s3_access_role_arn=s3_access_role_arn
@@ -1368,7 +1460,7 @@ def _redshift_to_authentication_proto(
     else:
         return connector_proto.RedshiftAuthentication(
             credentials=connector_proto.Credentials(
-                username=username, password=password
+                username=username, password=password, username_password_secret=username_password_secret
             )
         )
 
@@ -1382,6 +1474,8 @@ def _redshift_to_ext_db_proto(
     port: int,
     database: str,
     schema: str,
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1391,7 +1485,7 @@ def _redshift_to_ext_db_proto(
             database=database,
             schema=schema,
             redshift_authentication=_redshift_to_authentication_proto(
-                s3_access_role_arn, username, password
+                s3_access_role_arn, username, password, username_password_secret_id, username_password_secret_mapping
             ),
         ),
     )
@@ -1421,6 +1515,8 @@ def _mongo_conn_to_source_proto(
         database=data_source.db_name,
         user=data_source.username,
         password=data_source.password,
+        username_password_secret_id=data_source.username_password_secret_id,
+        username_password_secret_mapping=data_source.username_password_secret_mapping,
     )
 
     ext_table = _mongo_to_ext_table_proto(
@@ -1456,9 +1552,37 @@ def _mongo_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str,
-    password: str,
+    user: Optional[str],
+    password: Optional[str],
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
 ) -> connector_proto.ExtDatabase:
+    username_password_secret = None
+    if username_password_secret_id:
+        if username_password_secret_mapping is None:
+            raise ValueError(
+                "username_password_secret_mapping must be specified when username_password_secret_id is specified"
+            )
+        if "username" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a username key"
+            )
+        if "password" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a password key"
+            )
+        if len(username_password_secret_mapping.keys()) != 2:
+            raise ValueError(
+                "username_password_secret_mapping must only contain username and password keys"
+            )
+        username_password_secret = connector_proto.SecretsManagerSecret(
+            secret_id=username_password_secret_id,
+            key_mapping=username_password_secret_mapping,
+        )
+    if (user is None or password is None) and username_password_secret_id is None:
+        raise ValueError(
+            "(user and password) or username_password_secret_id must be specified"
+        )
     return connector_proto.ExtDatabase(
         name=name,
         mongo=connector_proto.Mongo(
@@ -1466,6 +1590,7 @@ def _mongo_to_ext_db_proto(
             database=database,
             user=user,
             password=password,
+            username_password_secret=username_password_secret,
         ),
     )
 
@@ -1488,12 +1613,26 @@ def _pubsub_conn_to_source_proto(
     if not connector.cdc:
         raise ValueError("CDC should always be set for PubSub source")
     data_source = connector.data_source
+    service_account_key = None
+    if data_source.service_account_key:
+        # Convert service_account_key to str defined in proto
+        service_account_key = json.dumps(data_source.service_account_key)
+    service_account_key_secret = None
+    if data_source.service_account_key_secret_id:
+        service_account_key_secret = connector_proto.SecretsManagerSecret(
+            secret_id=data_source.service_account_key_secret_id,
+        )
+    if service_account_key is None and service_account_key_secret is None:
+        raise ValueError(
+            "service_account_key or service_account_key_secret_id must be specified"
+        )
     ext_db = connector_proto.ExtDatabase(
         name=data_source.name,
         pubsub=connector_proto.PubSub(
             project_id=data_source.project_id,
             # Convert service_account_key to str defined in proto
-            service_account_key=json.dumps(data_source.service_account_key),
+            service_account_key=service_account_key,
+            service_account_key_secret=service_account_key_secret,
         ),
     )
     return (
@@ -1534,6 +1673,8 @@ def _snowflake_conn_to_source_proto(
         account=data_source.account,
         user=data_source.username,
         password=data_source.password,
+        username_password_secret_id=data_source.username_password_secret_id,
+        username_password_secret_mapping=data_source.username_password_secret_mapping,
         schema=data_source.src_schema,
         warehouse=data_source.warehouse,
         role=data_source.role,
@@ -1570,13 +1711,41 @@ def _snowflake_conn_to_source_proto(
 def _snowflake_to_ext_db_proto(
     name: str,
     account: str,
-    user: str,
-    password: str,
+    user: Optional[str],
+    password: Optional[str],
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
     schema: str,
     warehouse: str,
     role: str,
     database: str,
 ) -> connector_proto.ExtDatabase:
+    username_password_secret = None
+    if username_password_secret_id:
+        if username_password_secret_mapping is None:
+            raise ValueError(
+                "username_password_secret_mapping must be specified when username_password_secret_id is specified"
+            )
+        if "username" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a username key"
+            )
+        if "password" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a password key"
+            )
+        if len(username_password_secret_mapping.keys()) != 2:
+            raise ValueError(
+                "username_password_secret_mapping must only contain username and password keys"
+            )
+        username_password_secret = connector_proto.SecretsManagerSecret(
+            secret_id=username_password_secret_id,
+            key_mapping=username_password_secret_mapping,
+        )
+    if (user is None or password is None) and username_password_secret_id is None:
+        raise ValueError(
+            "(user and password) or username_password_secret_id must be specified"
+        )
     return connector_proto.ExtDatabase(
         name=name,
         snowflake=connector_proto.Snowflake(
@@ -1587,6 +1756,7 @@ def _snowflake_to_ext_db_proto(
             warehouse=warehouse,
             role=role,
             database=database,
+            username_password_secret=username_password_secret,
         ),
     )
 
@@ -1618,6 +1788,8 @@ def _mysql_conn_to_source_proto(
             port=data_source.port,
             user=data_source.username,
             password=data_source.password,
+            username_password_secret_id=data_source.username_password_secret_id,
+            username_password_secret_mapping=data_source.username_password_secret_mapping,
             database=data_source.db_name,
             jdbc_params=data_source.jdbc_params,
         )
@@ -1653,13 +1825,41 @@ def _mysql_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str,
-    password: str,
+    user: Optional[str],
+    password: Optional[str],
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
     port: int,
     jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jdbc_params is None:
         jdbc_params = ""
+    username_password_secret = None
+    if username_password_secret_id:
+        if username_password_secret_mapping is None:
+            raise ValueError(
+                "username_password_secret_mapping must be specified when username_password_secret_id is specified"
+            )
+        if "username" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a username key"
+            )
+        if "password" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a password key"
+            )
+        if len(username_password_secret_mapping.keys()) != 2:
+            raise ValueError(
+                "username_password_secret_mapping must only contain username and password keys"
+            )
+        username_password_secret = connector_proto.SecretsManagerSecret(
+            secret_id=username_password_secret_id,
+            key_mapping=username_password_secret_mapping,
+        )
+    if (user is None or password is None) and username_password_secret_id is None:
+        raise ValueError(
+            "(user and password) or username_password_secret_id must be specified"
+        )
     return connector_proto.ExtDatabase(
         name=name,
         mysql=connector_proto.MySQL(
@@ -1669,6 +1869,7 @@ def _mysql_to_ext_db_proto(
             password=password,
             port=port,
             jdbc_params=jdbc_params,
+            username_password_secret=username_password_secret,
         ),
     )
 
@@ -1711,6 +1912,8 @@ def _pg_conn_to_source_proto(
             password=data_source.password,
             database=data_source.db_name,
             jdbc_params=data_source.jdbc_params,
+            username_password_secret_id=data_source.username_password_secret_id,
+            username_password_secret_mapping=data_source.username_password_secret_mapping,
         )
     ext_table = _pg_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
@@ -1744,13 +1947,41 @@ def _pg_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str,
-    password: str,
+    user: Optional[str],
+    password: Optional[str],
+    username_password_secret_id: Optional[str],
+    username_password_secret_mapping: Optional[Dict[str, str]],
     port: int,
     jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
     if jdbc_params is None:
         jdbc_params = ""
+    username_password_secret = None
+    if username_password_secret_id:
+        if username_password_secret_mapping is None:
+            raise ValueError(
+                "username_password_secret_mapping must be specified when username_password_secret_id is specified"
+            )
+        if "username" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a username key"
+            )
+        if "password" not in username_password_secret_mapping:
+            raise ValueError(
+                "username_password_secret_mapping must contain a password key"
+            )
+        if len(username_password_secret_mapping.keys()) != 2:
+            raise ValueError(
+                "username_password_secret_mapping must only contain username and password keys"
+            )
+        username_password_secret = connector_proto.SecretsManagerSecret(
+            secret_id=username_password_secret_id,
+            key_mapping=username_password_secret_mapping,
+        )
+    if (user is None or password is None) and username_password_secret_id is None:
+        raise ValueError(
+            "(user and password) or username_password_secret_id must be specified"
+        )
 
     return connector_proto.ExtDatabase(
         name=name,
@@ -1761,6 +1992,7 @@ def _pg_to_ext_db_proto(
             password=password,
             port=port,
             jdbc_params=jdbc_params,
+            username_password_secret=username_password_secret,
         ),
     )
 
