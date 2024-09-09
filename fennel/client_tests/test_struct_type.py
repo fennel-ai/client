@@ -79,6 +79,7 @@ class MovieInfoWithFirstK:
                     window=Continuous("forever"),
                     limit=3,
                     dedup=False,
+                    drop_nulls=False,
                 ),
             ]
         )

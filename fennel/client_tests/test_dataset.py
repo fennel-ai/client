@@ -19,6 +19,7 @@ from fennel.datasets import (
     pipeline,
     Dataset,
     LastK,
+    FirstK,
     Min,
     Max,
     Sum,
@@ -4512,6 +4513,106 @@ def test_last_k_on_struct_type(client):
             [{"value": "4", "ts2": str(now)}, {"value": "3", "ts2": str(now)}],
             [{"value": "5", "ts2": str(now)}],
         ]
+
+
+@pytest.mark.integration
+@mock
+def test_firstk_nulls(client):
+    @dataset
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    class A:
+        id: int
+        value: Optional[int]
+        ts: datetime
+
+    @dataset(index=True)
+    class B:
+        id: int = field(key=True)
+        value: List[Optional[int]]
+        ts: datetime
+
+        @pipeline
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return event.groupby("id").aggregate(
+                value=FirstK(
+                    of="value",
+                    window=Continuous("forever"),
+                    dedup=False,
+                    limit=2,
+                    drop_nulls=False
+                )
+            )
+
+    client.commit(datasets=[A, B], message="test")
+
+    now = datetime.now(timezone.utc)
+    yesterday = now - timedelta(days=1)
+    day_before_yesterday = now - timedelta(days=2)
+    df = pd.DataFrame(
+        {
+            "id": [1, 1, 2, 2, 3, 3],
+            "value": [None, 1, None, 2, None, 3],
+            "ts": [yesterday, now, now, day_before_yesterday, now, yesterday],
+        }
+    )
+    client.log("fennel_webhook", "A", df)
+
+    results, _ = client.lookup(
+        B,
+        keys=pd.DataFrame({"id": [1, 2, 3]}),
+    )
+    assert results["value"].tolist() == [[pd.NA, 1], [2, pd.NA], [3, pd.NA]]
+
+
+@pytest.mark.integration
+@mock
+def test_firstk_drop_nulls(client):
+    @dataset
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    class A:
+        id: int
+        value: Optional[int]
+        ts: datetime
+
+    @dataset(index=True)
+    class B:
+        id: int = field(key=True)
+        value: List[Optional[int]]
+        ts: datetime
+
+        @pipeline
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return event.groupby("id").aggregate(
+                value=FirstK(
+                    of="value",
+                    window=Continuous("forever"),
+                    dedup=False,
+                    limit=2,
+                    drop_nulls=True
+                )
+            )
+
+    client.commit(datasets=[A, B], message="test")
+
+    now = datetime.now(timezone.utc)
+    yesterday = now - timedelta(days=1)
+    day_before_yesterday = now - timedelta(days=2)
+    df = pd.DataFrame(
+        {
+            "id": [1, 1, 2, 2, 3, 3],
+            "value": [None, 1, None, 2, None, 3],
+            "ts": [yesterday, now, now, day_before_yesterday, now, yesterday],
+        }
+    )
+    client.log("fennel_webhook", "A", df)
+
+    results, _ = client.lookup(
+        B,
+        keys=pd.DataFrame({"id": [1, 2, 3]}),
+    )
+    assert results["value"].tolist() == [[1], [2], [3]]
 
 
 @mock

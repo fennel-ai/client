@@ -183,6 +183,7 @@ class FirstViewedPostByAgg:
                 window=Continuous("forever"),
                 limit=1,
                 dedup=False,
+                drop_nulls=False,
             )
         )
 

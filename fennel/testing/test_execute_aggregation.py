@@ -100,7 +100,7 @@ def test_lastk_state_dedup():
 
 
 def test_firstk_state():
-    state = FirstKState(k=3, dedup=False)
+    state = FirstKState(k=3, dedup=False, drop_nulls=False)
     now = datetime.now(timezone.utc)
     assert state.add_val_to_state(1, now) == [1]
     assert state.add_val_to_state(2, now) == [1, 2]
@@ -115,7 +115,7 @@ def test_firstk_state():
 
 
 def test_firstk_state_dedup():
-    state = FirstKState(k=3, dedup=True)
+    state = FirstKState(k=3, dedup=True, drop_nulls=False)
     now = datetime.now(timezone.utc)
     assert state.add_val_to_state(1, now) == [1]
     assert state.add_val_to_state(2, now) == [1, 2]
@@ -126,6 +126,40 @@ def test_firstk_state_dedup():
 
     assert state.del_val_from_state(3, now) == [1, 2, 4]
     assert state.del_val_from_state(4, now) == [1, 2]
+
+
+def test_firstk_state_nulls():
+    state = FirstKState(k=3, dedup=False, drop_nulls=False)
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == [1]
+    assert state.add_val_to_state(None, now) == [1, None]
+    assert state.add_val_to_state(2, now) == [1, None, 2]
+    assert state.add_val_to_state(3, now) == [1, None, 2]
+    assert state.add_val_to_state(None, now) == [1, None, 2]
+    assert state.add_val_to_state(4, now) == [1, None, 2]
+
+    assert state.del_val_from_state(2, now) == [1, None, 3]
+    assert state.del_val_from_state(3, now) == [1, None, None]
+    assert state.del_val_from_state(None, now) == [1, None, 4]
+    assert state.del_val_from_state(4, now) == [1, None]
+    assert state.del_val_from_state(None, now) == [1]
+
+
+def test_firstk_state_drop_nulls():
+    state = FirstKState(k=3, dedup=False, drop_nulls=True)
+    now = datetime.now(timezone.utc)
+    assert state.add_val_to_state(1, now) == [1]
+    assert state.add_val_to_state(None, now) == [1]
+    assert state.add_val_to_state(2, now) == [1, 2]
+    assert state.add_val_to_state(3, now) == [1, 2, 3]
+    assert state.add_val_to_state(4, now) == [1, 2, 3]
+    assert state.add_val_to_state(None, now) == [1, 2, 3]
+    assert state.add_val_to_state(5, now) == [1, 2, 3]
+
+    assert state.del_val_from_state(3, now) == [1, 2, 4]
+    assert state.del_val_from_state(4, now) == [1, 2, 5]
+    assert state.del_val_from_state(5, now) == [1, 2]
+    assert state.del_val_from_state(5, now) == [1, 2]
 
 
 def test_min_state():

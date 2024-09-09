@@ -42,6 +42,7 @@ def test_basic(client):
                     limit=10,
                     dedup=False,
                     window=Continuous("1d"),
+                    drop_nulls=False,
                 ),
                 # docsnip-highlight end
             )
@@ -143,6 +144,7 @@ def test_invalid_type(client):
                         limit=10,
                         dedup=False,
                         window=Continuous("1d"),
+                        drop_nulls=False,
                     ),
                     # docsnip-highlight end
                 )
