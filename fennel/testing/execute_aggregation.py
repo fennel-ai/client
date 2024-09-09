@@ -219,7 +219,7 @@ class FirstKState(AggState):
         return list(ret[: self.k])
 
     def get_val(self):
-        return list(reversed(self.vals[-self.k :]))
+        return list(self.vals[: self.k])
 
 
 class Heap:
