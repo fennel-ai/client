@@ -14,6 +14,7 @@ from typing import (
     Mapping,
     Set,
     Callable,
+    Union,
 )
 
 import google.protobuf.duration_pb2 as duration_proto  # type: ignore
@@ -1026,8 +1027,8 @@ def _kafka_to_ext_db_proto(
     bootstrap_servers: str,
     security_protocol: str,
     sasl_mechanism: str,
-    sasl_plain_username: Optional[str] | Optional[Secret],
-    sasl_plain_password: Optional[str] | Optional[Secret],
+    sasl_plain_username: Optional[Union[str, Secret]],
+    sasl_plain_password: Optional[Union[str, Secret]],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1167,8 +1168,8 @@ def _s3_conn_to_sink_proto(
 
 def _s3_to_ext_db_proto(
     name: str,
-    aws_access_key_id: Optional[str] | Optional[Secret],
-    aws_secret_access_key: Optional[str] | Optional[Secret],
+    aws_access_key_id: Optional[Union[str, Secret]],
+    aws_secret_access_key: Optional[Union[str, Secret]],
     role_arn: Optional[str],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
@@ -1295,7 +1296,7 @@ def _bigquery_to_ext_db_proto(
     name: str,
     project_id: str,
     dataset_id: str,
-    service_account_key: str | Secret,
+    service_account_key: Union[str, Secret],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1368,8 +1369,8 @@ def _redshift_conn_to_source_proto(
 
 def _redshift_to_authentication_proto(
     s3_access_role_arn: Optional[str],
-    username: Optional[str] | Optional[Secret],
-    password: Optional[str] | Optional[Secret],
+    username: Optional[Union[str, Secret]],
+    password: Optional[Union[str, Secret]],
 ):
     if s3_access_role_arn:
         return connector_proto.RedshiftAuthentication(
@@ -1389,8 +1390,8 @@ def _redshift_to_authentication_proto(
 def _redshift_to_ext_db_proto(
     name: str,
     s3_access_role_arn: Optional[str],
-    username: Optional[str],
-    password: Optional[str],
+    username: Optional[Union[str, Secret]],
+    password: Optional[Union[str, Secret]],
     host: str,
     port: int,
     database: str,
@@ -1469,8 +1470,8 @@ def _mongo_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str | Secret,
-    password: str | Secret,
+    user: Union[str, Secret],
+    password: Union[str, Secret],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1586,8 +1587,8 @@ def _snowflake_conn_to_source_proto(
     )
 
 
-def to_secret_proto(secret: Optional[str] | Optional[Secret]):
-    if secret is None or type(secret) is not Secret :
+def to_secret_proto(secret: Optional[Union[str, Secret]]):
+    if secret is None or type(secret) is not Secret:
         return None
     return secret_proto.SecretRef(
         secret_arn=secret.arn,
@@ -1595,21 +1596,24 @@ def to_secret_proto(secret: Optional[str] | Optional[Secret]):
         path=secret.path,
     )
 
+
 def to_string(s):
     if s is not None and type(s) is str:
         return s
     return None
+
 
 def to_string_value(s):
     if to_string(s):
         return StringValue(value=s)
     return None
 
+
 def _snowflake_to_ext_db_proto(
     name: str,
     account: str,
-    user: str | Secret,
-    password: str | Secret,
+    user: Union[str, Secret],
+    password: Union[str, Secret],
     schema: str,
     warehouse: str,
     role: str,
@@ -1693,8 +1697,8 @@ def _mysql_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str | Secret,
-    password: str | Secret,
+    user: Union[str, Secret],
+    password: Union[str, Secret],
     port: int,
     jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
@@ -1786,8 +1790,8 @@ def _pg_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str | Secret,
-    password: str | Secret,
+    user: Union[str, Secret],
+    password: Union[str, Secret],
     port: int,
     jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
@@ -1991,9 +1995,9 @@ def to_kafka_format_proto(
 
 
 def to_auth_proto(
-    username: Optional[str] | Optional[Secret],
-    password: Optional[str] | Optional[Secret],
-    token: Optional[str] | Optional[Secret],
+    username: Optional[Union[str, Secret]],
+    password: Optional[Union[str, Secret]],
+    token: Optional[Union[str, Secret]],
 ) -> Optional[http_auth_proto.HTTPAuthentication]:
     if username is not None:
         return http_auth_proto.HTTPAuthentication(
@@ -2001,14 +2005,14 @@ def to_auth_proto(
                 username=to_string(username),
                 password=to_string_value(password),
                 username_secret=to_secret_proto(username),
-                password_secret=to_secret_proto(password)
+                password_secret=to_secret_proto(password),
             )
         )
     if token is not None:
         return http_auth_proto.HTTPAuthentication(
             token=http_auth_proto.TokenAuthentication(
                 token=to_string(token),
-                token_secret=to_secret_proto(token)
+                token_secret=to_secret_proto(token),
             )
         )
     return None

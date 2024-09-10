@@ -360,7 +360,7 @@ def test_simple_source_with_pre_proc():
 
 aws_secret = Secret(
     arn="arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
-    role_arn="arn:aws:iam::123456789012:role/fennel-test-role"
+    role_arn="arn:aws:iam::123456789012:role/fennel-test-role",
 )
 
 s3 = S3(
@@ -1424,7 +1424,9 @@ def test_multiple_sources_mongo():
 
     @meta(owner="test@test.com")
     @source(
-        mongo_with_only_password_secret.collection("test_table", cursor="added_on"),
+        mongo_with_only_password_secret.collection(
+            "test_table", cursor="added_on"
+        ),
         disorder="14d",
         cdc="upsert",
         every="1h",
@@ -2012,12 +2014,12 @@ def test_multiple_sources_bigquery():
                     "bigquery": {
                         "datasetId": "movie_tags",
                         "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
-                                             '"client_email": '
-                                             '"randomstring@fake-project-356105.iam.gserviceaccount.com", '
-                                             '"client_id": "103688493243243272951", "auth_uri": '
-                                             '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
-                                             '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
-                                             '"https://www.googleapis.com/oauth2/v1/certs"}',
+                        '"client_email": '
+                        '"randomstring@fake-project-356105.iam.gserviceaccount.com", '
+                        '"client_id": "103688493243243272951", "auth_uri": '
+                        '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+                        '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+                        '"https://www.googleapis.com/oauth2/v1/certs"}',
                         "projectId": "gold-cocoa-356105",
                     },
                 },
@@ -2043,10 +2045,10 @@ def test_multiple_sources_bigquery():
         "bigquery": {
             "datasetId": "movie_tags",
             "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", "client_email": '
-                                 '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
-                                 '"103688493243243272951", "auth_uri": "https://accounts.google.com/o/oauth2/auth", '
-                                 '"token_uri": "https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
-                                 '"https://www.googleapis.com/oauth2/v1/certs"}',
+            '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+            '"103688493243243272951", "auth_uri": "https://accounts.google.com/o/oauth2/auth", '
+            '"token_uri": "https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+            '"https://www.googleapis.com/oauth2/v1/certs"}',
             "projectId": "gold-cocoa-356105",
         },
     }
@@ -2451,12 +2453,12 @@ def test_multiple_sources_kafka():
                                     "usernameSecret": {
                                         "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                         "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                        "path": ["avro_username"]
+                                        "path": ["avro_username"],
                                     },
                                     "passwordSecret": {
                                         "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                         "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                        "path": ["avro_password"]
+                                        "path": ["avro_password"],
                                     },
                                 }
                             },
@@ -2532,13 +2534,13 @@ def test_multiple_sources_kafka():
                                     "usernameSecret": {
                                         "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                         "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                        "path": ["protobuf_username"]
+                                        "path": ["protobuf_username"],
                                     },
                                     "passwordSecret": {
                                         "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                         "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                        "path": ["protobuf_password"]
-                                    }
+                                        "path": ["protobuf_password"],
+                                    },
                                 }
                             },
                         }
@@ -2612,7 +2614,7 @@ def test_multiple_sources_kafka():
                                     "tokenSecret": {
                                         "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                         "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                        "path": ["avro_token"]
+                                        "path": ["avro_token"],
                                     }
                                 }
                             },
@@ -2687,7 +2689,7 @@ def test_multiple_sources_kafka():
                                     "tokenSecret": {
                                         "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                         "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                        "path": ["protobuf_token"]
+                                        "path": ["protobuf_token"],
                                     }
                                 }
                             },
@@ -2915,12 +2917,12 @@ def test_multiple_sources_pubsub():
                     "pubsub": {
                         "projectId": "test_project",
                         "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
-                                             '"client_email": '
-                                             '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
-                                             '"103688493243243272951", "auth_uri": '
-                                             '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
-                                             '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
-                                             '"https://www.googleapis.com/oauth2/v1/certs"}',
+                        '"client_email": '
+                        '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+                        '"103688493243243272951", "auth_uri": '
+                        '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+                        '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+                        '"https://www.googleapis.com/oauth2/v1/certs"}',
                     },
                     "name": "pubsub_src",
                 },
@@ -2945,12 +2947,12 @@ def test_multiple_sources_pubsub():
         "pubsub": {
             "projectId": "test_project",
             "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
-                                 '"client_email": '
-                                 '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
-                                 '"103688493243243272951", "auth_uri": '
-                                 '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
-                                 '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
-                                 '"https://www.googleapis.com/oauth2/v1/certs"}',
+            '"client_email": '
+            '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+            '"103688493243243272951", "auth_uri": '
+            '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+            '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+            '"https://www.googleapis.com/oauth2/v1/certs"}',
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())

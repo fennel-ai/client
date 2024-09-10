@@ -326,8 +326,8 @@ class Webhook(DataSource):
 class SQLSource(DataSource):
     host: str
     db_name: str
-    username: str | Secret
-    password: str | Secret
+    username: Union[str, Secret]
+    password: Union[str, Secret]
     jdbc_params: Optional[str] = None
     _get: bool = False
 
@@ -342,8 +342,8 @@ class CSV:
 
 
 class S3(DataSource):
-    aws_access_key_id: Optional[str] | Optional[Secret]
-    aws_secret_access_key: Optional[str] | Optional[Secret]
+    aws_access_key_id: Optional[Union[str, Secret]]
+    aws_secret_access_key: Optional[Union[str, Secret]]
     role_arn: Optional[str]
 
     def bucket(
@@ -385,7 +385,7 @@ class S3(DataSource):
 class BigQuery(DataSource):
     project_id: str
     dataset_id: str
-    service_account_key: dict[str, str] | Secret
+    service_account_key: Union[dict[str, str], Secret]
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -410,25 +410,25 @@ class BigQuery(DataSource):
 class Avro(BaseModel):
     registry: str
     url: str
-    username: Optional[str] | Optional[Secret]
-    password: Optional[str] | Optional[Secret]
-    token: Optional[str] | Optional[Secret]
+    username: Optional[Union[str, Secret]]
+    password: Optional[Union[str, Secret]]
+    token: Optional[Union[str, Secret]]
 
 
 class Protobuf(BaseModel):
     registry: str
     url: str
-    username: Optional[str] | Optional[Secret]
-    password: Optional[str] | Optional[Secret]
-    token: Optional[str] | Optional[Secret]
+    username: Optional[Union[str, Secret]]
+    password: Optional[Union[str, Secret]]
+    token: Optional[Union[str, Secret]]
 
     def __init__(
         self,
         registry: str,
         url: str,
-        username: Optional[str] | Optional[Secret] = None,
-        password: Optional[str] | Optional[Secret] = None,
-        token: Optional[str] | Optional[Secret] = None,
+        username: Optional[Union[str, Secret]] = None,
+        password: Optional[Union[str, Secret]] = None,
+        token: Optional[Union[str, Secret]] = None,
     ):
         if username or password:
             if token is not None:
@@ -454,8 +454,8 @@ class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
     sasl_mechanism: Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "GSSAPI"]
-    sasl_plain_username: Optional[str] | Optional[Secret]
-    sasl_plain_password: Optional[str] | Optional[Secret]
+    sasl_plain_username: Optional[Union[str, Secret]]
+    sasl_plain_password: Optional[Union[str, Secret]]
 
     def required_fields(self) -> List[str]:
         return ["topic"]
@@ -526,8 +526,8 @@ class MySQL(SQLSource):
 class Snowflake(DataSource):
     account: str
     db_name: str
-    username: str | Secret
-    password: str | Secret
+    username: Union[str, Secret]
+    password: Union[str, Secret]
     warehouse: str
     src_schema: str = Field(alias="schema")
     role: str
@@ -585,8 +585,8 @@ class Kinesis(DataSource):
 
 class Redshift(DataSource):
     s3_access_role_arn: Optional[str]
-    username: Optional[str] | Optional[Secret]
-    password: Optional[str] | Optional[Secret]
+    username: Optional[Union[str, Secret]]
+    password: Optional[Union[str, Secret]]
     db_name: str
     host: str
     port: int = 5439
@@ -618,8 +618,8 @@ class Redshift(DataSource):
 class Mongo(DataSource):
     host: str
     db_name: str
-    username: str | Secret
-    password: str | Secret
+    username: Union[str, Secret]
+    password: Union[str, Secret]
 
     def collection(self, collection_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name=collection_name, cursor=cursor)
@@ -644,7 +644,7 @@ class Mongo(DataSource):
 
 class PubSub(DataSource):
     project_id: str
-    service_account_key: dict[str, str] | Secret
+    service_account_key: Union[dict[str, str], Secret]
 
     def required_fields(self) -> List[str]:
         return ["topic_id", "format"]
