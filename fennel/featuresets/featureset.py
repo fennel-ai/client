@@ -450,7 +450,6 @@ def is_user_defined(obj):
     return inspect.isclass(type(obj)) and not inspect.isbuiltin(obj)
 
 
-
 def _add_input_constraints(func, params):
     """
     Wraps the user's extractor with a function that:
@@ -463,31 +462,25 @@ def _add_input_constraints(func, params):
     @functools.wraps(func)
     def inner(*args, **kwargs):
         # Ensure we have the correct number of arguments
-        assert len(args) == len(params) + 2, (
-            f"Expected {len(params) + 2} arguments, got {len(args)}"
-        )
-        
-        args = list(args)
-        input_series = [arg for arg in args[2:]]  # Skip the first two fixed args
-        
-        # Measure length of input series
-        input_lengths = [len(series) for series in input_series]
+        assert (
+            len(args) == len(params) + 2
+        ), f"Expected {len(params) + 2} arguments, got {len(args)}"
 
-        # Check if all input series have the same length
-        first_length = input_lengths[0]
-        
-        for i, series in enumerate(input_series):
-            assert len(series) == first_length, (
-                f"Input length mismatch: expected {first_length}, got {len(series)} for input {i+1}"
-            )
-        
+        args = list(args)
+        input_series = [
+            arg for arg in args[2:]
+        ]  # Skip the first two fixed args
+
+        # Measure length of input series
+        input_length = len(input_series[0])
+
         renamed_args = args[:2] + [
             arg.rename(name.fqn()) for name, arg in zip(params, input_series)
         ]
-        
+
         # Run the extractor
         ret = func(*renamed_args, **kwargs)
-        
+
         # Ensure the output matches the input length
         if isinstance(ret, pd.Series) or isinstance(ret, pd.DataFrame):
             output_length = len(ret)
@@ -495,16 +488,15 @@ def _add_input_constraints(func, params):
             raise ValueError(
                 f"Expected a pandas Series or DataFrame but got {type(ret)} in {func.__qualname__}."
             )
-        
-        # Check that the output length matches the input length
-        assert output_length == first_length, (
-            f"Output length mismatch in {func.__qualname__}: expected {first_length}, got {output_length}"
-        )
-        
-        return ret
-    
-    return inner
 
+        # Check that the output length matches the input length
+        assert (
+            output_length == input_length
+        ), f"Output length mismatch in {func.__qualname__}: expected {input_length}, got {output_length}"
+
+        return ret
+
+    return inner
 
 
 def _add_featureset_name(func, params):

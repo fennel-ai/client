@@ -86,11 +86,19 @@ class UserInfoSingleErrorProneExtractor:
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid", "age")
     @outputs("age", "age_squared", "age_cubed", "is_name_common")
-    def get_user_info(cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series):
-        output_df = pd.DataFrame({
-            'userid': user_id.iloc[:-1],  # Drop the last row to create a mismatch
-            'age': user_age.iloc[:-1]  # Drop the last row to create a mismatch
-        })
+    def get_user_info(
+        cls, ts: pd.Series, user_id: pd.Series, user_age: pd.Series
+    ):
+        output_df = pd.DataFrame(
+            {
+                "userid": user_id.iloc[
+                    :-1
+                ],  # Drop the last row to create a mismatch
+                "age": user_age.iloc[
+                    :-1
+                ],  # Drop the last row to create a mismatch
+            }
+        )
         return output_df
 
 
@@ -284,6 +292,7 @@ class TestSimpleExtractor(unittest.TestCase):
                 UserInfoMultipleExtractor, ts, user_ids, age
             )
         assert "Output length mismatch" in str(exc_info.value)
+        assert "expected 2, got 1" in str(exc_info.value)
 
     @pytest.mark.integration
     @mock
