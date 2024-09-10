@@ -44,6 +44,7 @@ def error_message(actual: Any, expected: Any) -> str:
     # Don't delete the following line. It is used to debug the test in
     # case of failure.
     print(actual_dict)
+    print(expected_dict)
     return jsondiff.diff(expected_dict, actual_dict, syntax="symmetric")
 
 

@@ -586,6 +586,8 @@ class IPv4NetworkError(PydanticValueError):
 class IPv6NetworkError(PydanticValueError):
     msg_template = 'value is not a valid IPv6 network'
 
+class AWSSecretError(PydanticValueError):
+    msg_template = 'value is not a valid AWS secret'
 
 class IPv4InterfaceError(PydanticValueError):
     msg_template = 'value is not a valid IPv4 interface'

@@ -21,6 +21,7 @@ from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.connectors.kinesis import at_timestamp
 from fennel.expr.expr import Expr, TypedExpr
+from fennel.integrations.aws import Secret
 from fennel.internal_lib.duration import (
     Duration,
 )
@@ -325,8 +326,8 @@ class Webhook(DataSource):
 class SQLSource(DataSource):
     host: str
     db_name: str
-    username: str
-    password: str
+    username: str | Secret
+    password: str | Secret
     jdbc_params: Optional[str] = None
     _get: bool = False
 
@@ -341,8 +342,8 @@ class CSV:
 
 
 class S3(DataSource):
-    aws_access_key_id: Optional[str]
-    aws_secret_access_key: Optional[str]
+    aws_access_key_id: Optional[str] | Optional[Secret]
+    aws_secret_access_key: Optional[str] | Optional[Secret]
     role_arn: Optional[str]
 
     def bucket(
@@ -372,8 +373,8 @@ class S3(DataSource):
         return S3(
             name=name,
             _get=True,
-            aws_access_key_id="",
-            aws_secret_access_key="",
+            aws_access_key_id=None,
+            aws_secret_access_key=None,
             role_arn=None,
         )
 
@@ -384,7 +385,7 @@ class S3(DataSource):
 class BigQuery(DataSource):
     project_id: str
     dataset_id: str
-    service_account_key: dict[str, str]
+    service_account_key: dict[str, str] | Secret
 
     def table(self, table_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name, cursor)
@@ -409,25 +410,25 @@ class BigQuery(DataSource):
 class Avro(BaseModel):
     registry: str
     url: str
-    username: Optional[str]
-    password: Optional[str]
-    token: Optional[str]
+    username: Optional[str] | Optional[Secret]
+    password: Optional[str] | Optional[Secret]
+    token: Optional[str] | Optional[Secret]
 
 
 class Protobuf(BaseModel):
     registry: str
     url: str
-    username: Optional[str]
-    password: Optional[str]
-    token: Optional[str]
+    username: Optional[str] | Optional[Secret]
+    password: Optional[str] | Optional[Secret]
+    token: Optional[str] | Optional[Secret]
 
     def __init__(
         self,
         registry: str,
         url: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        token: Optional[str] = None,
+        username: Optional[str] | Optional[Secret] = None,
+        password: Optional[str] | Optional[Secret] = None,
+        token: Optional[str] | Optional[Secret] = None,
     ):
         if username or password:
             if token is not None:
@@ -453,8 +454,8 @@ class Kafka(DataSource):
     bootstrap_servers: str
     security_protocol: Literal["PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL"]
     sasl_mechanism: Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "GSSAPI"]
-    sasl_plain_username: Optional[str]
-    sasl_plain_password: Optional[str]
+    sasl_plain_username: Optional[str] | Optional[Secret]
+    sasl_plain_password: Optional[str] | Optional[Secret]
 
     def required_fields(self) -> List[str]:
         return ["topic"]
@@ -525,8 +526,8 @@ class MySQL(SQLSource):
 class Snowflake(DataSource):
     account: str
     db_name: str
-    username: str
-    password: str
+    username: str | Secret
+    password: str | Secret
     warehouse: str
     src_schema: str = Field(alias="schema")
     role: str
@@ -584,8 +585,8 @@ class Kinesis(DataSource):
 
 class Redshift(DataSource):
     s3_access_role_arn: Optional[str]
-    username: Optional[str]
-    password: Optional[str]
+    username: Optional[str] | Optional[Secret]
+    password: Optional[str] | Optional[Secret]
     db_name: str
     host: str
     port: int = 5439
@@ -617,8 +618,8 @@ class Redshift(DataSource):
 class Mongo(DataSource):
     host: str
     db_name: str
-    username: str
-    password: str
+    username: str | Secret
+    password: str | Secret
 
     def collection(self, collection_name: str, cursor: str) -> TableConnector:
         return TableConnector(self, table_name=collection_name, cursor=cursor)
@@ -643,7 +644,7 @@ class Mongo(DataSource):
 
 class PubSub(DataSource):
     project_id: str
-    service_account_key: dict[str, str]
+    service_account_key: dict[str, str] | Secret
 
     def required_fields(self) -> List[str]:
         return ["topic_id", "format"]

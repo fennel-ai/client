@@ -22,6 +22,7 @@ from google.protobuf.wrappers_pb2 import StringValue
 
 import fennel.connectors as connectors
 import fennel.gen.connector_pb2 as connector_proto
+import fennel.gen.secret_pb2 as secret_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
 import fennel.gen.featureset_pb2 as fs_proto
@@ -43,6 +44,7 @@ from fennel.expr.expr import Expr, TypedExpr
 from fennel.expr.serializer import ExprSerializer
 from fennel.expr.visitor import ExprPrinter
 from fennel.featuresets import Featureset, Feature, Extractor, ExtractorType
+from fennel.integrations.aws import Secret
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -1024,8 +1026,8 @@ def _kafka_to_ext_db_proto(
     bootstrap_servers: str,
     security_protocol: str,
     sasl_mechanism: str,
-    sasl_plain_username: Optional[str],
-    sasl_plain_password: Optional[str],
+    sasl_plain_username: Optional[str] | Optional[Secret],
+    sasl_plain_password: Optional[str] | Optional[Secret],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1033,9 +1035,11 @@ def _kafka_to_ext_db_proto(
             bootstrap_servers=bootstrap_servers,
             security_protocol=security_protocol,
             sasl_mechanism=sasl_mechanism,
-            sasl_plain_username=sasl_plain_username,
-            sasl_plain_password=sasl_plain_password,
+            sasl_plain_username=to_string(sasl_plain_username),
+            sasl_plain_password=to_string(sasl_plain_password),
             sasl_jaas_config="",
+            sasl_password_secret=to_secret_proto(sasl_plain_password),
+            sasl_username_secret=to_secret_proto(sasl_plain_username),
         ),
     )
 
@@ -1163,16 +1167,18 @@ def _s3_conn_to_sink_proto(
 
 def _s3_to_ext_db_proto(
     name: str,
-    aws_access_key_id: Optional[str],
-    aws_secret_access_key: Optional[str],
+    aws_access_key_id: Optional[str] | Optional[Secret],
+    aws_secret_access_key: Optional[str] | Optional[Secret],
     role_arn: Optional[str],
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         s3=connector_proto.S3(
-            aws_access_key_id=aws_access_key_id or "",
-            aws_secret_access_key=aws_secret_access_key or "",
+            aws_access_key_id=to_string(aws_access_key_id),
+            aws_secret_access_key=to_string(aws_secret_access_key),
             role_arn=role_arn,
+            aws_access_key_id_secret=to_secret_proto(aws_access_key_id),
+            aws_secret_access_key_secret=to_secret_proto(aws_secret_access_key),
         ),
     )
 
@@ -1246,12 +1252,15 @@ def _bigquery_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for BigQuery source")
+    service_account_key = connector.data_source.service_account_key
+    if type(service_account_key) is dict:
+        # Convert service_account_key to str defined in proto
+        service_account_key = json.dumps(service_account_key)
     ext_db = _bigquery_to_ext_db_proto(
         data_source.name,
         data_source.project_id,
         data_source.dataset_id,
-        # Convert service_account_key to str defined in proto
-        json.dumps(data_source.service_account_key),
+        service_account_key,
     )
     ext_table = _bigquery_to_ext_table_proto(
         ext_db,
@@ -1286,14 +1295,15 @@ def _bigquery_to_ext_db_proto(
     name: str,
     project_id: str,
     dataset_id: str,
-    service_account_key: str,
+    service_account_key: str | Secret,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         bigquery=connector_proto.Bigquery(
             project_id=project_id,
             dataset_id=dataset_id,
-            service_account_key=service_account_key,
+            service_account_key=to_string(service_account_key),
+            service_account_key_secret=to_secret_proto(service_account_key),
         ),
     )
 
@@ -1358,8 +1368,8 @@ def _redshift_conn_to_source_proto(
 
 def _redshift_to_authentication_proto(
     s3_access_role_arn: Optional[str],
-    username: Optional[str],
-    password: Optional[str],
+    username: Optional[str] | Optional[Secret],
+    password: Optional[str] | Optional[Secret],
 ):
     if s3_access_role_arn:
         return connector_proto.RedshiftAuthentication(
@@ -1368,7 +1378,10 @@ def _redshift_to_authentication_proto(
     else:
         return connector_proto.RedshiftAuthentication(
             credentials=connector_proto.Credentials(
-                username=username, password=password
+                username=to_string(username),
+                password=to_string(password),
+                username_secret=to_secret_proto(username),
+                password_secret=to_secret_proto(password),
             )
         )
 
@@ -1456,16 +1469,18 @@ def _mongo_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str,
-    password: str,
+    user: str | Secret,
+    password: str | Secret,
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
         mongo=connector_proto.Mongo(
             host=host,
             database=database,
-            user=user,
-            password=password,
+            user=to_string(user),
+            password=to_string(password),
+            username_secret=to_secret_proto(user),
+            password_secret=to_secret_proto(password),
         ),
     )
 
@@ -1485,15 +1500,19 @@ def _pubsub_conn_to_source_proto(
     connector: connectors.PubSubConnector,
     dataset: Dataset,
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    service_account_key = connector.data_source.service_account_key
+    data_source = connector.data_source
+    if type(service_account_key) is dict:
+        # Convert service_account_key to str defined in proto
+        service_account_key = json.dumps(service_account_key)
     if not connector.cdc:
         raise ValueError("CDC should always be set for PubSub source")
-    data_source = connector.data_source
     ext_db = connector_proto.ExtDatabase(
         name=data_source.name,
         pubsub=connector_proto.PubSub(
             project_id=data_source.project_id,
-            # Convert service_account_key to str defined in proto
-            service_account_key=json.dumps(data_source.service_account_key),
+            service_account_key=to_string(service_account_key),
+            service_account_key_secret=to_secret_proto(service_account_key),
         ),
     )
     return (
@@ -1567,11 +1586,30 @@ def _snowflake_conn_to_source_proto(
     )
 
 
+def to_secret_proto(secret: Optional[str] | Optional[Secret]):
+    if secret is None or type(secret) is not Secret :
+        return None
+    return secret_proto.SecretRef(
+        secret_arn=secret.arn,
+        role_arn=secret.role_arn,
+        path=secret.path,
+    )
+
+def to_string(s):
+    if s is not None and type(s) is str:
+        return s
+    return None
+
+def to_string_value(s):
+    if to_string(s):
+        return StringValue(value=s)
+    return None
+
 def _snowflake_to_ext_db_proto(
     name: str,
     account: str,
-    user: str,
-    password: str,
+    user: str | Secret,
+    password: str | Secret,
     schema: str,
     warehouse: str,
     role: str,
@@ -1581,12 +1619,14 @@ def _snowflake_to_ext_db_proto(
         name=name,
         snowflake=connector_proto.Snowflake(
             account=account,
-            user=user,
-            password=password,
+            user=to_string(user),
+            password=to_string(password),
             schema=schema,
             warehouse=warehouse,
             role=role,
             database=database,
+            username_secret=to_secret_proto(user),
+            password_secret=to_secret_proto(password),
         ),
     )
 
@@ -1653,8 +1693,8 @@ def _mysql_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str,
-    password: str,
+    user: str | Secret,
+    password: str | Secret,
     port: int,
     jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
@@ -1665,10 +1705,12 @@ def _mysql_to_ext_db_proto(
         mysql=connector_proto.MySQL(
             host=host,
             database=database,
-            user=user,
-            password=password,
+            user=to_string(user),
+            password=to_string(password),
             port=port,
             jdbc_params=jdbc_params,
+            username_secret=to_secret_proto(user),
+            password_secret=to_secret_proto(password),
         ),
     )
 
@@ -1744,8 +1786,8 @@ def _pg_to_ext_db_proto(
     name: str,
     host: str,
     database: str,
-    user: str,
-    password: str,
+    user: str | Secret,
+    password: str | Secret,
     port: int,
     jdbc_params: Optional[str] = None,
 ) -> connector_proto.ExtDatabase:
@@ -1757,10 +1799,12 @@ def _pg_to_ext_db_proto(
         postgres=connector_proto.Postgres(
             host=host,
             database=database,
-            user=user,
-            password=password,
+            user=to_string(user),
+            password=to_string(password),
             port=port,
             jdbc_params=jdbc_params,
+            username_secret=to_secret_proto(user),
+            password_secret=to_secret_proto(password),
         ),
     )
 
@@ -1947,17 +1991,25 @@ def to_kafka_format_proto(
 
 
 def to_auth_proto(
-    username: Optional[str], password: Optional[str], token: Optional[str]
+    username: Optional[str] | Optional[Secret],
+    password: Optional[str] | Optional[Secret],
+    token: Optional[str] | Optional[Secret],
 ) -> Optional[http_auth_proto.HTTPAuthentication]:
     if username is not None:
         return http_auth_proto.HTTPAuthentication(
             basic=http_auth_proto.BasicAuthentication(
-                username=username, password=StringValue(value=password)
+                username=to_string(username),
+                password=to_string_value(password),
+                username_secret=to_secret_proto(username),
+                password_secret=to_secret_proto(password)
             )
         )
     if token is not None:
         return http_auth_proto.HTTPAuthentication(
-            token=http_auth_proto.TokenAuthentication(token=token)
+            token=http_auth_proto.TokenAuthentication(
+                token=to_string(token),
+                token_secret=to_secret_proto(token)
+            )
         )
     return None
 
