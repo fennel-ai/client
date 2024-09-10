@@ -290,7 +290,7 @@ def test_dataset_with_aggregates():
                         dedup=True,
                         window=Continuous("forever"),
                         into_field=str(cls.countries),
-                        drop_nulls=False,
+                        dropnull=False,
                     ),
                 ]
             )

@@ -100,7 +100,7 @@ def test_lastk_state_dedup():
 
 
 def test_firstk_state():
-    state = FirstKState(k=3, dedup=False, drop_nulls=False)
+    state = FirstKState(k=3, dedup=False, dropnull=False)
     now = datetime.now(timezone.utc)
     assert state.add_val_to_state(1, now) == [1]
     assert state.add_val_to_state(2, now) == [1, 2]
@@ -115,7 +115,7 @@ def test_firstk_state():
 
 
 def test_firstk_state_dedup():
-    state = FirstKState(k=3, dedup=True, drop_nulls=False)
+    state = FirstKState(k=3, dedup=True, dropnull=False)
     now = datetime.now(timezone.utc)
     assert state.add_val_to_state(1, now) == [1]
     assert state.add_val_to_state(2, now) == [1, 2]
@@ -128,8 +128,8 @@ def test_firstk_state_dedup():
     assert state.del_val_from_state(4, now) == [1, 2]
 
 
-def test_firstk_state_nulls():
-    state = FirstKState(k=3, dedup=False, drop_nulls=False)
+def test_firstk_state_null():
+    state = FirstKState(k=3, dedup=False, dropnull=False)
     now = datetime.now(timezone.utc)
     assert state.add_val_to_state(1, now) == [1]
     assert state.add_val_to_state(None, now) == [1, None]
@@ -145,8 +145,8 @@ def test_firstk_state_nulls():
     assert state.del_val_from_state(None, now) == [1]
 
 
-def test_firstk_state_drop_nulls():
-    state = FirstKState(k=3, dedup=False, drop_nulls=True)
+def test_firstk_state_dropnull():
+    state = FirstKState(k=3, dedup=False, dropnull=True)
     now = datetime.now(timezone.utc)
     assert state.add_val_to_state(1, now) == [1]
     assert state.add_val_to_state(None, now) == [1]

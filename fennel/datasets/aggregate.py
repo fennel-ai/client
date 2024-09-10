@@ -284,7 +284,7 @@ class FirstK(AggregateType):
     of: str
     limit: int
     dedup: bool
-    drop_nulls: bool
+    dropnull: bool
 
     def to_proto(self):
         if self.window is None:
@@ -296,7 +296,7 @@ class FirstK(AggregateType):
                 of=self.of,
                 limit=self.limit,
                 dedup=self.dedup,
-                dropnull=self.drop_nulls,
+                dropnull=self.dropnull,
             )
         )
 

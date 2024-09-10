@@ -4517,7 +4517,7 @@ def test_last_k_on_struct_type(client):
 
 @pytest.mark.integration
 @mock
-def test_firstk_nulls(client):
+def test_firstk_null(client):
     @dataset
     @source(webhook.endpoint("A"), disorder="14d", cdc="append")
     class A:
@@ -4540,7 +4540,7 @@ def test_firstk_nulls(client):
                     window=Continuous("forever"),
                     dedup=False,
                     limit=2,
-                    drop_nulls=False
+                    dropnull=False
                 )
             )
 
@@ -4569,7 +4569,7 @@ def test_firstk_nulls(client):
 
 @pytest.mark.integration
 @mock
-def test_firstk_drop_nulls(client):
+def test_firstk_dropnull(client):
     @dataset
     @source(webhook.endpoint("A"), disorder="14d", cdc="append")
     class A:
@@ -4592,7 +4592,7 @@ def test_firstk_drop_nulls(client):
                     window=Continuous("forever"),
                     dedup=False,
                     limit=2,
-                    drop_nulls=True
+                    dropnull=True
                 )
             )
 

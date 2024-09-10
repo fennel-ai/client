@@ -186,17 +186,17 @@ class LastKState(AggState):
 
 
 class FirstKState(AggState):
-    def __init__(self, k, dedup, drop_nulls):
+    def __init__(self, k, dedup, dropnull):
         self.k = k
         self.dedeup = dedup
-        self.drop_nulls = drop_nulls
+        self.dropnull = dropnull
         self.vals = []
 
     def is_null(self, val):
         return (val is None) or pd.isnull(val)
 
     def add_val_to_state(self, val, _ts):
-        if (self.drop_nulls and self.is_null(val)):
+        if (self.dropnull and self.is_null(val)):
             return list(self.vals[: self.k])
 
         self.vals.append(val)
@@ -855,7 +855,7 @@ def get_aggregated_df(
                         aggregate.limit, aggregate.dedup, aggregate.dropnull
                     )
                 elif isinstance(aggregate, FirstK):
-                    state[key] = FirstKState(aggregate.limit, aggregate.dedup, aggregate.drop_nulls)
+                    state[key] = FirstKState(aggregate.limit, aggregate.dedup, aggregate.dropnull)
                 elif isinstance(aggregate, Min):
                     state[key] = MinState(aggregate.default)
                 elif isinstance(aggregate, Max):
