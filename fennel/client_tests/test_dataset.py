@@ -4556,7 +4556,9 @@ def test_firstk_nulls(client):
             "ts": [yesterday, now, now, day_before_yesterday, now, yesterday],
         }
     )
+    df["value"] = df["value"].astype("Int64")
     client.log("fennel_webhook", "A", df)
+    client.sleep(30)
 
     results, _ = client.lookup(
         B,
@@ -4578,7 +4580,7 @@ def test_firstk_drop_nulls(client):
     @dataset(index=True)
     class B:
         id: int = field(key=True)
-        value: List[Optional[int]]
+        value: List[int]
         ts: datetime
 
         @pipeline
@@ -4606,7 +4608,9 @@ def test_firstk_drop_nulls(client):
             "ts": [yesterday, now, now, day_before_yesterday, now, yesterday],
         }
     )
+    df["value"] = df["value"].astype("Int64")
     client.log("fennel_webhook", "A", df)
+    client.sleep(30)
 
     results, _ = client.lookup(
         B,

@@ -688,6 +688,12 @@ class Aggregate(_Node):
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, FirstK):
                 dtype = input_schema.get_type(agg.of)
+                if (agg.drop_nulls):
+                    if (not fennel_is_optional(dtype)):
+                        raise TypeError(
+                            f"drop_nulls is only allowed for optional types"
+                        )
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Stddev):
@@ -2740,6 +2746,12 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, FirstK):
                 dtype = input_schema.get_type(agg.of)
+                if (agg.drop_nulls):
+                    if (not fennel_is_optional(dtype)):
+                        raise TypeError(
+                            f"drop_nulls is only allowed for optional types"
+                        )
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
