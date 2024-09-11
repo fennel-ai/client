@@ -19,7 +19,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.expr import col
+from fennel.expr import col, lit, when
 from fennel.testing import mock, log
 
 ################################################################################
@@ -97,6 +97,9 @@ class UserInfoMultipleExtractor:
     age_doubled: int
     age_reciprocal_expr: float = F(1 / (col("age") / (3600.0 * 24)) + 0.01)
     age_double_expr: int = F(col("age") * 2)
+    age_greater_than_30: bool = F(
+        when(col("age") > 30).then(lit(True)).otherwise(lit(False))
+    )
 
     @extractor(deps=[UserInfoDataset])  # type: ignore
     @inputs("userid")
@@ -171,6 +174,7 @@ class TestSimpleExtractor(unittest.TestCase):
             "UserInfoMultipleExtractor.age_doubled",
             "UserInfoMultipleExtractor.age_reciprocal_expr",
             "UserInfoMultipleExtractor.age_double_expr",
+            "UserInfoMultipleExtractor.age_greater_than_30",
         ]
         ts = pd.Series([datetime(2020, 1, 1), datetime(2020, 1, 1)])
         df = UserInfoMultipleExtractor.get_age_and_name_features(
@@ -265,7 +269,7 @@ class TestSimpleExtractor(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        assert feature_df.shape == (2, 11)
+        assert feature_df.shape == (2, 12)
         assert feature_df.columns.tolist() == [
             "UserInfoMultipleExtractor.userid",
             "UserInfoMultipleExtractor.name",
@@ -278,6 +282,7 @@ class TestSimpleExtractor(unittest.TestCase):
             "UserInfoMultipleExtractor.age_doubled",
             "UserInfoMultipleExtractor.age_reciprocal_expr",
             "UserInfoMultipleExtractor.age_double_expr",
+            "UserInfoMultipleExtractor.age_greater_than_30",
         ]
         assert feature_df["UserInfoMultipleExtractor.userid"].tolist() == [
             18232,
@@ -322,6 +327,9 @@ class TestSimpleExtractor(unittest.TestCase):
         assert feature_df[
             "UserInfoMultipleExtractor.age_double_expr"
         ].tolist() == [64, 48]
+        assert feature_df[
+            "UserInfoMultipleExtractor.age_greater_than_30"
+        ].tolist() == [True, False]
 
 
 @struct
@@ -508,7 +516,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserInfoMultipleExtractor.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 11))
+        self.assertEqual(feature_df.shape, (2, 12))
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_reciprocal"]),
             [2700.01, 3600.01],
@@ -524,6 +532,10 @@ class TestExtractorDAGResolution(unittest.TestCase):
         self.assertEqual(
             list(feature_df["UserInfoMultipleExtractor.age_double_expr"]),
             [64, 48],
+        )
+        self.assertEqual(
+            list(feature_df["UserInfoMultipleExtractor.age_greater_than_30"]),
+            [True, False],
         )
 
 

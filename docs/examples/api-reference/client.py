@@ -10,6 +10,7 @@ from fennel.datasets import dataset, field
 from fennel.featuresets import feature as F, featureset, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import mock
+from fennel.expr.expr import col, lit, when
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -45,6 +46,9 @@ class UserFeatures:
     age_squared: int
     age_cubed: int
     is_name_common: bool
+    item_claim_ctr: float = F(
+        when(col("age_cubed") > 0).then(lit(1.0)).otherwise(0.0)
+    )
 
     @extractor(deps=[UserInfoDataset])
     @inputs("userid")
@@ -109,7 +113,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
                 {"UserFeatures.userid": [18232, 18234]}
             ),
         )
-        self.assertEqual(feature_df.shape, (2, 7))
+        self.assertEqual(feature_df.shape, (2, 8))
         # /docsnip
 
         # docsnip query_offline_api
