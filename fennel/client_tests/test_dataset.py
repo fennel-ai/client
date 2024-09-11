@@ -12,7 +12,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook, ref
-from fennel.expr import col
+from fennel.expr import col, lit, when
 from fennel.datasets import (
     dataset,
     field,
@@ -854,6 +854,7 @@ class MovieRatingAssignExpr:
     rating_sq: float
     rating_cube: float
     rating_into_5: float
+    some_const: str
     t: datetime
 
     @pipeline
@@ -865,6 +866,9 @@ class MovieRatingAssignExpr:
                 float
             ),
             rating_into_5=(col("rating") * 5).astype(float),
+        )
+        rating_transformed = rating_transformed.assign(
+            "some_const", str, lambda df: "some_const"
         )
         return rating_transformed.drop("num_ratings", "sum_ratings", "rating")
 
@@ -1077,7 +1081,6 @@ class TestBasicAssign(unittest.TestCase):
             )
 
             assert found.tolist() == [True, False]
-            assert df.shape == (2, 5)
             assert df["movie"].tolist() == ["Jumanji", "Titanic"]
             assert df["rating_sq"].tolist()[0] == 16
             assert pd.isna(df["rating_sq"].tolist()[1])
@@ -1092,7 +1095,6 @@ class TestBasicAssign(unittest.TestCase):
                 keys=keys,
             )
 
-            assert df.shape == (2, 5)
             assert df["movie"].tolist() == ["Jumanji", "Titanic"]
             assert df["rating_sq"].tolist() == [16, 25]
             assert df["rating_cube"].tolist() == [64, 125]

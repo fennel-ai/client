@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.20] - 2024-09-10
+- Fix bug in using complex expressions in feature extractor.
+
 ## [1.5.19] - 2024-09-06
 - Add ability to specify fields in join
 

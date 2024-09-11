@@ -575,7 +575,7 @@ class Featureset:
                 )
 
             ref_extractor = FetchReferences()
-            user_defined_inputs = ref_extractor.fetch(expr)
+            user_defined_inputs = ref_extractor.fetch(expr.root)
             extractor = Extractor(
                 name=f"_fennel_expr_{feature.fqn()}",
                 extractor_type=ExtractorType.EXPR,
