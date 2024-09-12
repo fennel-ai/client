@@ -59,6 +59,14 @@ def get_primitive_dtype(dtype):
     return dtype
 
 
+def get_primitive_dtype_with_optional(dtype):
+    """Get the primitive type of a dtype with optional fields."""
+    if fennel_is_optional(dtype):
+        return get_primitive_dtype(fennel_get_optional_inner(dtype))
+    else:
+        return get_primitive_dtype(dtype)
+
+
 # Parse a json object into a python object based on the type annotation.
 def parse_json(annotation, json) -> Any:
     if annotation is Any:
@@ -160,7 +168,10 @@ def fennel_is_optional(type_):
 
 
 def fennel_get_optional_inner(type_):
-    return typing.get_args(type_)[0]
+    if fennel_is_optional(type_):
+        return typing.get_args(type_)[0]
+    else:
+        return type_
 
 
 def get_datatype(type_: Any) -> schema_proto.DataType:

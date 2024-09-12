@@ -2,7 +2,7 @@ from typing import List, Union, Optional
 
 import fennel.gen.spec_pb2 as spec_proto
 from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
-from fennel.dtypes import Continuous, Tumbling, Hopping, Session
+from fennel.dtypes import Continuous, Tumbling, Hopping
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
 
 ItemType = Union[str, List[str]]
@@ -39,6 +39,7 @@ class Count(AggregateType):
     of: Optional[str] = None
     unique: bool = False
     approx: bool = False
+    dropnull: bool = False
 
     def to_proto(self):
         if self.window is None:
@@ -50,23 +51,27 @@ class Count(AggregateType):
                 unique=self.unique,
                 approx=self.approx,
                 of=self.of,
+                dropnull=self.dropnull,
             )
         )
 
     def validate(self):
-        if not self.unique:
-            return None
+        if self.unique:
+            if not self.approx:
+                return NotImplementedError(
+                    "Exact unique counts are not yet supported, please set approx=True"
+                )
 
-        if not self.approx:
-            return NotImplementedError(
-                "Exact unique counts are not yet supported, please set approx=True"
-            )
-
-        if self.of is None:
-            return ValueError(
-                "Count unique requires a field parameter on which unique "
-                "values can be counted"
-            )
+            if self.of is None:
+                return ValueError(
+                    "Count unique requires a field parameter on which unique "
+                    "values can be counted"
+                )
+        if self.dropnull:
+            if self.of is None:
+                return ValueError(
+                    "Count with dropnull requires a field parameter on which null values can be ignored"
+                )
 
     def signature(self):
         return f"count_{self.window.signature()}"
@@ -75,6 +80,7 @@ class Count(AggregateType):
 class Distinct(AggregateType):
     of: str
     unordered: bool
+    dropnull: bool = False
 
     def to_proto(self) -> spec_proto.PreSpec:
         if self.window is None:
@@ -84,6 +90,7 @@ class Distinct(AggregateType):
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
+                dropnull=self.dropnull,
             )
         )
 
@@ -253,6 +260,7 @@ class LastK(AggregateType):
     of: str
     limit: int
     dedup: bool
+    dropnull: bool = False
 
     def to_proto(self):
         if self.window is None:
@@ -264,6 +272,7 @@ class LastK(AggregateType):
                 of=self.of,
                 limit=self.limit,
                 dedup=self.dedup,
+                dropnull=self.dropnull,
             )
         )
 

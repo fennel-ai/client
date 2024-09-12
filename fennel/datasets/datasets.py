@@ -72,6 +72,7 @@ from fennel.internal_lib.schema import (
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     get_datatype,
 )
+from fennel.internal_lib.schema.schema import get_primitive_dtype_with_optional
 from fennel.internal_lib.utils import (
     dtype_to_string,
     get_origin,
@@ -660,7 +661,7 @@ class Aggregate(_Node):
                 values[agg.into_field] = pd.Int64Dtype  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                primitive_dtype = get_primitive_dtype(dtype)
+                primitive_dtype = get_primitive_dtype_with_optional(dtype)
                 if primitive_dtype not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
@@ -671,19 +672,23 @@ class Aggregate(_Node):
                     values[agg.into_field] = primitive_dtype  # type: ignore
             elif isinstance(agg, Min) or isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                primitive_dtype = get_primitive_dtype(dtype)
+                primitive_dtype = get_primitive_dtype_with_optional(dtype)
                 if primitive_dtype == Decimal:
                     values[agg.into_field] = dtype  # type: ignore
                 else:
                     values[agg.into_field] = primitive_dtype  # type: ignore
             elif isinstance(agg, Distinct):
                 dtype = input_schema.get_type(agg.of)
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Average):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Stddev):
@@ -763,7 +768,7 @@ class GroupBy:
         if self.window_field is not None:
             if along is not None:
                 raise ValueError(
-                    "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+                    "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
                 )
             if len(self.keys) == 0:
                 raise ValueError(
@@ -2570,7 +2575,7 @@ class SchemaValidator(Visitor):
     def visitAggregate(self, obj) -> DSSchema:
         # TODO(Aditya): Aggregations should be allowed on only
         # 1. Keyless streams.
-        # 2. Keyed datasets, as long as `along` parameter is provided.
+        # 2. Keyed datasets, as long as `along` parameter is provided or doing forever aggregation.
         # 3. For outputs of window operators.
 
         input_schema = self.visit(obj.node)
@@ -2589,7 +2594,6 @@ class SchemaValidator(Visitor):
                     f"Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`."
                 )
 
-        values: Dict[str, Type] = {}
         if isinstance(obj.along, str):
             along_type = input_schema.values.get(obj.along)
             if along_type is None:
@@ -2606,11 +2610,11 @@ class SchemaValidator(Visitor):
                     f"error with along kwarg of aggregate operator: `{obj.along}` is not of type datetime"
                 )
 
+        values: Dict[str, Type] = {}
         found_discrete = False
         found_non_discrete = False
         lookback = None
         for agg in obj.aggregates:
-
             # If default window is present in groupby then each aggregate spec cannot have window different from
             # groupby window. Either pass them null or pass them same.
             if obj.window_field:
@@ -2665,6 +2669,17 @@ class SchemaValidator(Visitor):
                             f"type `{dtype_to_string(dtype)}`, as it is not "  # type: ignore
                             f"hashable"
                         )
+                if agg.dropnull:
+                    if agg.of is None:
+                        raise ValueError(
+                            f"Count with dropnull aggregate `{agg}` must have `of` field."
+                        )
+                    dtype = input_schema.get_type(agg.of)
+                    if not fennel_is_optional(dtype):
+                        raise ValueError(
+                            f"Cannot use count with dropnull for field `{agg.of}` of type `{dtype_to_string(dtype)}`, "
+                            f"as it is not optional."
+                        )
                 values[agg.into_field] = pd.Int64Dtype
             elif isinstance(agg, Distinct):
                 if agg.of is None:
@@ -2678,55 +2693,86 @@ class SchemaValidator(Visitor):
                         f"type `{dtype_to_string(dtype)}`, as it is not hashable"
                         # type: ignore
                     )
+                if agg.dropnull:
+                    if not fennel_is_optional(dtype):
+                        raise ValueError(
+                            f"Cannot use distinct with dropnull for field `{agg.of}` of type `{dtype_to_string(dtype)}`, "
+                            f"as it is not optional."
+                        )
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot sum field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Average):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
+                if agg.dropnull:
+                    if not fennel_is_optional(dtype):
+                        raise ValueError(
+                            f"Cannot use lastK with dropnull for field `{agg.of}` of type `{dtype_to_string(dtype)}`, "
+                            f"as it is not optional."
+                        )
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"invalid min: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
-                ):
+                if get_primitive_dtype_with_optional(
+                    dtype
+                ) == pd.Int64Dtype and (int(agg.default) != agg.default):
                     raise TypeError(
                         f"invalid min: default value `{agg.default}` not of type `int`"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"invalid max: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
-                ):
+                if get_primitive_dtype_with_optional(
+                    dtype
+                ) == pd.Int64Dtype and (int(agg.default) != agg.default):
                     raise TypeError(
                         f"invalid max: default value `{agg.default}` not of type `int`"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Stddev):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot get standard deviation of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
@@ -2734,9 +2780,8 @@ class SchemaValidator(Visitor):
             elif isinstance(agg, Quantile):
                 dtype = input_schema.get_type(agg.of)
                 if (
-                    dtype is pd.Float64Dtype
-                    or dtype is pd.Int64Dtype
-                    or isinstance(dtype, _Decimal)
+                    get_primitive_dtype_with_optional(dtype)
+                    in primitive_numeric_types
                 ):
                     if agg.default is not None:
                         values[agg.into_field] = pd.Float64Dtype  # type: ignore
@@ -2748,7 +2793,10 @@ class SchemaValidator(Visitor):
                     )
             elif isinstance(agg, ExpDecaySum):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot take exponential decay sum of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
@@ -2770,7 +2818,7 @@ class SchemaValidator(Visitor):
             found_discrete or obj.emit_strategy == EmitStrategy.Final
         ):
             raise ValueError(
-                "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+                "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
             )
 
         return DSSchema(

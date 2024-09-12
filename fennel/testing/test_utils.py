@@ -5,6 +5,7 @@ from typing import Any, List
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+from frozendict import frozendict
 from google.protobuf.json_format import MessageToDict
 
 from fennel._vendor import jsondiff  # type: ignore
@@ -107,6 +108,19 @@ def almost_equal(a: float, b: float, epsilon: float = 1e-6) -> bool:
     if isnan(a) and isnan(b):
         return True
     return abs(a - b) < epsilon
+
+
+def is_null(value: Any) -> bool:
+    try:
+        if not isinstance(
+            value, (list, tuple, dict, set, np.ndarray, frozendict)
+        ) and pd.isna(value):
+            return True
+        else:
+            return False
+    # ValueError error occurs when you do something like pd.isnull([1, 2, None])
+    except ValueError:
+        return False
 
 
 def cast_col_to_pandas_dtype(

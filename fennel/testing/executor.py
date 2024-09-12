@@ -389,7 +389,11 @@ class Executor(Visitor):
                 # Select the columns that are needed for the aggregate -> all keys without window
                 # and drop the rest
                 fields = obj.keys_without_window + [input_ret.timestamp_field]
-                if not isinstance(aggregate, Count) or aggregate.unique:
+                if (
+                    not isinstance(aggregate, Count)
+                    or aggregate.unique
+                    or aggregate.dropnull
+                ):
                     fields.append(aggregate.of)
                 if FENNEL_DELETE_TIMESTAMP in df.columns:
                     filtered_df = df[fields + [FENNEL_DELETE_TIMESTAMP]]

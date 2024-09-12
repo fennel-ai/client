@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.24] - 2024-09-18
+- Add support for aggregation on optional dtype columns
+
 ## [1.5.23] - 2024-09-17
 - Fix bug for using lambdas in jupyter notebooks
 
