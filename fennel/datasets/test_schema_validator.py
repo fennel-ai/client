@@ -5,18 +5,24 @@ from typing import Optional, List
 import pandas as pd
 import pytest
 
+from fennel.connectors import Webhook, source
 from fennel.datasets import (
     Count,
     dataset,
     field,
     pipeline,
     Dataset,
-    Sum,
+    Distinct,
+    LastK,
     Min,
     Max,
+    Sum,
 )
 from fennel.dtypes import Window, Continuous, Session, Tumbling
 from fennel.lib import meta, inputs
+
+__owner__ = "eng@fennel.ai"
+webhook = Webhook(name="fennel_webhook")
 
 
 @meta(owner="test@test.com")
@@ -1643,7 +1649,7 @@ def test_discrete_aggregations():
 
     assert (
         str(e.value)
-        == "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+        == "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
     )
 
     with pytest.raises(ValueError) as e:
@@ -1663,5 +1669,120 @@ def test_discrete_aggregations():
 
     assert (
         str(e.value)
-        == "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+        == "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
+    )
+
+
+def test_invalid_aggregation_with_optional_columns():
+    @source(webhook.endpoint("Transactions1"), cdc="append", disorder="14d")
+    @dataset
+    class Transactions1:
+        user_id: str
+        amount: Optional[float]
+        t: datetime
+
+    @source(webhook.endpoint("Transactions2"), cdc="append", disorder="14d")
+    @dataset
+    class Transactions2:
+        user_id: str
+        amount: float
+        val: int
+        t: datetime
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class Stats1:
+            user_id: str = field(key=True)
+            count: int
+            t: datetime
+
+            @pipeline
+            @inputs(Transactions1)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    count=Count(
+                        window=Continuous("forever"),
+                        dropnull=True,
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='count' of=None unique=False "
+        "approx=False dropnull=True`: Count with dropnull requires a field parameter on which null values can be "
+        "ignored"
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class Stats2:
+            user_id: str = field(key=True)
+            count: int
+            t: datetime
+
+            @pipeline
+            @inputs(Transactions2)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    count=Count(
+                        window=Continuous("forever"), dropnull=True, of="amount"
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot use count with dropnull for field `amount` of type `float`, as it is not optional."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class Stats3:
+            user_id: str = field(key=True)
+            lastK: List[float]
+            t: datetime
+
+            @pipeline
+            @inputs(Transactions2)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    lastK=LastK(
+                        window=Continuous("forever"),
+                        dropnull=True,
+                        of="amount",
+                        dedup=True,
+                        limit=10,
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot use lastK with dropnull for field `amount` of type `float`, as it is not optional."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset(index=True)
+        class Stats4:
+            user_id: str = field(key=True)
+            distinct: List[float]
+            t: datetime
+
+            @pipeline
+            @inputs(Transactions2)
+            def pipeline_window(cls, event: Dataset):
+                return event.groupby("user_id").aggregate(
+                    distinct=Distinct(
+                        window=Continuous("forever"),
+                        unordered=True,
+                        of="val",
+                        dropnull=True,
+                    )
+                )
+
+    assert (
+        str(e.value)
+        == "Cannot use distinct with dropnull for field `val` of type `int`, as it is not optional."
     )

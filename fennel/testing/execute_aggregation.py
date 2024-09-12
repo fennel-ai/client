@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections import Counter
 from datetime import datetime, timezone, timedelta
 from math import sqrt
-from typing import Dict, List, Type, Union
+from typing import Dict, List, Type, Union, Any
 
 import numpy as np
 import pandas as pd
@@ -34,6 +34,7 @@ from fennel.testing.test_utils import (
     add_deletes,
     get_timestamp_data_type,
     get_window_data_type,
+    is_null,
 )
 
 # Type of data, 1 indicates insert -1 indicates delete.
@@ -62,11 +63,13 @@ class SumState(AggState):
         self.sum = 0
 
     def add_val_to_state(self, val, _ts):
-        self.sum += val
+        if not pd.isna(val):
+            self.sum += val
         return self.sum
 
     def del_val_from_state(self, val, _ts):
-        self.sum -= val
+        if not pd.isna(val):
+            self.sum -= val
         return self.sum
 
     def get_val(self):
@@ -74,15 +77,18 @@ class SumState(AggState):
 
 
 class CountState(AggState):
-    def __init__(self):
+    def __init__(self, dropnull: bool = False):
         self.count = 0
+        self.dropnull = dropnull
 
     def add_val_to_state(self, val, _ts):
-        self.count += 1
+        if not (self.dropnull and pd.isna(val)):
+            self.count += 1
         return self.count
 
     def del_val_from_state(self, val, _ts):
-        self.count -= 1
+        if not (self.dropnull and pd.isna(val)):
+            self.count -= 1
         return self.count
 
     def get_val(self):
@@ -90,19 +96,22 @@ class CountState(AggState):
 
 
 class CountUniqueState(AggState):
-    def __init__(self):
+    def __init__(self, dropnull: bool = False):
         self.count = 0
-        self.counter = Counter()
+        self.dropnull = dropnull
+        self.counter = Counter()  # type: ignore
 
     def add_val_to_state(self, val, _ts):
-        self.counter[val] += 1
+        if not (self.dropnull and pd.isna(val)):
+            self.counter[val] += 1
         self.count = len(self.counter)
         return self.count
 
     def del_val_from_state(self, val, _ts):
-        self.counter[val] -= 1
-        if self.counter[val] == 0:
-            del self.counter[val]
+        if not (self.dropnull and pd.isna(val)):
+            self.counter[val] -= 1
+            if self.counter[val] == 0:
+                del self.counter[val]
         self.count = len(self.counter)
         return self.count
 
@@ -117,13 +126,15 @@ class AvgState(AggState):
         self.default = default
 
     def add_val_to_state(self, val, _ts):
-        self.sum += val
-        self.count += 1
+        if not pd.isnull(val):
+            self.sum += val
+            self.count += 1
         return self.get_val()
 
     def del_val_from_state(self, val, _ts):
-        self.sum -= val
-        self.count -= 1
+        if not pd.isnull(val):
+            self.sum -= val
+            self.count -= 1
         return self.get_val()
 
     def get_val(self):
@@ -133,40 +144,44 @@ class AvgState(AggState):
 
 
 class LastKState(AggState):
-    def __init__(self, k, dedup):
+    def __init__(self, k: int, dedup: bool, dropnull: bool = False):
         self.k = k
         self.dedeup = dedup
-        self.vals = []
+        self.dropnull = dropnull
+        self.vals: List[Any] = []
 
     def add_val_to_state(self, val, _ts):
-        self.vals.append(val)
-        if not self.dedeup:
-            return list(reversed(self.vals[-self.k :]))
-        else:
-            to_ret = []
-            for v in reversed(self.vals):
-                if v not in to_ret:
-                    to_ret.append(v)
-                if len(to_ret) == self.k:
-                    break
-        return list(to_ret[: self.k])
+        if not (self.dropnull and is_null(val)):
+            self.vals.append(val)
+        return self.get_val()
 
     def del_val_from_state(self, val, _ts):
-        if val in self.vals:
-            self.vals.remove(val)
-        if not self.dedeup:
-            return list(reversed(self.vals[-self.k :]))
-
-        ret = []
-        for v in reversed(self.vals):
-            if v not in ret:
-                ret.append(v)
-            if len(ret) == self.k:
-                break
-        return list(ret[: self.k])
+        if not (self.dropnull and is_null(val)):
+            # Check if val is present in self.vals or not, if yes then remove it.
+            if is_null(val):
+                if any(is_null(item) for item in self.vals):
+                    self.vals.remove(val)
+            else:
+                if any(not is_null(item) and item == val for item in self.vals):
+                    self.vals.remove(val)
+        return self.get_val()
 
     def get_val(self):
-        return list(reversed(self.vals[-self.k :]))
+        if not self.dedeup:
+            return list(reversed(self.vals[-self.k :]))
+        output: List[Any] = []
+        for val in reversed(self.vals):
+            if is_null(val):
+                if not any(is_null(item) for item in output):
+                    output.append(val)
+            else:
+                if not any(
+                    not is_null(item) and item == val for item in output
+                ):
+                    output.append(val)
+            if len(output) == self.k:
+                break
+        return list(output[: self.k])
 
 
 class Heap:
@@ -207,19 +222,21 @@ class MinState(AggState):
         self.default = default
 
     def add_val_to_state(self, val, _ts):
-        if val not in self.counter:
-            self.min_heap.push(val)
-        self.counter[val] += 1
+        if not pd.isnull(val):
+            if val not in self.counter:
+                self.min_heap.push(val)
+            self.counter[val] += 1
         return self.min_heap.top()
 
     def del_val_from_state(self, val, _ts):
-        if val not in self.counter:
-            return self.get_val()
-        if self.counter[val] == 1:
-            self.min_heap.remove(val)
-            self.counter.pop(val)
-        else:
-            self.counter[val] -= 1
+        if not pd.isnull(val):
+            if val not in self.counter:
+                return self.get_val()
+            if self.counter[val] == 1:
+                self.min_heap.remove(val)
+                self.counter.pop(val)
+            else:
+                self.counter[val] -= 1
         return self.get_val()
 
     def get_val(self):
@@ -236,19 +253,21 @@ class MaxState(AggState):
         self.default = default
 
     def add_val_to_state(self, val, _ts):
-        if val not in self.counter:
-            self.max_heap.push(val)
-        self.counter[val] += 1
+        if not pd.isnull(val):
+            if val not in self.counter:
+                self.max_heap.push(val)
+            self.counter[val] += 1
         return self.max_heap.top()
 
     def del_val_from_state(self, val, _ts):
-        if val not in self.counter:
-            return self.get_val()
-        if self.counter[val] == 1:
-            self.max_heap.remove(val)
-            self.counter.pop(val)
-        else:
-            self.counter[val] -= 1
+        if not pd.isnull(val):
+            if val not in self.counter:
+                return self.get_val()
+            if self.counter[val] == 1:
+                self.max_heap.remove(val)
+                self.counter.pop(val)
+            else:
+                self.counter[val] -= 1
         return self.get_val()
 
     def get_val(self):
@@ -267,27 +286,29 @@ class ExpDecayAggState(AggState):
         self.log_sum_neg = 0
 
     def add_val_to_state(self, val, ts):
-        ts = int(ts.timestamp())
-        if val >= 0:
-            self.log_sum_pos += val * math.exp(
-                ts * self.decay - self.max_exponent
-            )
-        else:
-            self.log_sum_neg += (
-                -1 * val * math.exp(ts * self.decay - self.max_exponent)
-            )
+        if not pd.isnull(val):
+            ts = int(ts.timestamp())
+            if val >= 0:
+                self.log_sum_pos += val * math.exp(
+                    ts * self.decay - self.max_exponent
+                )
+            else:
+                self.log_sum_neg += (
+                    -1 * val * math.exp(ts * self.decay - self.max_exponent)
+                )
         return self.get_val()
 
     def del_val_from_state(self, val, ts):
-        ts = int(ts.timestamp())
-        if val >= 0:
-            self.log_sum_pos -= val * math.exp(
-                ts * self.decay - self.max_exponent
-            )
-        else:
-            self.log_sum_neg -= (
-                -1 * val * math.exp(ts * self.decay - self.max_exponent)
-            )
+        if not pd.isnull(val):
+            ts = int(ts.timestamp())
+            if val >= 0:
+                self.log_sum_pos -= val * math.exp(
+                    ts * self.decay - self.max_exponent
+                )
+            else:
+                self.log_sum_neg -= (
+                    -1 * val * math.exp(ts * self.decay - self.max_exponent)
+                )
         return self.get_val()
 
     def get_val(self):
@@ -312,25 +333,27 @@ class StddevState(AggState):
         self.default = default
 
     def add_val_to_state(self, val, _ts):
-        self.count += 1
-        delta = val - self.mean
-        self.mean += delta / self.count
-        delta2 = val - self.mean
-        self.m2 += delta * delta2
+        if not pd.isnull(val):
+            self.count += 1
+            delta = val - self.mean
+            self.mean += delta / self.count
+            delta2 = val - self.mean
+            self.m2 += delta * delta2
         return self.get_val()
 
     def del_val_from_state(self, val, _ts):
-        if self.count == 1:  # If removing the last value, reset everything
-            self.count = 0
-            self.mean = 0
-            self.m2 = 0
-            return self.default
+        if not pd.isnull(val):
+            if self.count == 1:  # If removing the last value, reset everything
+                self.count = 0
+                self.mean = 0
+                self.m2 = 0
+                return self.default
 
-        self.count -= 1
-        delta = val - self.mean
-        self.mean -= delta / self.count
-        delta2 = val - self.mean
-        self.m2 -= delta * delta2
+            self.count -= 1
+            delta = val - self.mean
+            self.mean -= delta / self.count
+            delta2 = val - self.mean
+            self.m2 -= delta * delta2
         return self.get_val()
 
     def get_val(self):
@@ -345,17 +368,20 @@ class StddevState(AggState):
 
 
 class DistinctState(AggState):
-    def __init__(self):
-        self.counter = Counter()
+    def __init__(self, dropnull: bool = False):
+        self.counter = Counter()  # type: ignore
+        self.dropnull = dropnull
 
     def add_val_to_state(self, val, _ts):
-        self.counter[val] += 1
+        if not (self.dropnull and pd.isna(val)):
+            self.counter[val] += 1
         return list(self.counter.keys())
 
     def del_val_from_state(self, val, _ts):
-        self.counter[val] -= 1
-        if self.counter[val] == 0:
-            del self.counter[val]
+        if not (self.dropnull and pd.isna(val)):
+            self.counter[val] -= 1
+            if self.counter[val] == 0:
+                del self.counter[val]
         return list(self.counter.keys())
 
     def get_val(self) -> List:
@@ -369,11 +395,13 @@ class QuantileState(AggState):
         self.vals = SortedList()
 
     def add_val_to_state(self, val, _ts):
-        self.vals.add(val)
+        if not pd.isnull(val):
+            self.vals.add(val)
         return self.get_val()
 
     def del_val_from_state(self, val, _ts):
-        self.vals.remove(val)
+        if not pd.isnull(val):
+            self.vals.remove(val)
         return self.get_val()
 
     def get_val(self) -> List:
@@ -465,7 +493,11 @@ def get_timestamps_for_session_window(
     rows = []
     for session in sessions:
         start_timestamp = datetime.fromtimestamp(session["start_ts"], tz=timezone.utc)  # type: ignore
-        end_timestamp = datetime.fromtimestamp(session["end_ts"], tz=timezone.utc) + timedelta(microseconds=1)  # type: ignore
+        end_timestamp = datetime.fromtimestamp(
+            session["end_ts"], tz=timezone.utc
+        ) + timedelta(
+            microseconds=1
+        )  # type: ignore
         for row in session["rows"]:
             row[ts_field] = end_timestamp
             if is_window_key_field:
@@ -721,7 +753,11 @@ def get_aggregated_df(
 
     # Reset the index
     df = df.reset_index(drop=True)
-    if isinstance(aggregate, Count) and not aggregate.unique:
+    if (
+        isinstance(aggregate, Count)
+        and not aggregate.unique
+        and not aggregate.dropnull
+    ):
         df[FENNEL_FAKE_OF_FIELD] = 1
         of_field = FENNEL_FAKE_OF_FIELD
     else:
@@ -764,13 +800,15 @@ def get_aggregated_df(
                     state[key] = SumState()
                 elif isinstance(aggregate, Count):
                     if aggregate.unique:
-                        state[key] = CountUniqueState()
+                        state[key] = CountUniqueState(aggregate.dropnull)
                     else:
-                        state[key] = CountState()
+                        state[key] = CountState(aggregate.dropnull)
                 elif isinstance(aggregate, Average):
                     state[key] = AvgState(aggregate.default)
                 elif isinstance(aggregate, LastK):
-                    state[key] = LastKState(aggregate.limit, aggregate.dedup)
+                    state[key] = LastKState(
+                        aggregate.limit, aggregate.dedup, aggregate.dropnull
+                    )
                 elif isinstance(aggregate, Min):
                     state[key] = MinState(aggregate.default)
                 elif isinstance(aggregate, Max):
@@ -778,7 +816,7 @@ def get_aggregated_df(
                 elif isinstance(aggregate, Stddev):
                     state[key] = StddevState(aggregate.default)
                 elif isinstance(aggregate, Distinct):
-                    state[key] = DistinctState()
+                    state[key] = DistinctState(aggregate.dropnull)
                 elif isinstance(aggregate, Quantile):
                     state[key] = QuantileState(aggregate.default, aggregate.p)
                 elif isinstance(aggregate, ExpDecaySum):
