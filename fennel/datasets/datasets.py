@@ -2773,32 +2773,30 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
-                if (
-                    get_primitive_dtype_with_optional(dtype)
-                    not in primitive_numeric_types
-                ):
+                primtive_dtype = get_primitive_dtype_with_optional(dtype)
+                allowed_types = primitive_numeric_types + [datetime.date, datetime.datetime]
+                if primtive_dtype not in allowed_types:
                     raise TypeError(
-                        f"invalid min: type of field `{agg.of}` is not int or float"
+                        f"invalid min: type of field `{agg.of}` is not int, float, date or datetime"
                     )
-                if get_primitive_dtype_with_optional(
-                    dtype
-                ) == pd.Int64Dtype and (int(agg.default) != agg.default):
+                if primtive_dtype == pd.Int64Dtype and (
+                    int(agg.default) != agg.default
+                ):
                     raise TypeError(
                         f"invalid min: default value `{agg.default}` not of type `int`"
                     )
                 values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                if (
-                    get_primitive_dtype_with_optional(dtype)
-                    not in primitive_numeric_types
-                ):
+                primtive_dtype = get_primitive_dtype_with_optional(dtype)
+                allowed_types = primitive_numeric_types + [datetime.date, datetime.datetime]
+                if primtive_dtype not in allowed_types:
                     raise TypeError(
-                        f"invalid max: type of field `{agg.of}` is not int or float"
+                        f"invalid max: type of field `{agg.of}` is not int, float, date or datetime"
                     )
-                if get_primitive_dtype_with_optional(
-                    dtype
-                ) == pd.Int64Dtype and (int(agg.default) != agg.default):
+                if primtive_dtype == pd.Int64Dtype and (
+                    int(agg.default) != agg.default
+                ):
                     raise TypeError(
                         f"invalid max: default value `{agg.default}` not of type `int`"
                     )
