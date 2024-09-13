@@ -26,6 +26,8 @@ from typing import (
 import pandas as pd
 from typing_extensions import Literal
 
+
+from fennel.dtypes import Continuous
 from fennel.expr.expr import TypedExpr
 from fennel.expr.visitor import ExprPrinter
 import fennel.gen.index_pb2 as index_proto
@@ -1644,18 +1646,20 @@ class Pipeline:
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
 
-    def set_terminal_node(self, node: _Node) -> bool:
+    def is_terminal_node(self, node: _Node) -> bool:
         if node is None:
             raise Exception(f"Pipeline {self.name} cannot return None.")
         self.terminal_node = node
+        has_continuous_window = False
         if isinstance(node, Aggregate):
             # If any of the aggregates are exponential decay, then it is a terminal node
             if any(isinstance(agg, ExpDecaySum) for agg in node.aggregates):
                 return True
-        return (
-            isinstance(node, Aggregate)
-            and node.emit_strategy == EmitStrategy.Eager
-        )
+            has_continuous_window = any(
+                isinstance(agg.window, Continuous) for agg in node.aggregates
+            )
+
+        return isinstance(node, Aggregate) and has_continuous_window
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -1916,11 +1920,10 @@ class Dataset(_Node[T]):
                     f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
                 )
             names.add(pipeline.name)
-            is_terminal = pipeline.set_terminal_node(
+            is_terminal = pipeline.is_terminal_node(
                 pipeline.func(self, *pipeline.inputs)
             )
-            if is_terminal:
-                self.is_terminal = is_terminal
+            self.is_terminal = is_terminal
             pipelines.append(pipeline)
             pipelines[-1].set_dataset_name(dataset_name)
 
@@ -1959,6 +1962,14 @@ class Dataset(_Node[T]):
             expectation = getattr(method, GE_ATTR_FUNC)
         if expectation is None:
             return None
+
+        # Check that the dataset does not have a terminal aggregate node with Continuous windows
+        if self.is_terminal:
+            raise ValueError(
+                f"Dataset {self._name} has a terminal aggregate node with Continuous windows, we currently dont support expectations on continuous windows."
+                "This is because values are materialized into buckets which are combined at read time."
+            )
+
         # Check that the expectation function only takes 1 parameter: cls.
         sig = inspect.signature(expectation.func)
         if len(sig.parameters) != 1:
@@ -2648,6 +2659,7 @@ class SchemaValidator(Visitor):
                             f"Count unique aggregate `{agg}` must have `of` field."
                         )
                     if not is_hashable(input_schema.get_type(agg.of)):
+                        dtype = input_schema.get_type(agg.of)
                         raise TypeError(
                             f"Cannot use count unique for field `{agg.of}` of "
                             f"type `{dtype_to_string(dtype)}`, as it is not "  # type: ignore
