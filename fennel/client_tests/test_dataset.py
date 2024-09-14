@@ -821,6 +821,10 @@ class MovieRatingTransformed:
         return x.assign("rating_orig", float, lambda df: df["rating_sq"] ** 0.5)
 
 
+def square(x: int) -> int:
+    return x**2
+
+
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingAssign:
@@ -833,9 +837,12 @@ class MovieRatingAssign:
     t: datetime
 
     @pipeline
+    @includes(square)
     @inputs(MovieRating)
     def pipeline_assign(cls, m: Dataset):
-        rating_sq = m.assign("rating_sq", float, lambda df: df["rating"] ** 2)
+        rating_sq = m.assign(
+            "rating_sq", float, lambda df: square(df["rating"])
+        )
         rating_cube = rating_sq.assign(
             "rating_cube", float, lambda df: df["rating_sq"] * df["rating"]
         )
@@ -868,7 +875,7 @@ class MovieRatingAssignExpr:
             rating_into_5=(col("rating") * 5).astype(float),
         )
         rating_transformed = rating_transformed.assign(
-            "some_const", str, lambda df: "some_const"
+            some_const=lit("some_const").astype(str)
         )
         return rating_transformed.drop("num_ratings", "sum_ratings", "rating")
 

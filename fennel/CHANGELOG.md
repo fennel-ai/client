@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.21] - 2024-09-12
+- Raise an error if expectations are defined on terminal datasets.
+
 ## [1.5.20] - 2024-09-10
 - Fix bug in using complex expressions in feature extractor.
 

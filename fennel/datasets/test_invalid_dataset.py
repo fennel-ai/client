@@ -17,7 +17,7 @@ from fennel.datasets import (
     ExpDecaySum,
     index,
 )
-from fennel.dtypes import struct, Window, Continuous, Session
+from fennel.dtypes import struct, Window, Continuous, Session, Hopping
 from fennel.expr import col
 from fennel.lib import (
     meta,
@@ -318,6 +318,78 @@ def test_incorrect_filter_expr_type():
         str(e.value)
         == """Filter expression must return type bool, found float."""
     )
+
+
+def test_expectations_on_aggregated_datasets():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class PositiveRatingActivity:
+            cnt_rating: int
+            movie: str = field(key=True)
+            t: datetime
+
+            @expectations
+            def dataset_expectations(cls):
+                return [
+                    expect_column_values_to_be_between(
+                        column=str(cls.cnt_rating), min_value=0, max_value=100
+                    ),
+                ]
+
+            @pipeline
+            @inputs(RatingActivity)
+            def filter_positive_ratings(cls, rating: Dataset):
+                filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+                filter2 = filtered_ds.filter(
+                    lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+                )
+                return filter2.groupby("movie").aggregate(
+                    [
+                        Count(
+                            window=Continuous("forever"),
+                            into_field=str(cls.cnt_rating),
+                        ),
+                    ],
+                )
+
+    assert (
+        str(e.value)
+        == "Dataset PositiveRatingActivity has a terminal aggregate node with Continuous windows, we currently dont support expectations on continuous windows.This is because values are materialized into buckets which are combined at read time."
+    )
+
+    # Discrete window is fine
+    @meta(owner="test@test.com")
+    @dataset
+    class PositiveRatingActivity2:
+        cnt_rating: int
+        movie: str = field(key=True)
+        t: datetime
+
+        @expectations
+        def dataset_expectations(cls):
+            return [
+                expect_column_values_to_be_between(
+                    column=str(cls.cnt_rating), min_value=0, max_value=100
+                ),
+            ]
+
+        @pipeline
+        @inputs(RatingActivity)
+        def filter_positive_ratings(cls, rating: Dataset):
+            filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+            filter2 = filtered_ds.filter(
+                lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+            )
+            return filter2.groupby("movie").aggregate(
+                [
+                    Count(
+                        window=Hopping("7d", "1d"),
+                        into_field=str(cls.cnt_rating),
+                    ),
+                ],
+            )
 
 
 def test_incorrect_aggregate():
