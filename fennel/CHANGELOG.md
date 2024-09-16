@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.22] - 2024-09-12
+- Add casting to pyarrow for using expression in assign.
+
 ## [1.5.21] - 2024-09-12
 - Raise an error if expectations are defined on terminal datasets.
 

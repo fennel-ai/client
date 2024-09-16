@@ -4794,3 +4794,60 @@ def test_exponential_aggregation(client):
         assert (
             abs(df["rating_exp_agg_7d"].iloc[i] - expected_result_agg[i]) < 1e-3
         ), f"{df['rating_exp_agg_7d'].iloc[i]} != {expected_result_agg[i]}"
+
+
+@pytest.mark.integration
+@mock
+def test_assign_with_aggregation(client):
+
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    @dataset
+    class A:
+        user_id: int
+        value: int
+        ts: datetime
+
+    @dataset(index=True)
+    class B:
+        user_id: int = field(key=True)
+        const: str = field(key=True)
+        sum: int
+        count: int
+        ts: datetime
+
+        @pipeline
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return (
+                event.assign(const=lit("1").astype(str))
+                .groupby("user_id", "const")
+                .aggregate(
+                    sum=Sum(
+                        of="value",
+                        window=Continuous("forever"),
+                    ),
+                    count=Count(
+                        of="value", window=Continuous("forever"), unique=False
+                    ),
+                )
+            )
+
+    client.commit(datasets=[A, B], message="test")
+
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 2, 3],
+            "value": [1, 2, 3],
+            "ts": [now, now, now],
+        }
+    )
+    client.log("fennel_webhook", "A", df)
+    client.sleep()
+
+    results, _ = client.lookup(
+        B,
+        keys=pd.DataFrame({"user_id": [1, 2, 3], "const": [1, 1, 1]}),
+    )
+    assert results["sum"].tolist() == [1, 2, 3]
+    assert results["count"].tolist() == [1, 1, 1]
