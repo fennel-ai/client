@@ -835,9 +835,6 @@ class Executor(Visitor):
 
                 # Check the schema of the column
                 validate_field_in_df(field, df, self.cur_pipeline_name)
-
-                # Cast to arrow dtype
-                df = cast_df_to_arrow_dtype(df, fields)
             except Exception as e:
                 raise Exception(
                     f"Error in assign node for column `{obj.column}` for pipeline "
@@ -858,6 +855,8 @@ class Executor(Visitor):
                         f"Error in assign node for column `{col}` for pipeline "
                         f"`{self.cur_pipeline_name}`, {e}"
                     )
+        # Cast to arrow dtype
+        df = cast_df_to_arrow_dtype(df, fields)
         return NodeRet(
             df,
             input_ret.timestamp_field,
