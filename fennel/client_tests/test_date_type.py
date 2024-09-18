@@ -160,7 +160,9 @@ def test_date_type(client):
     )
     assert response.status_code == requests.codes.OK, response.json()
 
-    now = datetime.now(timezone.utc)
+    # microseconds are dropped when df is converted to json before
+    # passing to backend
+    now = datetime.now(timezone.utc).replace(microsecond=0)
     now_l1d = now - timedelta(days=1)
     now_date = now.date()
     now_l1d_date = now_l1d.date()
