@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.23] - 2024-09-17
+- Fix bug for using lambdas in jupyter notebooks
+
 ## [1.5.22] - 2024-09-12
 - Add casting to pyarrow for using expression in assign.
 
