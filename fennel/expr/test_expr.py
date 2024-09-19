@@ -769,12 +769,12 @@ def test_list():
         ),
         # List contains
         ExprTestCase(
-            expr=(col("a").list.contains(3)),
+            expr=(~col("a").list.contains(3)),
             df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
             schema={"a": List[int]},
-            display="CONTAINS(col('a'), 3)",
+            display="~(CONTAINS(col('a'), 3))",
             refs={"a"},
-            eval_result=[True, False, False],
+            eval_result=[False, True, True],
             expected_dtype=bool,
             proto_json=None,
         ),

@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.25] - 2024-09-24
+- Fix unary operator expressions
+
 ## [1.5.24] - 2024-09-18
 - Add support for aggregation on optional dtype columns
 
