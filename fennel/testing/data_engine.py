@@ -39,7 +39,7 @@ from fennel.expr.expr import Expr, TypedExpr
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
-from fennel.internal_lib.schema import data_schema_check, get_datatype
+from fennel.internal_lib.schema import data_schema_check, get_datatype, get_python_type_from_pd
 from fennel.internal_lib.to_proto import (
     dataset_to_proto,
     get_dataset_core_code,
@@ -172,27 +172,64 @@ def _preproc_df(
     return new_df
 
 
-def _preproc_where_df(
-    df: pd.DataFrame, filter_fn: Callable, ds: Dataset
-) -> pd.DataFrame:
+def _preproc_callable_df(df: pd.DataFrame, callable: Callable, ds: Dataset):
     filter_func_pycode = wrap_function(
         ds._name,
         get_dataset_core_code(ds),
         "",
-        to_includes_proto(filter_fn),
+        to_includes_proto(callable),
         is_filter=True,
     )
-    new_df = df.copy()
     mod = types.ModuleType(filter_func_pycode.entry_point)
     code = filter_func_pycode.imports + "\n" + filter_func_pycode.generated_code
     exec(code, mod.__dict__)
     func = mod.__dict__[filter_func_pycode.entry_point]
     try:
-        new_df = func(new_df)
+        df = func(df)
     except Exception as e:
         raise Exception(
-            f"Error in filter function `{filter_fn.__name__}` for preproc , {e}"
+            f"Error in filter function `{where_val.__name__}` for preproc , {e}"
         )
+    return df
+
+
+def _preproc_where_df(
+    df: pd.DataFrame, where_val: connectors.WhereValue, ds: Dataset
+) -> pd.DataFrame:
+    new_df = df.copy()
+    schema = ds.schema()
+
+    if isinstance(where_val, Callable):
+        new_df = _preproc_callable_df(new_df, where_val, ds)
+    else:
+        assert(isinstance(where_val, connectors.Eval))
+        if where_val.additional_schema:
+            for name, dtype in where_val.additional_schema.items():
+                if name not in df.columns:
+                    raise ValueError(
+                        f"Field `{name}` defined in schema for eval where not found " \
+                        f"in dataframe."
+                    )
+                if dtype != get_python_type_from_pd(schema[name]):
+                    raise ValueError(
+                        f"Field `{name}` defined in schema for eval where has " \
+                        f"different type in the dataframe."
+                    )
+
+        if isinstance(where_val.eval_type, Expr):
+            filtered = where_val.eval_type.eval(
+                new_df, schema
+            )
+            new_df = new_df.iloc[filtered.values.tolist()]
+        elif isinstance(where_val.eval_type, TypedExpr):
+            filtered = where_val.eval_type.expr.eval(
+                new_df, schema
+            )
+            new_df = new_df.iloc[filtered.values.tolist()]
+        else:
+            assert(isinstance(where_val.eval_type, Callable))
+            new_df = _preproc_callable_df(new_df, where_val.eval_type, ds)
+
     return new_df
 
 
@@ -203,7 +240,7 @@ class _SrcInfo:
     bounded: bool
     idleness: Optional[Duration]
     prev_log_time: Optional[datetime] = None
-    where: Optional[Callable] = None
+    where: Optional[connectors.WhereValue] = None
 
 
 @dataclass
@@ -410,14 +447,14 @@ class DataEngine(object):
                 if len(wheres) > 0 and wheres[0] is not None:
                     assert (
                         len(wheres) == 1
-                    ), f"Multiple preproc wheres found for {ds} and {webhook_endpoint}"
+                    ), f"Multiple wheres found for {ds} and {webhook_endpoint}"
                     try:
                         df = _preproc_where_df(
                             df, wheres[0], self.datasets[ds].dataset
                         )
                     except ValueError as e:
                         raise ValueError(
-                            f"Error using filter pre_proc for dataset `{ds}`: {str(e)}",
+                            f"Error using where for dataset `{ds}`: {str(e)}",
                         )
                 # Cast output to pyarrow dtypes
                 df = cast_df_to_schema(df, schema)

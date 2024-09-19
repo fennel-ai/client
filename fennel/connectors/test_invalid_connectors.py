@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from lib2to3.fixes.fix_tuple_params import tuple_name
+import pandas as pd
 from typing import Optional
 
 from fennel.connectors.connectors import Protobuf, ref, eval
@@ -18,6 +19,7 @@ from fennel.connectors import (
     at_timestamp,
     BigQuery,
     S3Connector,
+    Webhook,
 )
 from fennel.datasets import dataset, field
 from fennel.expr import col
@@ -25,6 +27,10 @@ from fennel.lib import meta
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
+
+
+__owner__ = "test@test.com"
+webhook = Webhook(name="fennel_webhook")
 
 mysql = MySQL(
     name="mysql",
@@ -973,5 +979,42 @@ def test_invalid_eval_assign_preproc(client):
 
     assert (
         '`age` is of type `int` in Dataset `UserInfoDataset`, can not be cast to `float`. Full expression: `col("val1")`'
+        == str(e.value)
+    )
+
+
+@mock
+def test_invalid_where(client):
+
+    @source(
+        webhook.endpoint("UserInfoDataset"),
+        cdc="upsert",
+        disorder="14d",
+        env="prod",
+        where=eval(col("age") >= 18, schema={"age": float}),
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        age: int
+        timestamp: datetime = field(timestamp=True)
+
+    client.commit(datasets=[UserInfoDataset], message="test")
+
+    with pytest.raises(Exception) as e:
+        now = datetime.now(timezone.utc)
+        df = pd.DataFrame(
+            {
+                "user_id": [1, 1, 1, 2, 2, 3, 4, 5, 5, 5],
+                "age": [100, 11, 12, 1, 2, 2, 3, 3, 4, 5],
+                "t": [now, now, now, now, now, now, now, now, now, now],
+            }
+        )
+        client.log("fennel_webhook", "UserInfoDataset", df)
+    assert (
+        'Schema validation failed during data insertion to `UserInfoDataset`: ' \
+        'Error using where for dataset `UserInfoDataset`: ' \
+        'Field `age` defined in schema for eval where has different type in the dataframe.'
         == str(e.value)
     )

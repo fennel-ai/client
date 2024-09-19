@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.41] - 2024-10-17
+- Support expressions in where field of source
+
 ## [1.5.40] - 2024-10-05
 - Add changelog operator
 

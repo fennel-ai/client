@@ -178,10 +178,11 @@ of that column on another column.
 
 ### Where
 The `where` field in the source provides a way to filter out some rows from source
-during ingestion. Provide the filter criteria as a lambda function.
+during ingestion. Provide the filter criteria as a lambda function or an
+expression.
 
 <pre snippet="concepts/source#where" status="success" 
-  message="Using lambda to filter during ingestion."
+  message="Using lambda or expression to filter during ingestion."
 ></pre>
 
 ### Since
