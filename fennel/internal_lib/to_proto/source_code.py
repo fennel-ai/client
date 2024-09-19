@@ -321,10 +321,20 @@ def check_ambiguous_lambda(
     """
     # Get the next line and append to lambda text
     next_line = ""
-    with open(lambda_func.__code__.co_filename, "r") as f:
-        lines = f.readlines()
-        if line_num < len(lines):
-            next_line = lines[line_num].strip()
+    try:
+        with open(lambda_func.__code__.co_filename, "r") as f:
+            lines = f.readlines()
+            if line_num < len(lines):
+                next_line = lines[line_num].strip()
+    except Exception:
+        # In jupyter notebook, we don't have co_filename available.
+        # So we are using fennel_get_source to get the source code and try to find the next line.
+        # This is not perfect, and might not work for all cases.
+        src_code = fennel_get_source(lambda_func)
+        num_lines = src_code.count("\n")
+        if num_lines <= 1:
+            return
+        next_line = src_code.split("\n")[1]
 
     # No Next line found
     if next_line == "":
@@ -414,7 +424,7 @@ def get_all_imports() -> str:
         "from fennel.lib.metadata import meta",
         "from fennel.lib import secrets, bucketize",
         "from fennel.datasets.datasets import dataset_lookup",
-        "from fennel.expr import col",
+        "from fennel.expr import col, lit, when",
     ]
 
     gen_code_marker = f"{FENNEL_GEN_CODE_MARKER}=True\n"

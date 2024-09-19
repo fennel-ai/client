@@ -402,9 +402,6 @@ class Client:
         name (str): The name of the branch to delete.
 
         """
-        if name == _MAIN_BRANCH:
-            raise Exception("Cannot delete the main branch.")
-
         cur_branch = self._branch
         self.checkout(name)
         response = self._post_json(f"{V1_API}/delete", {})

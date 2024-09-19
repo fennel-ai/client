@@ -289,12 +289,32 @@ def test_featureset_many_extractors():
 
 
 @mock
+def test_feature_on_feature(client):
+    # docsnip featureset_feature_on_feature
+    from fennel.featuresets import featureset, extractor
+    from fennel.lib import inputs, outputs
+
+    @featureset
+    class Movies:
+        duration: int
+        over_3hrs: bool
+
+        @extractor
+        @inputs("duration")  # docsnip-highlight
+        @outputs("over_3hrs")  # docsnip-highlight
+        def e(cls, ts: pd.Series, durations: pd.Series) -> pd.Series:
+            return pd.Series(name="over_3hrs", data=durations > 3 * 3600)
+
+    # /docsnip
+    client.commit(featuresets=[Movies], message="some commit message")
+
+
+@mock
 def test_multiple_extractors_of_same_feature(client):
     # docsnip featureset_extractors_of_same_feature
     from fennel.featuresets import featureset, extractor
-    from fennel.lib import meta, inputs, outputs
+    from fennel.lib import inputs, outputs
 
-    @meta(owner="aditya@xyz.ai")
     @featureset
     class Movies:
         duration: int

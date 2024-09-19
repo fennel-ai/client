@@ -1,8 +1,7 @@
 from __future__ import annotations
-
+import warnings
 import copy
 import datetime
-import enum
 import functools
 import inspect
 import sys
@@ -27,6 +26,8 @@ from typing import (
 import pandas as pd
 from typing_extensions import Literal
 
+
+from fennel.dtypes import Continuous
 from fennel.expr.expr import TypedExpr
 from fennel.expr.visitor import ExprPrinter
 import fennel.gen.index_pb2 as index_proto
@@ -45,7 +46,6 @@ from fennel.datasets.aggregate import (
     ExpDecaySum,
 )
 from fennel.dtypes.dtypes import (
-    FENNEL_STRUCT,
     get_fennel_struct,
     Window,
     Decimal,
@@ -72,6 +72,7 @@ from fennel.internal_lib.schema import (
     FENNEL_STRUCT_DEPENDENCIES_SRC_CODE,
     get_datatype,
 )
+from fennel.internal_lib.schema.schema import get_primitive_dtype_with_optional
 from fennel.internal_lib.utils import (
     dtype_to_string,
     get_origin,
@@ -303,6 +304,7 @@ class _Node(Generic[T]):
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
         within: Tuple[Duration, Duration] = ("forever", "0s"),
+        fields: Optional[List[str]] = None,
     ) -> Join:
         if not isinstance(other, Dataset) and isinstance(other, _Node):
             raise ValueError(
@@ -311,7 +313,7 @@ class _Node(Generic[T]):
             )
         if not isinstance(other, _Node):
             raise TypeError("Cannot join with a non-dataset object")
-        return Join(self, other, within, how, on, left_on, right_on)
+        return Join(self, other, within, how, on, left_on, right_on, fields)
 
     def rename(self, columns: Dict[str, str]) -> _Node:
         return Rename(self, columns)
@@ -334,6 +336,12 @@ class _Node(Generic[T]):
         ts = self.dsschema().timestamp
         if ts not in cols:
             cols.append(ts)
+        if len(cols) == len(self.dsschema().fields()):
+            warnings.warn(
+                f"Selecting all columns {cols} in the dataset, consider skipping the select operator."
+            )
+            return self
+
         drop_cols = list(
             filter(lambda c: c not in cols, self.dsschema().fields())
         )
@@ -653,7 +661,7 @@ class Aggregate(_Node):
                 values[agg.into_field] = pd.Int64Dtype  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                primitive_dtype = get_primitive_dtype(dtype)
+                primitive_dtype = get_primitive_dtype_with_optional(dtype)
                 if primitive_dtype not in primitive_numeric_types:
                     raise TypeError(
                         f"Cannot sum field {agg.of} of type {dtype_to_string(dtype)}"
@@ -664,19 +672,23 @@ class Aggregate(_Node):
                     values[agg.into_field] = primitive_dtype  # type: ignore
             elif isinstance(agg, Min) or isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                primitive_dtype = get_primitive_dtype(dtype)
+                primitive_dtype = get_primitive_dtype_with_optional(dtype)
                 if primitive_dtype == Decimal:
                     values[agg.into_field] = dtype  # type: ignore
                 else:
                     values[agg.into_field] = primitive_dtype  # type: ignore
             elif isinstance(agg, Distinct):
                 dtype = input_schema.get_type(agg.of)
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Average):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Stddev):
@@ -756,7 +768,7 @@ class GroupBy:
         if self.window_field is not None:
             if along is not None:
                 raise ValueError(
-                    "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+                    "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
                 )
             if len(self.keys) == 0:
                 raise ValueError(
@@ -931,6 +943,7 @@ class Join(_Node):
         on: Optional[List[str]] = None,
         left_on: Optional[List[str]] = None,
         right_on: Optional[List[str]] = None,
+        fields: Optional[List[str]] = None,
         # Currently not supported
         lsuffix: str = "",
         rsuffix: str = "",
@@ -959,6 +972,7 @@ class Join(_Node):
         self.right_on = right_on
         self.within = within
         self.how = how
+        self.fields = fields
         self.lsuffix = lsuffix
         self.rsuffix = rsuffix
         self.node.out_edges.append(self)
@@ -972,6 +986,7 @@ class Join(_Node):
                 self.left_on,
                 self.right_on,
                 self.how,
+                self.fields,
                 self.lsuffix,
                 self.rsuffix,
             )
@@ -983,6 +998,7 @@ class Join(_Node):
             self.right_on,
             self.within,
             self.how,
+            self.fields,
             self.lsuffix,
             self.rsuffix,
         )
@@ -999,6 +1015,8 @@ class Join(_Node):
         right_value_schema: Dict[str, Type] = copy.deepcopy(
             self.dataset.dsschema().values
         )
+
+        right_ts = self.dataset.dsschema().timestamp
 
         rhs_keys = set(self.dataset.dsschema().keys)
         join_keys = set(self.on) if self.on is not None else set(self.right_on)
@@ -1030,14 +1048,41 @@ class Join(_Node):
         if self.how == "left":
             right_value_schema = make_types_optional(right_value_schema)
 
-        # Add right value columns to left schema. Check for column name collisions
+        # If fields is set, check that it contains elements from right schema values and timestamp only
+        if self.fields is not None and len(self.fields) > 0:
+            allowed_col_names = [x for x in right_value_schema.keys()] + [
+                right_ts
+            ]
+            for col_name in self.fields:
+                if col_name not in allowed_col_names:
+                    raise ValueError(
+                        f"fields member `{col_name}` not present in allowed fields {allowed_col_names} of right input "
+                        f"{self.dataset.dsschema().name}"
+                    )
+
+        # Add right value columns to left schema. Check for column name collisions. Filter keys present in fields.
         joined_dsschema = copy.deepcopy(left_dsschema)
         for col, dtype in right_value_schema.items():
             if col in left_schema:
                 raise ValueError(
                     f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
                 )
+            if (
+                self.fields is not None
+                and len(self.fields) > 0
+                and col not in self.fields
+            ):
+                continue
             joined_dsschema.append_value_column(col, dtype)
+
+        # Add timestamp column if present in fields
+        if self.fields is not None and right_ts in self.fields:
+            if self.how == "left":
+                joined_dsschema.append_value_column(
+                    right_ts, Optional[datetime.datetime]
+                )
+            else:
+                joined_dsschema.append_value_column(right_ts, datetime.datetime)
 
         return joined_dsschema
 
@@ -1198,17 +1243,32 @@ def dataset(
             raise ValueError(
                 "When 'index' is set as True then 'offline' or 'online' params can only be set as False."
             )
-        elif not offline and not online:
+        # handling @dataset(index=True) choosing both index
+        elif offline is None and online is None:
             index_obj = Index(
                 type=IndexType.primary,
                 online=True,
                 offline=IndexDuration.forever,
             )
-        elif not offline:
+        # handling @dataset(index=True, offline=False, online=False) choosing none
+        elif (
+            not offline
+            and not online
+            and offline is not None
+            and online is not None
+        ):
+            index_obj = Index(
+                type=IndexType.primary,
+                online=False,
+                offline=IndexDuration.none,
+            )
+        # handling @dataset(index=True, offline=False) choosing only offline index
+        elif offline is not None and not offline:
             index_obj = Index(
                 type=IndexType.primary, online=True, offline=IndexDuration.none
             )
-        else:
+        # handling @dataset(index=True, online=False) choosing only online index
+        elif online is not None and not online:
             index_obj = Index(
                 type=IndexType.primary,
                 online=False,
@@ -1591,18 +1651,20 @@ class Pipeline:
     def signature(self):
         return f"{self._dataset_name}.{self._root}"
 
-    def set_terminal_node(self, node: _Node) -> bool:
+    def is_terminal_node(self, node: _Node) -> bool:
         if node is None:
             raise Exception(f"Pipeline {self.name} cannot return None.")
         self.terminal_node = node
+        has_continuous_window = False
         if isinstance(node, Aggregate):
             # If any of the aggregates are exponential decay, then it is a terminal node
             if any(isinstance(agg, ExpDecaySum) for agg in node.aggregates):
                 return True
-        return (
-            isinstance(node, Aggregate)
-            and node.emit_strategy == EmitStrategy.Eager
-        )
+            has_continuous_window = any(
+                isinstance(agg.window, Continuous) for agg in node.aggregates
+            )
+
+        return isinstance(node, Aggregate) and has_continuous_window
 
     def set_dataset_name(self, ds_name: str):
         self._dataset_name = ds_name
@@ -1863,11 +1925,10 @@ class Dataset(_Node[T]):
                     f"Duplicate pipeline name {pipeline.name} for dataset {dataset_name}."
                 )
             names.add(pipeline.name)
-            is_terminal = pipeline.set_terminal_node(
+            is_terminal = pipeline.is_terminal_node(
                 pipeline.func(self, *pipeline.inputs)
             )
-            if is_terminal:
-                self.is_terminal = is_terminal
+            self.is_terminal = is_terminal
             pipelines.append(pipeline)
             pipelines[-1].set_dataset_name(dataset_name)
 
@@ -1906,6 +1967,14 @@ class Dataset(_Node[T]):
             expectation = getattr(method, GE_ATTR_FUNC)
         if expectation is None:
             return None
+
+        # Check that the dataset does not have a terminal aggregate node with Continuous windows
+        if self.is_terminal:
+            raise ValueError(
+                f"Dataset {self._name} has a terminal aggregate node with Continuous windows, we currently dont support expectations on continuous windows."
+                "This is because values are materialized into buckets which are combined at read time."
+            )
+
         # Check that the expectation function only takes 1 parameter: cls.
         sig = inspect.signature(expectation.func)
         if len(sig.parameters) != 1:
@@ -1941,10 +2010,6 @@ class Dataset(_Node[T]):
     @property
     def fields(self):
         return self._fields
-
-    @property
-    def version(self):
-        return self._version
 
 
 # ---------------------------------------------------------------------
@@ -2093,7 +2158,7 @@ def indices_from_ds(
 
     if index_obj.online:
         online_index = index_proto.OnlineIndex(
-            ds_version=obj.version,
+            ds_version=obj._version,
             ds_name=obj._name,
             index_type=index_type,
             duration=index_proto.IndexDuration(forever="forever"),
@@ -2105,7 +2170,7 @@ def indices_from_ds(
         offline_index = None
     elif index_obj.offline == IndexDuration.forever:
         offline_index = index_proto.OfflineIndex(
-            ds_version=obj.version,
+            ds_version=obj._version,
             ds_name=obj._name,
             index_type=index_type,
             duration=index_proto.IndexDuration(forever="forever"),
@@ -2510,7 +2575,7 @@ class SchemaValidator(Visitor):
     def visitAggregate(self, obj) -> DSSchema:
         # TODO(Aditya): Aggregations should be allowed on only
         # 1. Keyless streams.
-        # 2. Keyed datasets, as long as `along` parameter is provided.
+        # 2. Keyed datasets, as long as `along` parameter is provided or doing forever aggregation.
         # 3. For outputs of window operators.
 
         input_schema = self.visit(obj.node)
@@ -2529,7 +2594,6 @@ class SchemaValidator(Visitor):
                     f"Found dataset with keys `{list(input_schema.keys.keys())}` in pipeline `{self.pipeline_name}`."
                 )
 
-        values: Dict[str, Type] = {}
         if isinstance(obj.along, str):
             along_type = input_schema.values.get(obj.along)
             if along_type is None:
@@ -2546,11 +2610,11 @@ class SchemaValidator(Visitor):
                     f"error with along kwarg of aggregate operator: `{obj.along}` is not of type datetime"
                 )
 
+        values: Dict[str, Type] = {}
         found_discrete = False
         found_non_discrete = False
         lookback = None
         for agg in obj.aggregates:
-
             # If default window is present in groupby then each aggregate spec cannot have window different from
             # groupby window. Either pass them null or pass them same.
             if obj.window_field:
@@ -2599,10 +2663,22 @@ class SchemaValidator(Visitor):
                             f"Count unique aggregate `{agg}` must have `of` field."
                         )
                     if not is_hashable(input_schema.get_type(agg.of)):
+                        dtype = input_schema.get_type(agg.of)
                         raise TypeError(
                             f"Cannot use count unique for field `{agg.of}` of "
                             f"type `{dtype_to_string(dtype)}`, as it is not "  # type: ignore
                             f"hashable"
+                        )
+                if agg.dropnull:
+                    if agg.of is None:
+                        raise ValueError(
+                            f"Count with dropnull aggregate `{agg}` must have `of` field."
+                        )
+                    dtype = input_schema.get_type(agg.of)
+                    if not fennel_is_optional(dtype):
+                        raise ValueError(
+                            f"Cannot use count with dropnull for field `{agg.of}` of type `{dtype_to_string(dtype)}`, "
+                            f"as it is not optional."
                         )
                 values[agg.into_field] = pd.Int64Dtype
             elif isinstance(agg, Distinct):
@@ -2617,55 +2693,86 @@ class SchemaValidator(Visitor):
                         f"type `{dtype_to_string(dtype)}`, as it is not hashable"
                         # type: ignore
                     )
+                if agg.dropnull:
+                    if not fennel_is_optional(dtype):
+                        raise ValueError(
+                            f"Cannot use distinct with dropnull for field `{agg.of}` of type `{dtype_to_string(dtype)}`, "
+                            f"as it is not optional."
+                        )
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Sum):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot sum field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Average):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
+                if agg.dropnull:
+                    if not fennel_is_optional(dtype):
+                        raise ValueError(
+                            f"Cannot use lastK with dropnull for field `{agg.of}` of type `{dtype_to_string(dtype)}`, "
+                            f"as it is not optional."
+                        )
+                if agg.dropnull:
+                    dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
                 values[agg.into_field] = List[list_type]  # type: ignore
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"invalid min: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
-                ):
+                if get_primitive_dtype_with_optional(
+                    dtype
+                ) == pd.Int64Dtype and (int(agg.default) != agg.default):
                     raise TypeError(
                         f"invalid min: default value `{agg.default}` not of type `int`"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"invalid max: type of field `{agg.of}` is not int or float"
                     )
-                if get_primitive_dtype(dtype) == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
-                ):
+                if get_primitive_dtype_with_optional(
+                    dtype
+                ) == pd.Int64Dtype and (int(agg.default) != agg.default):
                     raise TypeError(
                         f"invalid max: default value `{agg.default}` not of type `int`"
                     )
-                values[agg.into_field] = dtype  # type: ignore
+                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Stddev):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot get standard deviation of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
@@ -2673,9 +2780,8 @@ class SchemaValidator(Visitor):
             elif isinstance(agg, Quantile):
                 dtype = input_schema.get_type(agg.of)
                 if (
-                    dtype is pd.Float64Dtype
-                    or dtype is pd.Int64Dtype
-                    or isinstance(dtype, _Decimal)
+                    get_primitive_dtype_with_optional(dtype)
+                    in primitive_numeric_types
                 ):
                     if agg.default is not None:
                         values[agg.into_field] = pd.Float64Dtype  # type: ignore
@@ -2687,7 +2793,10 @@ class SchemaValidator(Visitor):
                     )
             elif isinstance(agg, ExpDecaySum):
                 dtype = input_schema.get_type(agg.of)
-                if get_primitive_dtype(dtype) not in primitive_numeric_types:
+                if (
+                    get_primitive_dtype_with_optional(dtype)
+                    not in primitive_numeric_types
+                ):
                     raise TypeError(
                         f"Cannot take exponential decay sum of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
@@ -2709,7 +2818,7 @@ class SchemaValidator(Visitor):
             found_discrete or obj.emit_strategy == EmitStrategy.Final
         ):
             raise ValueError(
-                "'along' param can only be used with non-discrete windows (Continuous/Forever) and lazy emit strategy."
+                "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
             )
 
         return DSSchema(
@@ -2827,6 +2936,27 @@ class SchemaValidator(Visitor):
                 f'"how" in {output_schema_name} must be either "inner" or "left" for `{output_schema_name}`'
             )
 
+        if obj.fields is not None and len(obj.fields) > 0:
+            allowed_fields = [x for x in right_schema.values.keys()] + [
+                right_schema.timestamp
+            ]
+            for field in obj.fields:
+                if field not in allowed_fields:
+                    raise ValueError(
+                        f"Field `{field}` specified in fields {obj.fields} "
+                        f"doesn't exist in allowed fields {allowed_fields} of "
+                        f"right schema of {output_schema_name}."
+                    )
+
+            if (
+                right_schema.timestamp in obj.fields
+                and right_schema.timestamp in left_schema.fields()
+            ):
+                raise ValueError(
+                    f"Field `{right_schema.timestamp}` specified in fields {obj.fields} "
+                    f"already exists in left schema of {output_schema_name}."
+                )
+
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema
@@ -2920,15 +3050,16 @@ class SchemaValidator(Visitor):
                     raise ValueError(
                         f"invalid assign - {output_schema_name} error in expression for column `{col}`: {str(e)}"
                     )
-                if typed_expr.dtype != expr_type:
+                if not typed_expr.expr.matches_type(
+                    typed_expr.dtype, input_schema.schema()
+                ):
                     printer = ExprPrinter()
                     type_errors.append(
-                        f"'{col}' is of type `{dtype_to_string(typed_expr.dtype)}`, can not be cast to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(typed_expr.expr.root)}`"
+                        f"'{col}' is expected to be of type `{dtype_to_string(typed_expr.dtype)}`, but evaluates to `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(typed_expr.expr.root)}`"
                     )
 
             if len(type_errors) > 0:
                 joined_errors = "\n\t".join(type_errors)
-                print(joined_errors)
                 raise TypeError(
                     f"found type errors in assign node of `{self.dsname}.{self.pipeline_name}`:\n\t{joined_errors}"
                 )
@@ -2966,10 +3097,19 @@ class SchemaValidator(Visitor):
         val_fields = input_schema.values.keys()
         for field in obj.columns:
             if field not in val_fields:
-                raise ValueError(
-                    f"Field `{field}` is a key or timestamp field in schema of "
-                    f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
-                )
+                if (
+                    field == input_schema.timestamp
+                    or field in input_schema.keys
+                ):
+                    raise ValueError(
+                        f"Field `{field}` is a key or timestamp field in schema of "
+                        f"drop node input {input_schema.name}. Value fields are: {list(val_fields)}"
+                    )
+                else:
+                    raise ValueError(
+                        f"Field `{field}` does not exist in schema of drop node input {input_schema.name}"
+                    )
+
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name
         return output_schema
@@ -3003,6 +3143,16 @@ class SchemaValidator(Visitor):
                 raise ValueError(
                     f"invalid select - {output_schema_name} field : `{column}` not found in {input_schema.name}"
                 )
+
+        # If all columns are selected, throw an error since the corresponding
+        # drop operator will get empty columns, returning a server error.
+        selected_columns = set(obj.columns)
+        # Add timestamp field to the selected columns
+        selected_columns.add(timestamp)
+        if len(selected_columns) == len(input_schema.fields()):
+            warnings.warn(
+                f"invalid select - {output_schema_name} has selected all the fields in the dataset `{self.dsname}`. Please remove the select operator."
+            )
 
         output_schema = obj.dsschema()
         output_schema.name = output_schema_name

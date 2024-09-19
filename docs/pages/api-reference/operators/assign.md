@@ -26,8 +26,22 @@ the value of the new column for each row in the dataframe.
 Fennel verifies at runtime that the returned series matches the declared `dtype`.
 </Expandable>
 
+<Expandable title="**kwargs" type="TypedExpression">
+Assign can also be given one or more expressions instead of Python lambdas - it
+can either have expressions or lambdas but not both. Expected types must also be
+present along with each expression (see example). 
+
+Unlike lambda based assign, all type validation and many other errors can be 
+verified at the commit time itself (vs incurring runtime errors).
+</Expandable>
+
 <pre snippet="api-reference/operators/assign#basic" status="success" 
     message="Adding new column 'amount_sq' of type int" highlight="18, 24"
+>
+</pre>
+
+<pre snippet="api-reference/operators/assign#expression" status="success" 
+    message="Adding two new columns using expressions"
 >
 </pre>
 
@@ -45,7 +59,15 @@ Runtime error if the value returned from the lambda isn't a pandas Series of
 the declared type and the same length as the input dataframe.
 </Expandable>
 
+<Expandable title="Invalid expression at import/commit time">
+When using expressions, errors may be raised during the import or commit if types 
+don't match and/or there are other validation errors related to the expressions.
+</Expandable>
+
 <pre snippet="api-reference/operators/assign#incorrect_type" status="error" 
-    message="Runtime error: returns float, not int" highlight="18, 25"
->
+    message="Runtime error: returns float, not int">
 </pre>
+
+<pre snippet="api-reference/operators/assign#incorrect_type_expr" status="error" 
+    message="Import error: age_half is expected to be int but expr evaluates to float"
+> </pre>

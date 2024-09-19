@@ -29,5 +29,7 @@ from fennel.connectors.connectors import (
     ref,
     PreProcValue,
     at_timestamp,
+    Eval,
+    eval,
 )
 import fennel.connectors.kinesis as kinesis

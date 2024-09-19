@@ -258,6 +258,7 @@ class Serializer(Visitor):
                 ),
                 within_low=within_low,
                 within_high=within_high,
+                rhs_fields=obj.fields,
             ),
         )
 

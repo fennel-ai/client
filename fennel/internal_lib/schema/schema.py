@@ -1,10 +1,11 @@
 from __future__ import annotations
-from typing import Dict
+
 import dataclasses
 import re
 import typing
 from datetime import datetime, date
 from decimal import Decimal as PythonDecimal
+from typing import Dict
 from typing import (
     Union,
     Any,
@@ -30,7 +31,12 @@ from fennel.dtypes.dtypes import (
     _Embedding,
     _Decimal,
 )
-from fennel.internal_lib.utils.utils import get_origin, is_user_defined_class
+from fennel.internal_lib.utils.utils import (
+    get_origin,
+    is_user_defined_class,
+    parse_struct_into_dict,
+    parse_datetime_in_value,
+)
 
 FENNEL_STRUCT = "__fennel_struct__"
 FENNEL_STRUCT_SRC_CODE = "__fennel_struct_src_code__"
@@ -53,6 +59,14 @@ def get_primitive_dtype(dtype):
     return dtype
 
 
+def get_primitive_dtype_with_optional(dtype):
+    """Get the primitive type of a dtype with optional fields."""
+    if fennel_is_optional(dtype):
+        return get_primitive_dtype(fennel_get_optional_inner(dtype))
+    else:
+        return get_primitive_dtype(dtype)
+
+
 # Parse a json object into a python object based on the type annotation.
 def parse_json(annotation, json) -> Any:
     if annotation is Any:
@@ -60,6 +74,14 @@ def parse_json(annotation, json) -> Any:
 
     if isinstance(json, frozendict):
         json = dict(json)
+
+    # If json is not an array
+    if (
+        json is None
+        or json is pd.NA
+        or (isinstance(json, (int, float)) and np.isnan(json))
+    ):
+        return pd.NA
 
     origin = get_origin(annotation)
     if origin is not None:
@@ -70,8 +92,10 @@ def parse_json(annotation, json) -> Any:
                     f"Union must be of the form `Union[type, None]`, "
                     f"got `{annotation}`"
                 )
-            if json is None or (not isinstance(json, list) and pd.isna(json)):
-                return None
+            if json is None or (
+                isinstance(json, (int, float)) and pd.isna(json)
+            ):
+                return pd.NA
             return parse_json(args[0], json)
         if origin is list:
             if isinstance(json, np.ndarray):
@@ -144,7 +168,10 @@ def fennel_is_optional(type_):
 
 
 def fennel_get_optional_inner(type_):
-    return typing.get_args(type_)[0]
+    if fennel_is_optional(type_):
+        return typing.get_args(type_)[0]
+    else:
+        return type_
 
 
 def get_datatype(type_: Any) -> schema_proto.DataType:
@@ -251,9 +278,13 @@ def get_python_type_from_pd(type):
     return type
 
 
-def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
+def convert_dtype_to_arrow_type_with_nullable(
+    dtype: schema_proto.DataType, nullable: bool = False
+) -> pa.DataType:
     if dtype.HasField("optional_type"):
-        return convert_dtype_to_arrow_type(dtype.optional_type.of)
+        return convert_dtype_to_arrow_type_with_nullable(
+            dtype.optional_type.of, True
+        )
     elif dtype.HasField("int_type"):
         return pa.int64()
     elif dtype.HasField("double_type"):
@@ -272,28 +303,44 @@ def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
         return pa.decimal128(28, dtype.decimal_type.scale)
     elif dtype.HasField("array_type"):
         return pa.list_(
-            value_type=convert_dtype_to_arrow_type(dtype.array_type.of)
+            value_type=convert_dtype_to_arrow_type_with_nullable(
+                dtype.array_type.of, nullable
+            )
         )
     elif dtype.HasField("map_type"):
-        key_pa_type = convert_dtype_to_arrow_type(dtype.map_type.key)
-        value_pa_type = convert_dtype_to_arrow_type(dtype.map_type.value)
+        key_pa_type = convert_dtype_to_arrow_type_with_nullable(
+            dtype.map_type.key, nullable=False
+        )
+        value_pa_type = convert_dtype_to_arrow_type_with_nullable(
+            dtype.map_type.value, nullable
+        )
         return pa.map_(key_pa_type, value_pa_type, False)
     elif dtype.HasField("embedding_type"):
         embedding_size = dtype.embedding_type.embedding_size
         return pa.list_(pa.float64(), embedding_size)
     elif dtype.HasField("one_of_type"):
-        return convert_dtype_to_arrow_type(dtype.one_of_type.of)
+        return convert_dtype_to_arrow_type_with_nullable(
+            dtype.one_of_type.of, nullable
+        )
     elif dtype.HasField("between_type"):
-        return convert_dtype_to_arrow_type(dtype.between_type.dtype)
+        return convert_dtype_to_arrow_type_with_nullable(
+            dtype.between_type.dtype, nullable
+        )
     elif dtype.HasField("struct_type"):
         fields: List[Tuple[str, pa.DataType]] = []
         for field in dtype.struct_type.fields:
-            fields.append(
-                (field.name, convert_dtype_to_arrow_type(field.dtype))
+            inner = convert_dtype_to_arrow_type_with_nullable(
+                field.dtype, nullable
             )
+            field = pa.field(field.name, inner, nullable)
+            fields.append(field)
         return pa.struct(fields)
     else:
         raise TypeError(f"Invalid dtype: {dtype}.")
+
+
+def convert_dtype_to_arrow_type(dtype: schema_proto.DataType) -> pa.DataType:
+    return convert_dtype_to_arrow_type_with_nullable(dtype)
 
 
 def check_val_is_null(val: Any) -> bool:
@@ -914,4 +961,34 @@ def from_proto(data_type: schema_proto.DataType) -> Any:
     else:
         raise ValueError(f"Unsupported data type field: {field}")
 
-    return None
+
+def cast_col_to_arrow_dtype(
+    series: pd.Series, dtype: schema_proto.DataType
+) -> pd.Series:
+    """
+    This function casts dtype of pd.Series object into pd.ArrowDtype depending on the DataType proto.
+    """
+    if not dtype.HasField("optional_type"):
+        if series.isnull().any():
+            raise ValueError("Null values found in non-optional field.")
+
+    # Let's convert structs into json, this is done because arrow
+    # dtype conversion fails with fennel struct
+    # Parse datetime values
+    if check_dtype_has_struct_type(dtype):
+        series = series.apply(lambda x: parse_struct_into_dict(x, dtype))
+    series = series.apply(lambda x: parse_datetime_in_value(x, dtype))
+    arrow_type = convert_dtype_to_arrow_type_with_nullable(dtype)
+    return series.astype(pd.ArrowDtype(arrow_type))
+
+
+def check_dtype_has_struct_type(dtype: schema_proto.DataType) -> bool:
+    if dtype.HasField("struct_type"):
+        return True
+    elif dtype.HasField("optional_type"):
+        return check_dtype_has_struct_type(dtype.optional_type.of)
+    elif dtype.HasField("array_type"):
+        return check_dtype_has_struct_type(dtype.array_type.of)
+    elif dtype.HasField("map_type"):
+        return check_dtype_has_struct_type(dtype.map_type.value)
+    return False

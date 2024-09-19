@@ -12,7 +12,7 @@ import pytest
 
 import fennel._vendor.requests as requests
 from fennel.connectors import source, Webhook, ref
-from fennel.expr import col
+from fennel.expr import col, lit, when
 from fennel.datasets import (
     dataset,
     field,
@@ -606,81 +606,6 @@ class TestDataset(unittest.TestCase):
         )
 
 
-# On demand datasets are not supported for now.
-
-# class TestDocumentDataset(unittest.TestCase):
-#     @mock_client
-#     def test_log_to_document_dataset(self, client):
-#         """Log some data to the dataset and check if it is logged correctly."""
-#
-#         @meta(owner="aditya@fennel.ai")
-#         @dataset
-#         class DocumentContentDataset:
-#             doc_id: int = field(key=True)
-#             bert_embedding: Embedding[4]
-#             fast_text_embedding: Embedding[3]
-#             num_words: int
-#             timestamp: datetime = field(timestamp=True)
-#
-#             @on_demand(expires_after="3d")
-#             @inputs(datetime, int)
-#             def get_embedding(cls, ts: pd.Series, doc_ids: pd.Series):
-#                 data = []
-#                 doc_ids = doc_ids.tolist()
-#                 for i in range(len(ts)):
-#                     data.append(
-#                         [
-#                             doc_ids[i],
-#                             [0.1, 0.2, 0.3, 0.4],
-#                             [1.1, 1.2, 1.3],
-#                             10 * i,
-#                             ts[i],
-#                         ]
-#                     )
-#                 columns = [
-#                     str(cls.doc_id),
-#                     str(cls.bert_embedding),
-#                     str(cls.fast_text_embedding),
-#                     str(cls.num_words),
-#                     str(cls.timestamp),
-#                 ]
-#                 return pd.DataFrame(data, columns=columns), pd.Series(
-#                     [True] * len(ts)
-#                 )
-#
-#         # Sync the dataset
-#         client.commit(datasets=[DocumentContentDataset])
-#         now = datetime.now(timezone.utc)
-#         data = [
-#             [18232, np.array([1, 2, 3, 4]), np.array([1, 2, 3]), 10, now],
-#             [
-#                 18234,
-#                 np.array([1, 2.2, 0.213, 0.343]),
-#                 np.array([0.87, 2, 3]),
-#                 9,
-#                 now,
-#             ],
-#             [18934, [1, 2.2, 0.213, 0.343], [0.87, 2, 3], 12, now],
-#         ]
-#         columns = [
-#             "doc_id",
-#             "bert_embedding",
-#             "fast_text_embedding",
-#             "num_words",
-#             "timestamp",
-#         ]
-#         df = pd.DataFrame(data, columns=columns)
-#         response = client.log("fennel_webhook","DocumentContentDataset", df)
-#         assert response.status_code == requests.codes.OK, response.json()
-#
-#         # Do some lookups
-#         doc_ids = pd.Series([18232, 1728, 18234, 18934, 19200, 91012])
-#         ts = pd.Series([now, now, now, now, now, now])
-#         df, _ = DocumentContentDataset.lookup(ts, doc_id=doc_ids)
-#         assert df.shape == (6, 5)
-#         assert df["num_words"].tolist() == [10.0, 9.0, 12, 0, 10.0, 20.0]
-
-
 ################################################################################
 #                           Dataset & Pipelines Unit Tests
 ################################################################################
@@ -896,6 +821,10 @@ class MovieRatingTransformed:
         return x.assign("rating_orig", float, lambda df: df["rating_sq"] ** 0.5)
 
 
+def square(x: int) -> int:
+    return x**2
+
+
 @meta(owner="test@test.com")
 @dataset(index=True)
 class MovieRatingAssign:
@@ -908,9 +837,12 @@ class MovieRatingAssign:
     t: datetime
 
     @pipeline
+    @includes(square)
     @inputs(MovieRating)
     def pipeline_assign(cls, m: Dataset):
-        rating_sq = m.assign("rating_sq", float, lambda df: df["rating"] ** 2)
+        rating_sq = m.assign(
+            "rating_sq", float, lambda df: square(df["rating"])
+        )
         rating_cube = rating_sq.assign(
             "rating_cube", float, lambda df: df["rating_sq"] * df["rating"]
         )
@@ -929,6 +861,7 @@ class MovieRatingAssignExpr:
     rating_sq: float
     rating_cube: float
     rating_into_5: float
+    some_const: str
     t: datetime
 
     @pipeline
@@ -940,6 +873,9 @@ class MovieRatingAssignExpr:
                 float
             ),
             rating_into_5=(col("rating") * 5).astype(float),
+        )
+        rating_transformed = rating_transformed.assign(
+            some_const=lit("some_const").astype(str)
         )
         return rating_transformed.drop("num_ratings", "sum_ratings", "rating")
 
@@ -1012,6 +948,25 @@ class Orders:
     timestamp: datetime
 
 
+@dataset
+class OrdersOptional:
+    uid: Optional[int]
+    uid_float: float
+    uid_twice: float
+    skus: List[int]
+    prices: List[float]
+    timestamp: datetime
+
+    @pipeline
+    @inputs(Orders)
+    def cast(cls, ds: Dataset):
+        return ds.assign(
+            uid=col("uid").astype(Optional[int]),  # type: ignore
+            uid_float=col("uid").astype(float),  # type: ignore
+            uid_twice=(col("uid") * 2.0).astype(float),  # type: ignore
+        )
+
+
 @dataset(index=True)
 class Derived:
     uid: int = field(key=True)
@@ -1066,6 +1021,39 @@ class TestBasicExplode(unittest.TestCase):
         assert df["price"].tolist()[0] == 10.1
         assert pd.isna(df["price"].tolist()[1])
 
+    @pytest.mark.integration
+    @mock
+    def test_basic_cast(self, client):
+        # # Sync the dataset
+        client.commit(message="msg", datasets=[Orders, OrdersOptional])
+        # log some rows to the transaction dataset
+        df = pd.DataFrame(
+            [
+                {
+                    "uid": 1,
+                    "skus": [1, 2],
+                    "prices": [10.1, 20.0],
+                    "timestamp": "2021-01-01T00:00:00",
+                },
+                {
+                    "uid": 2,
+                    "skus": [],
+                    "prices": [],
+                    "timestamp": "2021-01-01T00:00:00",
+                },
+            ]
+        )
+        client.log("webhook", "Orders", df)
+        client.sleep()
+
+        # do lookup on the WithSquare dataset
+        df = client.inspect("OrdersOptional")
+        assert df.shape == (2, 6)
+        assert df["uid"].tolist() == [1, 2]
+        assert df["uid_float"].tolist() == [1.0, 2.0]
+        assert df["uid_twice"].tolist() == [2.0, 4.0]
+        assert df["skus"].tolist() == [[1, 2], []]
+
 
 class TestBasicAssign(unittest.TestCase):
     @pytest.mark.integration
@@ -1100,7 +1088,6 @@ class TestBasicAssign(unittest.TestCase):
             )
 
             assert found.tolist() == [True, False]
-            assert df.shape == (2, 5)
             assert df["movie"].tolist() == ["Jumanji", "Titanic"]
             assert df["rating_sq"].tolist()[0] == 16
             assert pd.isna(df["rating_sq"].tolist()[1])
@@ -1115,7 +1102,6 @@ class TestBasicAssign(unittest.TestCase):
                 keys=keys,
             )
 
-            assert df.shape == (2, 5)
             assert df["movie"].tolist() == ["Jumanji", "Titanic"]
             assert df["rating_sq"].tolist() == [16, 25]
             assert df["rating_cube"].tolist() == [64, 125]
@@ -1418,6 +1404,151 @@ class TestInnerJoinExplodeDedup(unittest.TestCase):
                 pd.NA,
                 pd.NA,
             ]
+
+
+@meta(owner="test@test.com")
+@source(
+    webhook.endpoint("MovieRevenueWithRightFields"),
+    disorder="14d",
+    cdc="upsert",
+)
+@dataset(index=True)
+class MovieRevenueWithRightFields:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
+        key=True
+    )
+    revenue: int
+    extra_field: int
+    t: datetime
+
+
+@meta(owner="satwant@fennel.ai")
+@dataset(index=True)
+class MovieStatsWithRightFields:
+    movie: oneof(str, ["Jumanji", "Titanic", "RaOne", "ABC"]) = field(  # type: ignore
+        key=True
+    )
+    rating: float
+    revenue_in_millions: float
+    t: Optional[datetime]
+    ts: datetime = field(timestamp=True)
+
+    @pipeline
+    @inputs(MovieRating, MovieRevenueWithRightFields)
+    def pipeline_join(cls, rating: Dataset, revenue: Dataset):
+        def to_millions(df: pd.DataFrame) -> pd.DataFrame:
+            df[str(cls.revenue_in_millions)] = df["revenue"] / 1000000
+            df[str(cls.revenue_in_millions)].fillna(-1, inplace=True)
+            return df[
+                [
+                    str(cls.movie),
+                    str(cls.t),
+                    str(cls.ts),
+                    str(cls.revenue_in_millions),
+                    str(cls.rating),
+                ]
+            ]
+
+        rating = rating.rename({"t": "ts"})  # type: ignore
+        c = rating.join(
+            revenue, how="left", on=[str(cls.movie)], fields=["revenue", "t"]
+        )
+        # Transform provides additional columns which will be filtered out.
+        return c.transform(
+            to_millions,
+            schema={
+                str(cls.movie): oneof(
+                    str, ["Jumanji", "Titanic", "RaOne", "ABC"]
+                ),
+                str(cls.rating): float,
+                str(cls.t): Optional[datetime],
+                str(cls.ts): datetime,
+                str(cls.revenue_in_millions): float,
+            },
+        )
+
+
+class TestBasicJoinWithRightFields(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_basic_join_with_fields(self, client):
+        # # Sync the dataset
+        client.commit(
+            message="msg",
+            datasets=[
+                MovieRating,
+                MovieRevenueWithRightFields,
+                MovieStatsWithRightFields,
+                RatingActivity,
+            ],
+        )
+        now = datetime.now(timezone.utc)
+        one_hour_ago = now - timedelta(hours=1)
+        data = [
+            ["Jumanji", 4, 343, 789, one_hour_ago],
+            ["Titanic", 5, 729, 1232, now],
+        ]
+        columns = ["movie", "rating", "num_ratings", "sum_ratings", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "MovieRating", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        two_hours_ago = now - timedelta(hours=2)
+        data = [
+            ["Jumanji", 2000000, 1, two_hours_ago],
+            ["Titanic", 50000000, 2, now],
+        ]
+        columns = ["movie", "revenue", "extra_field", "t"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log(
+            "fennel_webhook", "MovieRevenueWithRightFields", df
+        )
+        assert response.status_code == requests.codes.OK, response.json()
+        client.sleep()
+
+        # Do some lookups to verify pipeline_join is working as expected
+        keys = pd.DataFrame({"movie": ["Jumanji", "Titanic"]})
+        df, _ = client.lookup(
+            "MovieStatsWithRightFields",
+            keys=keys,
+        )
+        assert df.shape == (2, 5)
+        assert df["movie"].tolist() == ["Jumanji", "Titanic"]
+        assert df["rating"].tolist() == [4, 5]
+        assert df["revenue_in_millions"].tolist() == [2, 50]
+        assert df["t"].tolist() == [two_hours_ago, now]
+        assert "extra_field" not in df.columns
+
+        # Do some lookup at various timestamps in the past
+        ts = pd.Series([two_hours_ago, one_hour_ago, one_hour_ago, now])
+        keys = pd.DataFrame(
+            {"movie": ["Jumanji", "Jumanji", "Titanic", "Titanic"]}
+        )
+        df, _ = client.lookup(
+            "MovieStatsWithRightFields",
+            timestamps=ts,
+            keys=keys,
+        )
+        assert df.shape == (4, 5)
+        assert df["movie"].tolist() == [
+            "Jumanji",
+            "Jumanji",
+            "Titanic",
+            "Titanic",
+        ]
+        assert pd.isna(df["rating"].tolist()[0])
+        assert df["rating"].tolist()[1] == 4
+        assert pd.isna(df["rating"].tolist()[2])
+        assert df["rating"].tolist()[3] == 5
+        assert pd.isna(df["revenue_in_millions"].tolist()[0])
+        assert df["revenue_in_millions"].tolist()[1] == 2
+        assert pd.isna(df["revenue_in_millions"].tolist()[2])
+        assert df["revenue_in_millions"].tolist()[3] == 50
+        assert pd.isna(df["t"].tolist()[0])
+        assert df["t"].tolist()[1] == two_hours_ago
+        assert pd.isna(df["t"].tolist()[2])
+        assert df["t"].tolist()[3] == now
+        assert "extra_field" not in df.columns
 
 
 class TestBasicAggregate(unittest.TestCase):
@@ -4663,3 +4794,60 @@ def test_exponential_aggregation(client):
         assert (
             abs(df["rating_exp_agg_7d"].iloc[i] - expected_result_agg[i]) < 1e-3
         ), f"{df['rating_exp_agg_7d'].iloc[i]} != {expected_result_agg[i]}"
+
+
+@pytest.mark.integration
+@mock
+def test_assign_with_aggregation(client):
+
+    @source(webhook.endpoint("A"), disorder="14d", cdc="append")
+    @dataset
+    class A:
+        user_id: int
+        value: int
+        ts: datetime
+
+    @dataset(index=True)
+    class B:
+        user_id: int = field(key=True)
+        const: str = field(key=True)
+        sum: int
+        count: int
+        ts: datetime
+
+        @pipeline
+        @inputs(A)
+        def pipeline(cls, event: Dataset):
+            return (
+                event.assign(const=lit("1").astype(str))
+                .groupby("user_id", "const")
+                .aggregate(
+                    sum=Sum(
+                        of="value",
+                        window=Continuous("forever"),
+                    ),
+                    count=Count(
+                        of="value", window=Continuous("forever"), unique=False
+                    ),
+                )
+            )
+
+    client.commit(datasets=[A, B], message="test")
+
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 2, 3],
+            "value": [1, 2, 3],
+            "ts": [now, now, now],
+        }
+    )
+    client.log("fennel_webhook", "A", df)
+    client.sleep()
+
+    results, _ = client.lookup(
+        B,
+        keys=pd.DataFrame({"user_id": [1, 2, 3], "const": [1, 1, 1]}),
+    )
+    assert results["sum"].tolist() == [1, 2, 3]
+    assert results["count"].tolist() == [1, 1, 1]

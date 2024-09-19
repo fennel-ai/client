@@ -1,8 +1,7 @@
 import copy
 import logging
-import types
 import math
-
+import types
 from collections import defaultdict
 from dataclasses import dataclass
 from dataclasses import field
@@ -31,16 +30,16 @@ from fennel.datasets import (
     Pipeline,
     Quantile,
     Stddev,
-    ExpDecaySum,
 )
 from fennel.datasets.datasets import (
     get_index,
     IndexDuration,
 )
+from fennel.expr.expr import Expr, TypedExpr
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.dataset_pb2 import CoreDataset
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
-from fennel.internal_lib.schema import data_schema_check
+from fennel.internal_lib.schema import data_schema_check, get_datatype
 from fennel.internal_lib.to_proto import (
     dataset_to_proto,
     get_dataset_core_code,
@@ -59,6 +58,8 @@ from fennel.testing.test_utils import (
     FENNEL_LOOKUP,
     FENNEL_TIMESTAMP,
     FENNEL_ORDER,
+    cast_col_to_arrow_dtype,
+    cast_col_to_pandas_dtype,
 )
 
 TEST_PORT = 50051
@@ -89,9 +90,17 @@ def internal_webhook_endpoint(dataset: Dataset):
 
 
 def _preproc_df(
-    df: pd.DataFrame, pre_proc: Dict[str, connectors.PreProcValue]
+    dataset: Dataset,
+    df: pd.DataFrame,
+    pre_proc: Dict[str, connectors.PreProcValue],
 ) -> pd.DataFrame:
     new_df = df.copy()
+    schema = dataset.schema()
+    # Remove the fields that are created in preproc
+    for col in pre_proc.keys():
+        if col in schema:
+            del schema[col]
+
     for col, pre_proc_value in pre_proc.items():
         if isinstance(pre_proc_value, connectors.Ref):
             col_name = pre_proc_value.name
@@ -100,6 +109,61 @@ def _preproc_df(
                     f"Referenced column {col_name} not found in dataframe"
                 )
             new_df[col] = df[col_name]
+        elif isinstance(pre_proc_value, connectors.Eval):
+            input_schema = copy.deepcopy(schema)
+
+            # try casting the column in dataframe according to schema defined in additional schema in eval preproc
+            if pre_proc_value.additional_schema:
+                for name, dtype in pre_proc_value.additional_schema.items():
+                    if name not in df.columns:
+                        raise ValueError(
+                            f"Field `{name}` defined in schema for eval preproc not found in dataframe."
+                        )
+                    try:
+                        new_df[name] = cast_col_to_arrow_dtype(
+                            new_df[name], get_datatype(dtype)
+                        )
+                        new_df[name] = cast_col_to_pandas_dtype(
+                            new_df[name], get_datatype(dtype)
+                        )
+                    except Exception as e:
+                        raise ValueError(
+                            f"Casting column in dataframe for field `{name}` defined in schema for eval preproc failed : {e}"
+                        )
+                    input_schema[name] = dtype
+
+            try:
+                if isinstance(pre_proc_value.eval_type, Expr):
+                    new_df[col] = pre_proc_value.eval_type.eval(
+                        new_df, input_schema
+                    )
+                elif isinstance(pre_proc_value.eval_type, TypedExpr):
+                    new_df[col] = pre_proc_value.eval_type.expr.eval(
+                        new_df, input_schema
+                    )
+                else:
+                    assign_func_pycode = wrap_function(
+                        dataset._name,
+                        get_dataset_core_code(dataset),
+                        "",
+                        to_includes_proto(pre_proc_value.eval_type),
+                        column_name=col,
+                        is_assign=True,
+                    )
+                    assign_df = new_df.copy()
+                    mod = types.ModuleType(assign_func_pycode.entry_point)
+                    code = (
+                        assign_func_pycode.imports
+                        + "\n"
+                        + assign_func_pycode.generated_code
+                    )
+                    exec(code, mod.__dict__)
+                    func = mod.__dict__[assign_func_pycode.entry_point]
+                    new_df = func(assign_df)
+            except Exception as e:
+                raise Exception(
+                    f"Error in assign preproc for field `{col}` for dataset `{dataset._name}`: {e} "
+                )
         else:
             if isinstance(pre_proc_value, datetime):
                 new_df[col] = parse_datetime(pre_proc_value)
@@ -329,7 +393,9 @@ class DataEngine(object):
                         len(preproc) == 1
                     ), f"Multiple preproc found for {ds} and {webhook_endpoint}"
                     try:
-                        df = _preproc_df(df, preproc[0])
+                        df = _preproc_df(
+                            self.datasets[ds].dataset, df, preproc[0]
+                        )
                     except ValueError as e:
                         raise ValueError(
                             f"Error using pre_proc for dataset `{ds}`: {str(e)}",

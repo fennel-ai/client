@@ -128,3 +128,78 @@ class TestFilterSnips(unittest.TestCase):
             Filtered.lookup(
                 pd.Series([datetime(2021, 1, 1, 0, 0, 0)]), uid=pd.Series([1])
             )
+
+    @mock
+    def test_basic_expr(self, client):
+        # docsnip basic_expr
+        from fennel.datasets import dataset, field, pipeline, Dataset
+        from fennel.lib import inputs
+        from fennel.connectors import source, Webhook
+
+        # docsnip-highlight next-line
+        from fennel.expr import col
+
+        webhook = Webhook(name="webhook")
+
+        @source(webhook.endpoint("User"), disorder="14d", cdc="upsert")
+        @dataset
+        class User:
+            uid: int = field(key=True)
+            city: str
+            signup_time: datetime
+
+        @dataset(index=True)
+        class Filtered:
+            uid: int = field(key=True)
+            city: str
+            signup_time: datetime
+
+            @pipeline
+            @inputs(User)
+            def my_pipeline(cls, user: Dataset):
+                # docsnip-highlight next-line
+                return user.filter(col("city") != "London")
+
+        # /docsnip
+
+        client.commit(message="some msg", datasets=[User, Filtered])
+        # log some rows to the transaction dataset
+        client.log(
+            "webhook",
+            "User",
+            pd.DataFrame(
+                [
+                    {
+                        "uid": 1,
+                        "city": "London",
+                        "signup_time": "2021-01-01T00:00:00",
+                    },
+                    {
+                        "uid": 2,
+                        "city": "San Francisco",
+                        "signup_time": "2021-01-01T00:00:00",
+                    },
+                    {
+                        "uid": 3,
+                        "city": "New York",
+                        "signup_time": "2021-01-01T00:00:00",
+                    },
+                ]
+            ),
+        )
+        # do lookup on the WithSquare dataset
+        ts = pd.Series(
+            [
+                datetime(2021, 1, 1, 0, 0, 0),
+                datetime(2021, 1, 1, 0, 0, 0),
+                datetime(2021, 1, 1, 0, 0, 0),
+            ]
+        )
+        df, found = Filtered.lookup(ts, uid=pd.Series([1, 2, 3]))
+        assert found.tolist() == [False, True, True]
+        assert df["uid"].tolist()[1:] == [2, 3]
+        assert df["city"].tolist()[1:] == ["San Francisco", "New York"]
+        assert df["signup_time"].tolist()[1:] == [
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+            datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
+        ]

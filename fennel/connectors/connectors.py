@@ -4,12 +4,23 @@ import copy
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Callable, List, Optional, TypeVar, Union, Tuple, Dict
-from typing import Literal
+from typing import (
+    Any,
+    Callable,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+    Tuple,
+    Dict,
+    Type,
+    Literal,
+)
 
 from fennel._vendor.pydantic import BaseModel, Field  # type: ignore
 from fennel._vendor.pydantic import validator  # type: ignore
 from fennel.connectors.kinesis import at_timestamp
+from fennel.expr.expr import Expr, TypedExpr
 from fennel.internal_lib.duration import (
     Duration,
 )
@@ -32,11 +43,27 @@ class Ref(BaseModel):
     name: str
 
 
+@dataclass
+class Eval:
+    eval_type: Union[Callable, Expr, TypedExpr]
+    additional_schema: Optional[Dict[str, Type]] = None
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
 def ref(ref_name: str) -> PreProcValue:
     return Ref(name=ref_name)
 
 
-PreProcValue = Union[Ref, Any]
+def eval(
+    eval_type: Union[Callable, Expr, TypedExpr],
+    schema: Optional[Dict[str, Type]] = None,
+) -> PreProcValue:
+    return Eval(eval_type=eval_type, additional_schema=schema)
+
+
+PreProcValue = Union[Ref, Any, Eval]
 
 
 def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
@@ -178,32 +205,64 @@ def source(
 
 def sink(
     conn: DataConnector,
-    cdc: str,
+    cdc: Optional[str] = None,
+    every: Optional[Duration] = None,
+    how: Optional[Literal["incremental", "recreate"] | SnapshotData] = None,
+    renames: Optional[Dict[str, str]] = {},
+    since: Optional[datetime] = None,
+    until: Optional[datetime] = None,
     env: Optional[Union[str, List[str]]] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
-            raise TypeError("Expected a DataSource, found %s" % type(conn))
-        raise TypeError(
+            raise ValueError("Expected a DataSource, found %s" % type(conn))
+        raise ValueError(
             f"{conn.name} does not specify required fields "
             f"{', '.join(conn.required_fields())}."
         )
 
-    if not isinstance(conn, KafkaConnector):
-        raise TypeError(
-            "Sink only support Kafka Connector, found %s" % type(conn)
+    if not isinstance(conn, KafkaConnector) and not isinstance(
+        conn, S3Connector
+    ):
+        raise ValueError(
+            "Sink is only supported for Kafka and S3, found %s" % type(conn)
         )
 
-    if cdc != "debezium":
-        raise TypeError('Sink only support "debezium" cdc, found %s' % cdc)
+    if isinstance(conn, KafkaConnector):
+        if cdc != "debezium":
+            raise ValueError('Sink only support "debezium" cdc, found %s' % cdc)
 
-    if conn.format != "json":
-        raise TypeError(
-            'Sink only support "json" format for now, found %s' % cdc
-        )
+        if conn.format != "json":
+            raise ValueError(
+                'Sink only support "json" format for now, found %s' % cdc
+            )
+    if isinstance(conn, S3Connector):
+        if cdc:
+            raise ValueError("CDC shouldn't be set for S3 sink")
+        if conn.format != "delta":
+            raise ValueError("Only Delta format supported for S3 sink")
+        if how != "incremental":
+            raise ValueError("Only Incremental style supported for S3 sink")
+        if not isinstance(conn.data_source, S3):
+            raise ValueError("S3 specifications not defined for S3 sink")
+        if (
+            conn.data_source.aws_access_key_id
+            or conn.data_source.aws_access_key_id
+            or conn.data_source.role_arn
+        ):
+            raise ValueError(
+                "S3 sink only supports data access through Fennel DataAccess IAM Role"
+            )
 
     def decorator(dataset_cls: T):
         conn.cdc = cdc
+        conn.every = every
+        conn.how = how
+        conn.renames = renames
+        # Always pass this as True for now
+        conn.create = True
+        conn.since = since
+        conn.until = until
         conn.envs = EnvSelector(env)
         connectors = getattr(dataset_cls, SINK_FIELD, [])
         connectors.append(conn)
@@ -608,13 +667,18 @@ class PubSub(DataSource):
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------
+class SnapshotData:
+    marker: str
+    num_retain: int
+
+
 class DataConnector:
     """DataConnector is a fully specified data source or sink. It contains
     all the fields required to fetch data from a source or sink. DataConnectors
     are only created by code and are attached to a dataset."""
 
     data_source: DataSource
-    cdc: str
+    cdc: Optional[str] = None
     every: Optional[Duration] = None
     disorder: Optional[Duration] = None
     since: Optional[datetime] = None
@@ -624,6 +688,9 @@ class DataConnector:
     bounded: bool = False
     idleness: Optional[Duration] = None
     where: Optional[Callable] = None
+    how: Optional[Literal["incremental", "recreate"] | SnapshotData] = None
+    create: Optional[bool] = None
+    renames: Optional[Dict[str, str]] = {}
 
     def identifier(self):
         raise NotImplementedError
@@ -866,3 +933,12 @@ class PubSubConnector(DataConnector):
 
     def identifier(self) -> str:
         return f"{self.data_source.identifier()}(topic={self.topic_id}, format={self.format})"
+
+
+def is_table_source(con: DataConnector) -> bool:
+    if isinstance(
+        con,
+        (KinesisConnector, PubSubConnector, KafkaConnector, WebhookConnector),
+    ):
+        return False
+    return True

@@ -1,5 +1,50 @@
 # Changelog
 
+## [1.5.25] - 2024-09-24
+- Fix unary operator expressions
+
+## [1.5.24] - 2024-09-18
+- Add support for aggregation on optional dtype columns
+
+## [1.5.23] - 2024-09-17
+- Fix bug for using lambdas in jupyter notebooks
+
+## [1.5.22] - 2024-09-12
+- Add casting to pyarrow for using expression in assign.
+
+## [1.5.21] - 2024-09-12
+- Raise an error if expectations are defined on terminal datasets.
+
+## [1.5.20] - 2024-09-10
+- Fix bug in using complex expressions in feature extractor.
+
+## [1.5.19] - 2024-09-06
+- Add ability to specify fields in join
+
+## [1.5.18] - 2024-09-05
+- Struct initializer + arrow fixes + type promotion in assign
+
+## [1.5.17] - 2024-09-04
+- Add support for several more expressions
+
+## [1.5.16] - 2024-08-29
+- Add assign in preproc.
+
+## [1.5.15] - 2024-09-01
+- Allow version to be used as field in dataset
+
+## [1.5.14] - 2024-08-29
+- Add support for S3 batch sink
+
+## [1.5.13] - 2024-08-29
+- Allow not passing a column for optional types in struct
+
+## [1.5.12] - 2024-08-29
+- Add support for timestamp dtype parsing in case of non timestamp field.
+
+## [1.5.8] - 2024-08-23
+- Fix selection of indexes from dataset decorator
+
 ## [1.5.7] - 2024-08-21
 - Fix proto for lookback
 

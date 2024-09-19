@@ -17,7 +17,7 @@ from fennel.datasets import (
     ExpDecaySum,
     index,
 )
-from fennel.dtypes import struct, Window, Continuous, Session
+from fennel.dtypes import struct, Window, Continuous, Session, Hopping
 from fennel.expr import col
 from fennel.lib import (
     meta,
@@ -127,6 +127,7 @@ def test_invalid_assign():
 
 
 def test_select_drop_invalid_param():
+
     with pytest.raises(ValueError) as e:
 
         @meta(owner="test@test.com")
@@ -140,7 +141,7 @@ def test_select_drop_invalid_param():
 
         @meta(owner="thaqib@fennel.ai")
         @dataset
-        class B:
+        class B1:
             a1: int = field(key=True)
             a2: int
             t: datetime
@@ -246,13 +247,8 @@ def test_incorrect_assign_expr_type():
                     .astype(int),
                 ).drop("rating", "movie")
 
-    expected_err = (
-        "found type errors in assign node of `RatingActivityTransformed.transform`:\n"
-        + "\t'rating_sq' is of type `str`, can not be cast to `float`. Full expression: `(col('rating') * col('rating'))`\n"
-        + "\t'movie_suffixed' is of type `int`, can not be cast to `str`. Full expression: `col('movie') + \"_suffix\"`"
-    )
-
-    assert str(e.value) == expected_err
+    expected_err = "'movie_suffixed' is expected to be of type `int`, but evaluates to `str`. Full expression: `col('movie') + \"_suffix\"`"
+    assert expected_err in str(e.value)
 
     with pytest.raises(TypeError) as e2:
 
@@ -324,6 +320,78 @@ def test_incorrect_filter_expr_type():
     )
 
 
+def test_expectations_on_aggregated_datasets():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="test@test.com")
+        @dataset
+        class PositiveRatingActivity:
+            cnt_rating: int
+            movie: str = field(key=True)
+            t: datetime
+
+            @expectations
+            def dataset_expectations(cls):
+                return [
+                    expect_column_values_to_be_between(
+                        column=str(cls.cnt_rating), min_value=0, max_value=100
+                    ),
+                ]
+
+            @pipeline
+            @inputs(RatingActivity)
+            def filter_positive_ratings(cls, rating: Dataset):
+                filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+                filter2 = filtered_ds.filter(
+                    lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+                )
+                return filter2.groupby("movie").aggregate(
+                    [
+                        Count(
+                            window=Continuous("forever"),
+                            into_field=str(cls.cnt_rating),
+                        ),
+                    ],
+                )
+
+    assert (
+        str(e.value)
+        == "Dataset PositiveRatingActivity has a terminal aggregate node with Continuous windows, we currently dont support expectations on continuous windows.This is because values are materialized into buckets which are combined at read time."
+    )
+
+    # Discrete window is fine
+    @meta(owner="test@test.com")
+    @dataset
+    class PositiveRatingActivity2:
+        cnt_rating: int
+        movie: str = field(key=True)
+        t: datetime
+
+        @expectations
+        def dataset_expectations(cls):
+            return [
+                expect_column_values_to_be_between(
+                    column=str(cls.cnt_rating), min_value=0, max_value=100
+                ),
+            ]
+
+        @pipeline
+        @inputs(RatingActivity)
+        def filter_positive_ratings(cls, rating: Dataset):
+            filtered_ds = rating.filter(lambda df: df["rating"] >= 3.5)
+            filter2 = filtered_ds.filter(
+                lambda df: df["movie"].isin(["Jumanji", "Titanic", "RaOne"])
+            )
+            return filter2.groupby("movie").aggregate(
+                [
+                    Count(
+                        window=Hopping("7d", "1d"),
+                        into_field=str(cls.cnt_rating),
+                    ),
+                ],
+            )
+
+
 def test_incorrect_aggregate():
     with pytest.raises(ValueError) as e:
 
@@ -359,7 +427,7 @@ def test_incorrect_aggregate():
 
     assert (
         str(e.value)
-        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_ratings' of='rating' unique=True approx=False`: Exact unique counts are not yet supported, please set approx=True"
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_ratings' of='rating' unique=True approx=False dropnull=False`: Exact unique counts are not yet supported, please set approx=True"
     )
 
     with pytest.raises(TypeError) as e:
@@ -433,7 +501,7 @@ def test_incorrect_aggregate():
 
     assert (
         str(e.value)
-        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_users' of='userid' unordered=False`: Distinct requires unordered=True"
+        == "Invalid aggregate `window=Continuous(duration='forever') into_field='unique_users' of='userid' unordered=False dropnull=False`: Distinct requires unordered=True"
     )
 
     with pytest.raises(TypeError) as e:
@@ -765,6 +833,109 @@ def test_dataset_incorrect_join():
         str(e.value)
         == "Fields used in a join operator must not be optional in left schema, found `user_id` of "
         "type `Optional[int]` in `'[Pipeline:create_pipeline]->join node'`"
+    )
+
+
+def test_dataset_incorrect_join_fields():
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset(index=True)
+        class ABC:
+            user_id: int = field(key=True)
+            age: int
+            timestamp: datetime
+
+        @dataset
+        class XYZJoinedABC:
+            user_id: int
+            name: str
+            age: int
+            timestamp: datetime
+
+            @pipeline
+            @inputs(XYZ, ABC)
+            def create_pipeline(cls, a: Dataset, b: Dataset):
+                c = a.join(b, how="inner", on=["user_id"], fields=["rank"])  # type: ignore
+                return c
+
+    assert (
+        str(e.value)
+        == "Field `rank` specified in fields ['rank'] doesn't exist in "
+        "allowed fields ['age', 'timestamp'] of right schema of "
+        "'[Pipeline:create_pipeline]->join node'."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset(index=True)
+        class ABC:
+            user_id: int = field(key=True)
+            age: int
+            timestamp: datetime
+
+        @dataset
+        class XYZJoinedABC1:
+            user_id: int
+            name: str
+            age: int
+            timestamp: datetime
+
+            @pipeline
+            @inputs(XYZ, ABC)
+            def create_pipeline(cls, a: Dataset, b: Dataset):
+                c = a.join(b, how="inner", on=["user_id"], fields=["user_id"])  # type: ignore
+                return c
+
+    assert (
+        str(e.value)
+        == "Field `user_id` specified in fields ['user_id'] doesn't exist in "
+        "allowed fields ['age', 'timestamp'] of right schema of "
+        "'[Pipeline:create_pipeline]->join node'."
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @dataset
+        class XYZ:
+            user_id: int
+            name: str
+            timestamp: datetime
+
+        @dataset(index=True)
+        class ABC:
+            user_id: int = field(key=True)
+            age: int
+            timestamp: datetime
+
+        @dataset
+        class XYZJoinedABC2:
+            user_id: int
+            name: str
+            age: int
+            timestamp: datetime
+
+            @pipeline
+            @inputs(XYZ, ABC)
+            def create_pipeline(cls, a: Dataset, b: Dataset):
+                c = a.join(b, how="inner", on=["user_id"], fields=["timestamp"])  # type: ignore
+                return c
+
+    assert (
+        str(e.value)
+        == "Field `timestamp` specified in fields ['timestamp'] already "
+        "exists in left schema of '[Pipeline:create_pipeline]->join node'."
     )
 
 

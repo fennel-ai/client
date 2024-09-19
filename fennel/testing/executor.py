@@ -389,7 +389,11 @@ class Executor(Visitor):
                 # Select the columns that are needed for the aggregate -> all keys without window
                 # and drop the rest
                 fields = obj.keys_without_window + [input_ret.timestamp_field]
-                if not isinstance(aggregate, Count) or aggregate.unique:
+                if (
+                    not isinstance(aggregate, Count)
+                    or aggregate.unique
+                    or aggregate.dropnull
+                ):
                     fields.append(aggregate.of)
                 if FENNEL_DELETE_TIMESTAMP in df.columns:
                     filtered_df = df[fields + [FENNEL_DELETE_TIMESTAMP]]
@@ -496,6 +500,13 @@ class Executor(Visitor):
         right_df = right_df.rename(
             columns={right_timestamp_field: tmp_right_ts}
         )
+        # Conserve the rhs timestamp field if the join demands it
+        if (
+            obj.fields is not None
+            and len(obj.fields) > 0
+            and right_timestamp_field in obj.fields
+        ):
+            right_df[right_timestamp_field] = right_df[tmp_right_ts]
 
         # Set the value of the left timestamp - this is the timestamp that will be used for the join
         # - to be the upper bound of the join query (this is the max ts of a valid right dataset entry)
@@ -656,6 +667,33 @@ class Executor(Visitor):
             columns=[tmp_ts_low, ts_query_field, tmp_left_ts, tmp_right_ts],
             inplace=True,
         )
+
+        if obj.fields is not None and len(obj.fields) > 0:
+            all_right_fields = [f.name for f in right_ret.fields]  # type: ignore
+            for col_name in obj.fields:
+                if col_name in right_ret.key_fields:  # type: ignore
+                    raise Exception(
+                        f"fields member {col_name} cannot be one of right dataframe's "
+                        f"key fields {right_ret.key_fields}"  # type: ignore
+                    )
+                if col_name not in all_right_fields:
+                    raise Exception(
+                        f"fields member {col_name} not present in right dataframe's "  # type: ignore
+                        f"fields {right_ret.fields}"
+                    )
+
+            cols_to_drop = []
+            for field in right_ret.fields:  # type: ignore
+                col_name = field.name
+                if (
+                    col_name not in right_ret.key_fields  # type: ignore
+                    and col_name != right_ret.timestamp_field  # type: ignore
+                    and col_name not in obj.fields
+                ):
+                    cols_to_drop.append(col_name)
+
+            merged_df.drop(columns=cols_to_drop, inplace=True)
+
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
 
@@ -801,9 +839,6 @@ class Executor(Visitor):
 
                 # Check the schema of the column
                 validate_field_in_df(field, df, self.cur_pipeline_name)
-
-                # Cast to arrow dtype
-                df = cast_df_to_arrow_dtype(df, fields)
             except Exception as e:
                 raise Exception(
                     f"Error in assign node for column `{obj.column}` for pipeline "
@@ -812,19 +847,20 @@ class Executor(Visitor):
         else:
             input_df = copy.deepcopy(input_ret.df)
             df = copy.deepcopy(input_df)
+            df.reset_index(drop=True, inplace=True)
             for col, typed_expr in obj.output_expressions.items():
-                if col in input_ret.df.columns:
-                    raise Exception(
-                        f"Column `{col}` already present in dataframe"
-                    )
                 input_dsschema = obj.node.dsschema().schema()
                 try:
-                    df[col] = typed_expr.expr.eval(input_df, input_dsschema)
+                    df[col] = typed_expr.expr.eval(
+                        input_df, input_dsschema, typed_expr.dtype, parse=False
+                    )
                 except Exception as e:
                     raise Exception(
                         f"Error in assign node for column `{col}` for pipeline "
                         f"`{self.cur_pipeline_name}`, {e}"
                     )
+        # Cast to arrow dtype
+        df = cast_df_to_arrow_dtype(df, fields)
         return NodeRet(
             df,
             input_ret.timestamp_field,

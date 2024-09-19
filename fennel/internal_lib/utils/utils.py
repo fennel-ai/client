@@ -1,11 +1,14 @@
 import dataclasses
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, Union
+from typing import Any, Optional, Union, Dict
 
+import numpy as np
 import pandas as pd
-
+from frozendict import frozendict
+from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.schema_pb2 import DataType
+from fennel.internal_lib import FENNEL_STRUCT
 
 
 def _get_args(type_: Any) -> Any:
@@ -69,7 +72,8 @@ def as_json(self):
 
 
 def parse_datetime(value: Union[int, str, datetime]) -> datetime:
-    if isinstance(value, int):
+    if isinstance(value, (int, float)):
+        value = int(value)
         try:
             value = pd.to_datetime(value, unit="s", utc=True)
         except ValueError:
@@ -123,3 +127,95 @@ def cast_col_to_pandas(
         )
     else:
         return series.fillna(pd.NA)
+
+
+def parse_struct_into_dict(
+    value: Any, dtype: schema_proto.DataType
+) -> Optional[Union[dict, list]]:
+    """
+    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
+    """
+    if hasattr(value, FENNEL_STRUCT):
+        try:
+            return value.as_json()
+        except Exception as e:
+            raise TypeError(
+                f"Not able parse value: {value} into json, error: {e}"
+            )
+    elif isinstance(value, list) or isinstance(value, np.ndarray):
+        return [parse_struct_into_dict(x, dtype.array_type.of) for x in value]
+    elif isinstance(value, dict) or isinstance(value, frozendict):
+        return {
+            key: parse_struct_into_dict(val, dtype.map_type.value)
+            for key, val in value.items()
+        }
+    elif value is None or pd.isna(value):
+        # If dtype is an optional struct type return, a dict with all fields as None
+        if dtype.HasField("optional_type") and dtype.optional_type.of.HasField(
+            "struct_type"
+        ):
+            return {
+                field.name: None
+                for field in dtype.optional_type.of.struct_type.fields
+            }
+        else:
+            return None
+    else:
+        return value
+
+
+def parse_datetime_in_value(
+    value: Any, dtype: DataType, nullable: bool = False
+) -> Any:
+    """
+    This function assumes that there's a struct somewhere in the value that needs to be converted into json.
+    """
+    if nullable:
+        try:
+            if not isinstance(
+                value, (list, tuple, dict, set, np.ndarray, frozendict)
+            ) and pd.isna(value):
+                return pd.NA
+        # ValueError error occurs when you do something like pd.isnull([1, 2, None])
+        except ValueError:
+            pass
+    if dtype.HasField("optional_type"):
+        return parse_datetime_in_value(value, dtype.optional_type.of, True)
+    elif dtype.HasField("timestamp_type"):
+        return parse_datetime(value)
+    elif dtype.HasField("array_type"):
+        return [parse_datetime_in_value(x, dtype.array_type.of) for x in value]
+    elif dtype.HasField("map_type"):
+        if isinstance(value, (dict, frozendict)):
+            return {
+                key: parse_datetime_in_value(value, dtype.map_type.value)
+                for (key, value) in value.items()
+            }
+        elif isinstance(value, (list, np.ndarray)):
+            return [
+                (key, parse_datetime_in_value(value, dtype.map_type.value))
+                for (key, value) in value
+            ]
+        else:
+            return value
+    elif dtype.HasField("struct_type"):
+        if hasattr(value, FENNEL_STRUCT):
+            try:
+                value = value.as_json()
+            except Exception as e:
+                raise TypeError(
+                    f"Not able parse value: {value} into json, error: {e}"
+                )
+        output: Dict[Any, Any] = {}
+        for field in dtype.struct_type.fields:
+            dtype = field.dtype
+            name = field.name
+            if not dtype.HasField("optional_type") and name not in value:
+                raise ValueError(
+                    f"value not found for non optional field : {field}"
+                )
+            if name in value:
+                output[name] = parse_datetime_in_value(value[name], dtype)
+        return output
+    else:
+        return value

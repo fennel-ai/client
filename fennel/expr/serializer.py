@@ -8,8 +8,20 @@ import fennel.gen.expr_pb2 as proto
 from fennel.internal_lib.schema import get_datatype
 
 from fennel.expr.expr import (
+    DateTimeParts,
+    DateTimeSince,
+    DateTimeSinceEpoch,
+    DateTimeStrftime,
+    ListContains,
+    ListGet,
+    ListHasNull,
+    ListLen,
+    ListNoop,
     Literal,
     Ref,
+    StructGet,
+    StructNoop,
+    TimeUnit,
     Unary,
     When,
     Then,
@@ -31,6 +43,10 @@ from fennel.expr.expr import (
     Floor,
     StringNoop,
     StrLen,
+    StringStrpTime,
+    StringParse,
+    StrStartsWith,
+    StrEndsWith,
     Lower,
     Upper,
     StrContains,
@@ -39,7 +55,30 @@ from fennel.expr.expr import (
     DictGet,
     DictLen,
     DictNoop,
+    DateTimeNoop,
 )
+
+
+def time_unit_to_proto(unit: TimeUnit) -> proto.TimeUnit:
+    if unit == TimeUnit.MILLISECOND:
+        return proto.TimeUnit.MILLISECOND
+    elif unit == TimeUnit.MILLISECOND:
+        return proto.TimeUnit.MILLISECOND
+    elif unit == TimeUnit.SECOND:
+        return proto.TimeUnit.SECOND
+    elif unit == TimeUnit.MINUTE:
+        return proto.TimeUnit.MINUTE
+    elif unit == TimeUnit.HOUR:
+        return proto.TimeUnit.HOUR
+    elif unit == TimeUnit.DAY:
+        return proto.TimeUnit.DAY
+    elif unit == TimeUnit.WEEK:
+        return proto.TimeUnit.WEEK
+    elif unit == TimeUnit.MONTH:
+        return proto.TimeUnit.MONTH
+    elif unit == TimeUnit.YEAR:
+        return proto.TimeUnit.YEAR
+    raise InvalidExprException("invalid time unit: %s" % unit)
 
 
 class ExprSerializer(Visitor):
@@ -67,7 +106,12 @@ class ExprSerializer(Visitor):
 
     def visitUnary(self, obj):
         expr = proto.Expr()
-        expr.unary.op = obj.op
+        if obj.op == "~":
+            expr.unary.op = proto.UnaryOp.NOT
+        elif obj.op == "-":
+            expr.unary.op = proto.UnaryOp.NEG
+        else:
+            raise Exception("invalid unary operation: %s" % obj.op)
         operand = self.visit(obj.operand)
         expr.unary.operand.CopyFrom(operand)
         return expr
@@ -116,10 +160,10 @@ class ExprSerializer(Visitor):
         return expr
 
     def visitFillNull(self, obj):
-        return "FILL NULL(%s, %s)" % (
-            self.visit(obj.expr),
-            self.visit(obj.fill),
-        )
+        expr = proto.Expr()
+        expr.fillnull.fill.CopyFrom(self.visit(obj.fill))
+        expr.fillnull.operand.CopyFrom(self.visit(obj.expr))
+        return expr
 
     def visitWhen(self, obj):
         expr = proto.Expr()
@@ -129,7 +173,7 @@ class ExprSerializer(Visitor):
         while cur_when is not None:
             if cur_when._then is None:
                 raise InvalidExprException(
-                    f"THEN clause missing for WHEN clause {self.visit(cur_when)}"
+                    f"THEN clause missing for WHEN clause {cur_when.expr}"
                 )
             when_then_pairs.append((cur_when, cur_when._then))
             cur_when = cur_when._then._chained_when
@@ -201,6 +245,42 @@ class ExprSerializer(Visitor):
                     )
                 )
             )
+        elif isinstance(obj.op, StringStrpTime):
+            if obj.op.timezone is not None:
+                expr.string_fn.fn.CopyFrom(
+                    proto.StringOp(
+                        strptime=proto.Strptime(
+                            format=obj.op.format,
+                            timezone=proto.Timezone(timezone=obj.op.timezone),
+                        )
+                    )
+                )
+            else:
+                expr.string_fn.fn.CopyFrom(
+                    proto.StringOp(
+                        strptime=proto.Strptime(format=obj.op.format)
+                    )
+                )
+        elif isinstance(obj.op, StringParse):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(
+                    json_decode=proto.JsonDecode(
+                        dtype=get_datatype(obj.op.dtype)
+                    )
+                )
+            )
+        elif isinstance(obj.op, StrStartsWith):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(
+                    startswith=proto.StartsWith(key=self.visit(obj.op.item))
+                )
+            )
+        elif isinstance(obj.op, StrEndsWith):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(
+                    endswith=proto.EndsWith(key=self.visit(obj.op.item))
+                )
+            )
         else:
             raise InvalidExprException("invalid string operation: %s" % obj.op)
         expr.string_fn.string.CopyFrom(self.visit(obj.operand))
@@ -234,6 +314,105 @@ class ExprSerializer(Visitor):
         else:
             raise InvalidExprException("invalid dict operation: %s" % obj.op)
         expr.dict_fn.dict.CopyFrom(self.visit(obj.expr))
+        return expr
+
+    def visitDateTime(self, obj):
+        expr = proto.Expr()
+        if isinstance(obj.op, DateTimeNoop):
+            return self.visit(obj.operand)
+        elif isinstance(obj.op, DateTimeParts):
+            part = proto.Part()
+            part.unit = time_unit_to_proto(obj.op.part)
+            expr.datetime_fn.fn.CopyFrom(proto.DateTimeOp(part=part))
+        elif isinstance(obj.op, DateTimeSince):
+            expr.datetime_fn.fn.CopyFrom(
+                proto.DateTimeOp(
+                    since=proto.Since(
+                        other=self.visit(obj.op.other),
+                        unit=time_unit_to_proto(obj.op.unit),
+                    )
+                )
+            )
+        elif isinstance(obj.op, DateTimeSinceEpoch):
+            expr.datetime_fn.fn.CopyFrom(
+                proto.DateTimeOp(
+                    since_epoch=proto.SinceEpoch(
+                        unit=time_unit_to_proto(obj.op.unit)
+                    )
+                )
+            )
+        elif isinstance(obj.op, DateTimeStrftime):
+            expr.datetime_fn.fn.CopyFrom(
+                proto.DateTimeOp(
+                    strftime=proto.Strftime(
+                        format=obj.op.format,
+                    )
+                )
+            )
+        else:
+            raise InvalidExprException(
+                "invalid datetime operation: %s" % obj.op
+            )
+        expr.datetime_fn.datetime.CopyFrom(self.visit(obj.operand))
+        return expr
+
+    def visitList(self, obj):
+        expr = proto.Expr()
+        if isinstance(obj.op, ListNoop):
+            return self.visit(obj.expr)
+        elif isinstance(obj.op, ListContains):
+            expr.list_fn.fn.CopyFrom(
+                proto.ListOp(
+                    contains=proto.Contains(element=self.visit(obj.op.item))
+                )
+            )
+        elif isinstance(obj.op, ListGet):
+            expr.list_fn.fn.CopyFrom(
+                proto.ListOp(
+                    get=self.visit(obj.op.index),
+                )
+            )
+        elif isinstance(obj.op, ListLen):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(len=proto.Len()))
+        elif isinstance(obj.op, ListHasNull):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(has_null=proto.HasNull()))
+        expr.list_fn.list.CopyFrom(self.visit(obj.expr))
+        return expr
+
+    def visitStruct(self, obj):
+        expr = proto.Expr()
+        if isinstance(obj.op, StructNoop):
+            return self.visit(obj.operand)
+        elif isinstance(obj.op, StructGet):
+            expr.struct_fn.fn.CopyFrom(proto.StructOp(field=obj.op.field))
+        else:
+            raise InvalidExprException("invalid struct operation: %s" % obj.op)
+        expr.struct_fn.struct.CopyFrom(self.visit(obj.operand))
+        return expr
+
+    def visitMakeStruct(self, obj):
+        expr = proto.Expr()
+        for field, value in obj.fields.items():
+            field_expr = expr.make_struct.fields.get_or_create(field)
+            field_expr.CopyFrom(self.visit(value))
+
+        # Ensure get_datatype returns a correct protobuf message of type StructType
+        dtype = get_datatype(obj.dtype)
+        if dtype.struct_type is None:
+            raise InvalidExprException(
+                "Expected struct_type to be a StructType, found {}".format(
+                    dtype
+                )
+            )
+        expr.make_struct.struct_type.CopyFrom(dtype.struct_type)
+        return expr
+
+    def visitDateTimeFromEpoch(self, obj):
+        expr = proto.Expr()
+        from_epoch = proto.FromEpoch()
+        from_epoch.unit = time_unit_to_proto(obj.unit)
+        from_epoch.duration.CopyFrom(self.visit(obj.duration))
+        expr.from_epoch.CopyFrom(from_epoch)
         return expr
 
 

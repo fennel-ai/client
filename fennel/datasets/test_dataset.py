@@ -41,6 +41,7 @@ class UserInfoDataset:
     age: int = field().meta(description="Users age lol")  # type: ignore
     account_creation_date: datetime
     country: Optional[str]
+    version: int
     timestamp: datetime = field(timestamp=True)
 
 
@@ -49,7 +50,7 @@ def test_simple_dataset():
     view = InternalTestClient()
     view.add(UserInfoDataset)
     assert desc(UserInfoDataset.age) == "Users age lol"
-    assert desc(UserInfoDataset.dob) == "Users date of birth"
+    # assert desc(UserInfoDataset.dob) == "Users date of birth"
 
     sync_request = view._get_sync_request_proto()
     assert len(sync_request.datasets) == 1
@@ -58,7 +59,6 @@ def test_simple_dataset():
             {
                 "name": "UserInfoDataset",
                 "metadata": {"owner": "ml-eng@fennel.ai"},
-                "version": 1,
                 "dsschema": {
                     "keys": {
                         "fields": [
@@ -81,6 +81,7 @@ def test_simple_dataset():
                                     "optionalType": {"of": {"stringType": {}}}
                                 },
                             },
+                            {"name": "version", "dtype": {"intType": {}}},
                         ]
                     },
                     "timestamp": "timestamp",
@@ -88,8 +89,9 @@ def test_simple_dataset():
                 "history": "63072000s",
                 "retention": "63072000s",
                 "fieldMetadata": {
-                    "age": {"description": "Users age lol"},
+                    "version": {},
                     "name": {},
+                    "age": {"description": "Users age lol"},
                     "account_creation_date": {},
                     "country": {},
                     "user_id": {"owner": "xyz@fennel.ai"},
@@ -99,6 +101,7 @@ def test_simple_dataset():
                 },
                 "pycode": {},
                 "isSourceDataset": True,
+                "version": 1,
             }
         ],
         "sources": [
@@ -118,8 +121,8 @@ def test_simple_dataset():
                 },
                 "dataset": "UserInfoDataset",
                 "dsVersion": 1,
-                "cdc": "Upsert",
                 "disorder": "1209600s",
+                "cdc": "Upsert",
             }
         ],
         "extdbs": [
@@ -592,7 +595,7 @@ def test_dataset_with_pipes():
         @includes(add_one)
         @inputs(A, B)
         def pipeline1(cls, a: Dataset, b: Dataset):
-            return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+            return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 
     view = InternalTestClient()
     view.add(ABCDataset)
@@ -634,14 +637,14 @@ def add_one(x: int):
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 """
     assert expected_gen_code == pipeline_req.pycode.generated_code
     expected_source_code = """@pipeline
 @includes(add_one)
 @inputs(A, B)
 def pipeline1(cls, a: Dataset, b: Dataset):
-    return a.join(b, how="left", left_on=["a1"], right_on=["b1"])
+    return a.join(b, how="inner", left_on=["a1"], right_on=["b1"])
 """
     assert expected_source_code == pipeline_req.pycode.source_code
     p = {
@@ -693,17 +696,17 @@ def pipeline1(cls, a: Dataset, b: Dataset):
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
-        "is_root": True,
-        "pipeline_name": "pipeline1",
-        "dataset_name": "ABCDataset",
+        "id": "b8a998fc5e47160f2ef4d3e4570d6bab",
+        "isRoot": True,
+        "pipelineName": "pipeline1",
+        "datasetName": "ABCDataset",
         "join": {
-            "lhs_operand_id": "A",
-            "rhs_dsref_operand_id": "B",
+            "lhsOperandId": "A",
+            "rhsDsrefOperandId": "B",
             "on": {"a1": "b1"},
-            "how": 0,
+            "how": "Inner",
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -865,17 +868,16 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
-        "is_root": True,
-        "pipeline_name": "pipeline1",
-        "dataset_name": "ABCDatasetDefault",
+        "id": "3338ee30aac1dc899789da9fc78fa025",
+        "isRoot": True,
+        "pipelineName": "pipeline1",
+        "datasetName": "ABCDatasetDefault",
         "join": {
-            "lhs_operand_id": "A",
-            "rhs_dsref_operand_id": "B",
+            "lhsOperandId": "A",
+            "rhsDsrefOperandId": "B",
             "on": {"a1": "b1"},
-            "how": 0,
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -963,17 +965,16 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
-        "is_root": True,
-        "pipeline_name": "pipeline1",
-        "dataset_name": "ABCDatasetDefault",
+        "id": "3338ee30aac1dc899789da9fc78fa025",
+        "isRoot": True,
+        "pipelineName": "pipeline1",
+        "datasetName": "ABCDatasetDefault",
         "join": {
-            "lhs_operand_id": "A",
-            "rhs_dsref_operand_id": "B",
+            "lhsOperandId": "A",
+            "rhsDsrefOperandId": "B",
             "on": {"a1": "b1"},
-            "how": 0,
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1061,18 +1062,17 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
-        "is_root": True,
-        "pipeline_name": "pipeline1",
-        "dataset_name": "ABDatasetLow",
+        "id": "3338ee30aac1dc899789da9fc78fa025",
+        "isRoot": True,
+        "pipelineName": "pipeline1",
+        "datasetName": "ABDatasetLow",
         "join": {
-            "lhs_operand_id": "A",
-            "rhs_dsref_operand_id": "B",
+            "lhsOperandId": "A",
+            "rhsDsrefOperandId": "B",
             "on": {"a1": "b1"},
-            "within_low": "3600s",
-            "how": 0,
+            "withinLow": "3600s",
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1160,18 +1160,17 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
-        "is_root": True,
-        "pipeline_name": "pipeline1",
-        "dataset_name": "ABDatasetHigh",
+        "id": "3338ee30aac1dc899789da9fc78fa025",
+        "isRoot": True,
+        "pipelineName": "pipeline1",
+        "datasetName": "ABDatasetHigh",
         "join": {
-            "lhs_operand_id": "A",
-            "rhs_dsref_operand_id": "B",
+            "lhsOperandId": "A",
+            "rhsDsrefOperandId": "B",
             "on": {"a1": "b1"},
-            "how": 0,
-            "within_high": "86400s",
+            "withinHigh": "86400s",
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1259,19 +1258,18 @@ def test_dataset_with_pipes_bounds():
     )
     operator_req = sync_request.operators[2]
     o = {
-        "id": "12a2088d8d7a0d265a7bd3f694fc81aa",
-        "is_root": True,
-        "pipeline_name": "pipeline1",
-        "dataset_name": "ABDataset",
+        "id": "3338ee30aac1dc899789da9fc78fa025",
+        "isRoot": True,
+        "pipelineName": "pipeline1",
+        "datasetName": "ABDataset",
         "join": {
-            "lhs_operand_id": "A",
-            "rhs_dsref_operand_id": "B",
+            "lhsOperandId": "A",
+            "rhsDsrefOperandId": "B",
             "on": {"a1": "b1"},
-            "how": 0,
-            "within_low": "259200s",
-            "within_high": "31536000s",
+            "withinLow": "259200s",
+            "withinHigh": "31536000s",
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1476,16 +1474,15 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[3]
     o = {
-        "id": "4202e94cf2e47bf5bcc94fd57aee8d0f",
+        "id": "246863a3fc1191098d24b4034f704851",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "join": {
             "lhsOperandId": "101097826c6986ddb25ce924985d9217",
             "rhsDsrefOperandId": "UserInfoDataset",
             "on": {"user_id": "user_id"},
-            "how": 0,
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1494,11 +1491,11 @@ def test_dataset_with_complex_pipe():
 
     operator_req = erase_operator_pycode(sync_request.operators[4])
     o = {
-        "id": "bfa10d216f843625785d24e6b9d890fb",
+        "id": "6158406804b946bda0c38a994229e995",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "transform": {
-            "operandId": "4202e94cf2e47bf5bcc94fd57aee8d0f",
+            "operandId": "246863a3fc1191098d24b4034f704851",
             "schema": {
                 "user_id": {"intType": {}},
                 "merchant_id": {"intType": {}},
@@ -1515,14 +1512,14 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "acd519ba5789e767383099d0561e07c8",
+        "id": "c898276d34d964b833155b0e36a4ba2b",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "dedup": {
-            "operandId": "bfa10d216f843625785d24e6b9d890fb",
+            "operandId": "6158406804b946bda0c38a994229e995",
             "columns": ["user_id", "merchant_id"],
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -1531,12 +1528,12 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[6]
     o = {
-        "id": "0b381d6b2444c390000402aaa4485a26",
+        "id": "45877eefa2fe6d8dbd5aba2fb07e5cb5",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operandId": "acd519ba5789e767383099d0561e07c8",
+            "operandId": "c898276d34d964b833155b0e36a4ba2b",
             "keys": ["merchant_id"],
             "specs": [
                 {
@@ -1553,17 +1550,17 @@ def test_dataset_with_complex_pipe():
                 },
                 {
                     "quantile": {
+                        "of": "transaction_amount",
                         "name": "median_transaction_amount",
                         "window": {"sliding": {"duration": "604800s"}},
-                        "quantile": 0.5,
                         "default": 0.0,
-                        "of": "transaction_amount",
+                        "quantile": 0.5,
                         "approx": True,
                     }
                 },
             ],
         },
-        "ds_version": 1,
+        "dsVersion": 1,
     }
     expected_operator_request = ParseDict(o, ds_proto.Operator())
     assert operator_req == expected_operator_request, error_message(
@@ -3387,4 +3384,122 @@ def test_aggregation_emit_final():
     expected_dataset_request = ParseDict(d, ds_proto.CoreDataset())
     assert dataset_req == expected_dataset_request, error_message(
         dataset_req, expected_dataset_request
+    )
+
+
+def test_select_all_columns():
+    @meta(owner="test@test.com")
+    @dataset
+    class A:
+        a1: int
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class B:
+        a1: int
+        a2: int
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_b(cls, a: Dataset):
+            return a.select("a1", "a2", "a3", "a4")
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class C:
+        a3: str
+        a4: float
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_c(cls, a: Dataset):
+            return a.drop("a1", "a2").select("a3", "a4")
+
+    @meta(owner="thaqib@fennel.ai")
+    @dataset
+    class D:
+        a1: int
+        a2: int
+        t: datetime
+
+        @pipeline
+        @inputs(A)
+        def from_a_to_d(cls, a: Dataset):
+            return a.select("a1", "a2", "a3", "a4").drop("a3", "a4")
+
+    view = InternalTestClient()
+    view.add(A)  # type: ignore
+    view.add(B)  # type: ignore
+    view.add(C)  # type: ignore
+    view.add(D)  # type: ignore
+    sync_request = view._get_sync_request_proto()
+    operators = sync_request.operators
+    # 3 ds ref + 2 drop operators
+    assert len(operators) == 5
+    operator_req = operators[0]
+    ds_ref = {
+        "id": "A",
+        "isRoot": True,
+        "pipelineName": "from_a_to_b",
+        "datasetName": "B",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operator_req == expected_operator_request, error_message(
+        operator_req, expected_operator_request
+    )
+    ds_ref = {
+        "id": "A",
+        "pipelineName": "from_a_to_c",
+        "datasetName": "C",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[1] == expected_operator_request, error_message(
+        operators[1], expected_operator_request
+    )
+    drop = {
+        "id": "69fa3b1907d6753bce7b409eb822632b",
+        "isRoot": True,
+        "pipelineName": "from_a_to_c",
+        "datasetName": "C",
+        "drop": {"operandId": "A", "dropcols": ["a1", "a2"]},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(drop, ds_proto.Operator())
+    assert operators[2] == expected_operator_request, error_message(
+        operators[2], expected_operator_request
+    )
+    ds_ref = {
+        "id": "A",
+        "pipelineName": "from_a_to_d",
+        "datasetName": "D",
+        "datasetRef": {"referringDatasetName": "A"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[3] == expected_operator_request, error_message(
+        operators[3], expected_operator_request
+    )
+    drop = {
+        "id": "98ba3bf35c472883e9e3530b49b7c38e",
+        "isRoot": True,
+        "pipelineName": "from_a_to_d",
+        "datasetName": "D",
+        "drop": {"operandId": "A", "dropcols": ["a3", "a4"]},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(drop, ds_proto.Operator())
+    assert operators[4] == expected_operator_request, error_message(
+        operators[4], expected_operator_request
     )

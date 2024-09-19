@@ -1,0 +1,15 @@
+version: '3'
+services: 
+  preview: 
+    build: 
+      context: "https://${GITHUB_TOKEN}:@github.com/${GITHUB_REPO}.git#rk-changelog-pro"
+      dockerfile: apps/web/Dockerfile
+    ports:
+      - 3000:3000
+    volumes: 
+      - ./assets:/app/apps/web/_content/assets
+      - ./pages:/app/apps/web/_content/pages
+    environment:
+      - MODE=EDIT
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - DOCS_URL=http://localhost:3001

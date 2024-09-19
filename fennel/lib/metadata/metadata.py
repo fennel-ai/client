@@ -20,10 +20,7 @@ from typing import Any, List, Optional
 
 import fennel.gen.metadata_pb2 as proto
 from fennel._vendor.pydantic import BaseModel, validator  # type: ignore
-
-EMAIL_REGEX = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-META_FIELD = "__fennel_metadata__"
-OWNER = "__owner__"
+from fennel.internal_lib import EMAIL_REGEX, META_FIELD, OWNER
 
 
 def desc(obj):

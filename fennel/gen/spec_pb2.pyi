@@ -127,12 +127,14 @@ class Count(google.protobuf.message.Message):
     UNIQUE_FIELD_NUMBER: builtins.int
     APPROX_FIELD_NUMBER: builtins.int
     OF_FIELD_NUMBER: builtins.int
+    DROPNULL_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
     unique: builtins.bool
     approx: builtins.bool
     of: builtins.str
+    dropnull: builtins.bool
     def __init__(
         self,
         *,
@@ -141,9 +143,10 @@ class Count(google.protobuf.message.Message):
         unique: builtins.bool = ...,
         approx: builtins.bool = ...,
         of: builtins.str = ...,
+        dropnull: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["approx", b"approx", "name", b"name", "of", b"of", "unique", b"unique", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["approx", b"approx", "dropnull", b"dropnull", "name", b"name", "of", b"of", "unique", b"unique", "window", b"window"]) -> None: ...
 
 global___Count = Count
 
@@ -156,12 +159,14 @@ class LastK(google.protobuf.message.Message):
     LIMIT_FIELD_NUMBER: builtins.int
     DEDUP_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
+    DROPNULL_FIELD_NUMBER: builtins.int
     of: builtins.str
     name: builtins.str
     limit: builtins.int
     dedup: builtins.bool
     @property
     def window(self) -> window_pb2.Window: ...
+    dropnull: builtins.bool
     def __init__(
         self,
         *,
@@ -170,9 +175,10 @@ class LastK(google.protobuf.message.Message):
         limit: builtins.int = ...,
         dedup: builtins.bool = ...,
         window: window_pb2.Window | None = ...,
+        dropnull: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "dropnull", b"dropnull", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___LastK = LastK
 
@@ -261,19 +267,22 @@ class Distinct(google.protobuf.message.Message):
     OF_FIELD_NUMBER: builtins.int
     NAME_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
+    DROPNULL_FIELD_NUMBER: builtins.int
     of: builtins.str
     name: builtins.str
     @property
     def window(self) -> window_pb2.Window: ...
+    dropnull: builtins.bool
     def __init__(
         self,
         *,
         of: builtins.str = ...,
         name: builtins.str = ...,
         window: window_pb2.Window | None = ...,
+        dropnull: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dropnull", b"dropnull", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___Distinct = Distinct
 

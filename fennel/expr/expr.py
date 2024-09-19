@@ -1,17 +1,29 @@
 from __future__ import annotations
+
 from enum import Enum
+import json
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
-
-import json
-
-from fennel.dtypes.dtypes import FENNEL_STRUCT
 import pandas as pd
-from fennel.internal_lib.schema.schema import from_proto
+
+from fennel.dtypes.dtypes import FENNEL_STRUCT, FENNEL_STRUCT_SRC_CODE
+from fennel.internal_lib.schema.schema import (
+    convert_dtype_to_arrow_type_with_nullable,
+    from_proto,
+    parse_json,
+)
 import pyarrow as pa
-from fennel_data_lib import eval, type_of
-from fennel.internal_lib.schema import get_datatype
+from fennel_data_lib import assign, type_of, matches
+
 import fennel.gen.schema_pb2 as schema_proto
+from fennel.internal_lib.schema import (
+    get_datatype,
+    cast_col_to_arrow_dtype,
+)
+from fennel.internal_lib.utils.utils import (
+    cast_col_to_pandas,
+    is_user_defined_class,
+)
 
 
 class InvalidExprException(Exception):
@@ -68,7 +80,15 @@ class Expr(object):
     def abs(self) -> _Number:
         return _Number(self, Abs())
 
-    def round(self, precision: int) -> _Number:
+    def round(self, precision: int = 0) -> _Number:
+        if not isinstance(precision, int):
+            raise InvalidExprException(
+                f"precision can only be an int but got {precision} instead"
+            )
+        if precision < 0:
+            raise InvalidExprException(
+                f"precision can only be a positive int but got {precision} instead"
+            )
         return _Number(self, Round(precision))
 
     def ceil(self) -> _Number:
@@ -91,6 +111,9 @@ class Expr(object):
 
     def __bool__(self):
         raise InvalidExprException("can not convert: '%s' to bool" % self)
+
+    def __neg__(self) -> Expr:
+        return Unary("-", self)
 
     def __add__(self, other: Any) -> Expr:
         other = make_expr(other)
@@ -302,7 +325,8 @@ class Expr(object):
     def __hash__(self) -> int:
         return self.nodeid
 
-    def typeof(self, schema: Dict) -> Type:
+    def typeof(self, schema: Dict = None) -> Type:
+        schema = schema or {}
         from fennel.expr.serializer import ExprSerializer
 
         serializer = ExprSerializer()
@@ -316,79 +340,79 @@ class Expr(object):
         datatype.ParseFromString(type_bytes)
         return from_proto(datatype)
 
-    def eval(self, input_df: pd.DataFrame, schema: Dict) -> pd.Series:
+    def matches_type(self, dtype: Type, schema: Dict) -> bool:
+        schema = schema or {}
         from fennel.expr.serializer import ExprSerializer
-
-        def convert_object(obj):
-            if isinstance(obj, list):
-                result = [convert_object(i) for i in obj]
-            elif isinstance(obj, dict):
-                result = {}
-                for key in obj:
-                    result[key] = convert_object(obj[key])
-            elif hasattr(obj, "as_json"):
-                result = obj.as_json()
-            else:
-                result = obj
-            return result
-
-        def convert_objects(df):
-            for col in df.columns:
-                df[col] = df[col].apply(convert_object)
-            return df
-
-        def pd_to_pa(pd_data, schema=None):
-            # Schema unspecified - as in the case with lookups
-            if not schema:
-                if isinstance(pd_data, pd.Series):
-                    pd_data = pd_data.apply(convert_object)
-                    return pa.Array.from_pandas(pd_data)
-                elif isinstance(pd_data, pd.DataFrame):
-                    pd_data = convert_objects(pd_data)
-                    return pa.RecordBatch.from_pandas(
-                        pd_data, preserve_index=False
-                    )
-                else:
-                    raise ValueError("only pd.Series or pd.Dataframe expected")
-
-            # Single column expected
-            if isinstance(schema, pa.Field):
-                # extra columns may have been provided
-                if isinstance(pd_data, pd.DataFrame):
-                    if schema.name not in pd_data:
-                        raise ValueError(
-                            f"Dataframe does not contain column {schema.name}"
-                        )
-                    # df -> series
-                    pd_data = pd_data[schema.name]
-
-                if not isinstance(pd_data, pd.Series):
-                    raise ValueError("only pd.Series or pd.Dataframe expected")
-                pd_data = pd_data.apply(convert_object)
-                return pa.Array.from_pandas(pd_data, type=schema.type)
-
-            # Multiple columns case: use the columns we need
-            result_df = pd.DataFrame()
-            for col in schema.names:
-                if col not in pd_data:
-                    raise ValueError(f"Dataframe does not contain column {col}")
-                result_df[col] = pd_data[col].apply(convert_object)
-            return pa.RecordBatch.from_pandas(
-                result_df, preserve_index=False, schema=schema
-            )
-
-        def pa_to_pd(pa_data):
-            return pa_data.to_pandas(types_mapper=pd.ArrowDtype)
 
         serializer = ExprSerializer()
         proto_expr = serializer.serialize(self.root)
         proto_bytes = proto_expr.SerializeToString()
-        df_pa = pd_to_pa(input_df)
         proto_schema = {}
         for key, value in schema.items():
             proto_schema[key] = get_datatype(value).SerializeToString()
-        arrow_col = eval(proto_bytes, df_pa, proto_schema)
-        return pa_to_pd(arrow_col)
+        proto_type_bytes = get_datatype(dtype).SerializeToString()
+        return matches(proto_bytes, proto_schema, proto_type_bytes)
+
+    def eval(
+        self,
+        input_df: pd.DataFrame,
+        schema: Dict,
+        output_dtype: Optional[Type] = None,
+        parse=True,
+    ) -> pd.Series:
+        from fennel.expr.serializer import ExprSerializer
+
+        def pd_to_pa(pd_data: pd.DataFrame, schema: Dict[str, Type]):
+            new_df = pd_data.copy()
+            for column, dtype in schema.items():
+                dtype = get_datatype(dtype)
+                if column not in new_df.columns:
+                    raise InvalidExprException(
+                        f"column : {column} not found in input dataframe but defined in schema."
+                    )
+                new_df[column] = cast_col_to_arrow_dtype(new_df[column], dtype)
+            new_df = new_df.loc[:, list(schema.keys())]
+            fields = []
+            for column, dtype in schema.items():
+                proto_dtype = get_datatype(dtype)
+                pa_type = convert_dtype_to_arrow_type_with_nullable(proto_dtype)
+                if proto_dtype.HasField("optional_type"):
+                    nullable = True
+                else:
+                    nullable = False
+                field = pa.field(column, type=pa_type, nullable=nullable)
+                fields.append(field)
+            pa_schema = pa.schema(fields)
+            # Replace pd.NA with None
+            new_df = new_df.where(pd.notna(new_df), None)
+            return pa.RecordBatch.from_pandas(
+                new_df, preserve_index=False, schema=pa_schema
+            )
+
+        def pa_to_pd(pa_data, ret_type, parse=True):
+            ret = pa_data.to_pandas(types_mapper=pd.ArrowDtype)
+            ret = cast_col_to_pandas(ret, get_datatype(ret_type))
+            if parse:
+                ret = ret.apply(lambda x: parse_json(ret_type, x))
+            return ret
+
+        serializer = ExprSerializer()
+        proto_expr = serializer.serialize(self.root)
+        proto_bytes = proto_expr.SerializeToString()
+        df_pa = pd_to_pa(input_df, schema)
+        proto_schema = {}
+        for key, value in schema.items():
+            proto_schema[key] = get_datatype(value).SerializeToString()
+        if output_dtype is None:
+            ret_type = self.typeof(schema)
+        else:
+            ret_type = output_dtype
+
+        serialized_ret_type = get_datatype(ret_type).SerializeToString()
+        arrow_col = assign(
+            proto_bytes, df_pa, proto_schema, serialized_ret_type
+        )
+        return pa_to_pd(arrow_col, ret_type, parse)
 
     def __str__(self) -> str:  # type: ignore
         from fennel.expr.visitor import ExprPrinter
@@ -445,7 +469,7 @@ class _Number(Expr):
     def abs(self) -> _Number:
         return _Number(self, Abs())
 
-    def round(self, precision: int) -> _Number:
+    def round(self, precision: int) -> _Number:  # type: ignore
         return _Number(self, Round(precision))
 
     def ceil(self) -> _Number:
@@ -469,6 +493,16 @@ class StrContains(StringOp):
     item: Expr
 
 
+@dataclass
+class StrStartsWith(StringOp):
+    item: Expr
+
+
+@dataclass
+class StrEndsWith(StringOp):
+    item: Expr
+
+
 class Lower(StringOp):
     pass
 
@@ -486,12 +520,22 @@ class StringNoop(StringOp):
 
 
 @dataclass
+class StringStrpTime(StringOp):
+    format: str
+    timezone: Optional[str]
+
+
+@dataclass
+class StringParse(StringOp):
+    dtype: Type
+
+
+@dataclass
 class Concat(StringOp):
     other: Expr
 
 
 class _String(Expr):
-
     def __init__(self, expr: Expr, op: StringOp):
         self.op = op
         self.operand = expr
@@ -513,6 +557,24 @@ class _String(Expr):
 
     def len(self) -> _Number:
         return _Number(_String(self, StrLen()), MathNoop())
+
+    def strptime(
+        self, format: str, timezone: Optional[str] = "UTC"
+    ) -> _DateTime:
+        return _DateTime(
+            _String(self, StringStrpTime(format, timezone)), DateTimeNoop()
+        )
+
+    def parse(self, dtype: Type) -> Expr:
+        return _String(self, StringParse(dtype))
+
+    def startswith(self, item) -> _Bool:
+        item_expr = make_expr(item)
+        return _Bool(_String(self, StrStartsWith(item_expr)))
+
+    def endswith(self, item) -> _Bool:
+        item_expr = make_expr(item)
+        return _Bool(_String(self, StrEndsWith(item_expr)))
 
 
 #########################################################
@@ -573,7 +635,7 @@ class StructOp:
 
 @dataclass
 class StructGet(StructOp):
-    key: Expr
+    field: str
 
 
 class StructNoop(StructOp):
@@ -581,7 +643,17 @@ class StructNoop(StructOp):
 
 
 class _Struct(Expr):
-    pass
+    def __init__(self, expr: Expr, op: DateTimeOp):
+        self.op = op
+        self.operand = expr
+        super(_Struct, self).__init__()
+
+    def get(self, field: str) -> Expr:  # type: ignore
+        if not isinstance(field, str):
+            raise InvalidExprException(
+                f"invalid field access for struct, expected string but got {field}"
+            )
+        return _Struct(self, StructGet(field))  # type: ignore
 
 
 #########################################################
@@ -597,8 +669,114 @@ class DateTimeNoop(DateTimeOp):
     pass
 
 
+class TimeUnit(Enum):
+    YEAR = "year"
+    MONTH = "month"
+    WEEK = "week"
+    DAY = "day"
+    HOUR = "hour"
+    MINUTE = "minute"
+    SECOND = "second"
+    MILLISECOND = "millisecond"
+    MICROSECOND = "microsecond"
+
+    @staticmethod
+    def from_string(time_unit_str: str | TimeUnit) -> TimeUnit:
+        if isinstance(time_unit_str, TimeUnit):
+            return time_unit_str
+
+        for unit in TimeUnit:
+            if unit.value == time_unit_str.lower():
+                return unit
+        raise ValueError(f"Unknown time unit: {time_unit_str}")
+
+
+@dataclass
+class DateTimeParts(DateTimeOp):
+    part: TimeUnit
+
+
+@dataclass
+class DateTimeSince(DateTimeOp):
+    other: Expr
+    unit: TimeUnit
+
+
+@dataclass
+class DateTimeSinceEpoch(DateTimeOp):
+    unit: TimeUnit
+
+
+@dataclass
+class DateTimeStrftime(DateTimeOp):
+    format: str
+
+
+@dataclass
+class DateTimeFromEpoch(Expr):
+    duration: Expr
+    unit: TimeUnit
+
+
 class _DateTime(Expr):
-    pass
+    def __init__(self, expr: Expr, op: DateTimeOp):
+        self.op = op
+        self.operand = expr
+        super(_DateTime, self).__init__()
+
+    def parts(self, part: TimeUnit) -> _Number:
+        part = TimeUnit.from_string(part)
+        return _Number(_DateTime(self, DateTimeParts(part)), MathNoop())
+
+    def since(self, other: Expr, unit: TimeUnit) -> _Number:
+        unit = TimeUnit.from_string(unit)
+        other_expr = make_expr(other)
+        return _Number(
+            _DateTime(self, DateTimeSince(other_expr, unit)), MathNoop()
+        )
+
+    def since_epoch(self, unit: TimeUnit) -> _Number:
+        unit = TimeUnit.from_string(unit)
+        return _Number(_DateTime(self, DateTimeSinceEpoch(unit)), MathNoop())
+
+    def strftime(self, format: str) -> _String:
+        return _String(_DateTime(self, DateTimeStrftime(format)), StringNoop())
+
+    @property
+    def year(self) -> _Number:
+        return self.parts(TimeUnit.YEAR)
+
+    @property
+    def month(self) -> _Number:
+        return self.parts(TimeUnit.MONTH)
+
+    @property
+    def week(self) -> _Number:
+        return self.parts(TimeUnit.WEEK)
+
+    @property
+    def day(self) -> _Number:
+        return self.parts(TimeUnit.DAY)
+
+    @property
+    def hour(self) -> _Number:
+        return self.parts(TimeUnit.HOUR)
+
+    @property
+    def minute(self) -> _Number:
+        return self.parts(TimeUnit.MINUTE)
+
+    @property
+    def second(self) -> _Number:
+        return self.parts(TimeUnit.SECOND)
+
+    @property
+    def millisecond(self) -> _Number:
+        return self.parts(TimeUnit.MILLISECOND)
+
+    @property
+    def microsecond(self) -> _Number:
+        return self.parts(TimeUnit.MICROSECOND)
 
 
 #########################################################
@@ -624,12 +802,30 @@ class ListGet(ListOp):
     index: Expr
 
 
+class ListHasNull(ListOp):
+    pass
+
+
 class ListNoop(ListOp):
     pass
 
 
 class _List(Expr):
-    pass
+    def __init__(self, expr: Expr, op: ListOp):
+        self.op = op
+        self.expr = expr
+        super(_List, self).__init__()
+
+    def len(self) -> _Number:
+        return _Number(_List(self, ListLen()), MathNoop())
+
+    def contains(self, item: Expr) -> _Bool:
+        item_expr = make_expr(item)
+        return _Bool(_List(self, ListContains(item_expr)))
+
+    def get(self, index: Expr) -> Expr:
+        index_expr = make_expr(index)
+        return _List(self, ListGet(index_expr))
 
 
 #######################################################
@@ -651,7 +847,7 @@ class Literal(Expr):
 
 class Unary(Expr):
     def __init__(self, op: str, operand: Any):
-        valid = ("~", "len", "str")
+        valid = ("~", "-")
         if op not in valid:
             raise InvalidExprException(
                 "unary expressions only support %s but given '%s'"
@@ -667,10 +863,7 @@ class Unary(Expr):
         super(Unary, self).__init__()
 
     def __str__(self) -> str:
-        if self.op in ["len", "str"]:
-            return f"{self.op}({self.operand})"
-        else:
-            return f"{self.op}{self.operand}"
+        return f"{self.op} {self.operand}"
 
 
 class Binary(Expr):
@@ -780,10 +973,18 @@ class IsNull(Expr):
 class FillNull(Expr):
     def __init__(self, expr: Expr, value: Any):
         self.expr = expr
-        self.value = make_expr(value)
+        super(FillNull, self).__init__()
+        self.fill = make_expr(value)
 
     def __str__(self) -> str:
-        return f"fillnull({self.expr}, {self.value})"
+        return f"fillnull({self.expr}, {self.fill})"
+
+
+class MakeStruct(Expr):
+    def __init__(self, fields: Dict[str, Expr], type: Type):
+        self.fields = fields
+        self.dtype = type
+        super(MakeStruct, self).__init__()
 
 
 def make_expr(v: Any) -> Any:
@@ -815,14 +1016,14 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
     # TODO: Add support for more types recursively
     if type is not None:
         return Literal(v, type)
+    elif isinstance(v, bool):
+        return Literal(v, bool)
     elif isinstance(v, int):
         return Literal(v, int)
     elif isinstance(v, float):
         return Literal(v, float)
     elif isinstance(v, str):
         return Literal(v, str)
-    elif isinstance(v, bool):
-        return Literal(v, bool)
     elif v is None:
         return Literal(v, None)  # type: ignore
     else:
@@ -833,3 +1034,14 @@ def lit(v: Any, type: Optional[Type] = None) -> Expr:
 
 def when(expr: Expr) -> When:
     return When(expr)
+
+
+def make_struct(fields: Dict[str, Expr], type: Type) -> Expr:
+    fields = {k: make_expr(v) for k, v in fields.items()}
+    return MakeStruct(fields, type)
+
+
+def from_epoch(duration: Expr, unit: str | TimeUnit) -> _DateTime:
+    duration = make_expr(duration)
+    unit = TimeUnit.from_string(unit)
+    return _DateTime(DateTimeFromEpoch(duration, unit), DateTimeNoop())

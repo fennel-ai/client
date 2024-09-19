@@ -48,7 +48,8 @@ sides must have the same data types.
 <Expandable title="within" type="Tuple[Duration, Duration]" defaultVal='("forever", "0s")'>
 Optional kwarg specifying the time window relative to the left side timestamp 
 within which the join should be performed. This can be seen as adding another
-condition to join like `WHERE left_time - d1 < right_time AND right_time < left_time + d1`
+condition to join like `WHERE left_time - d1 < right_time AND right_time < left_time + d2`
+where (d1, d2) = within.
 - The first value in the tuple represents how far back in time should a join
    happen. The term "forever" means that we can go infinitely back in time 
    when searching for an event to join from the left-hand side data.

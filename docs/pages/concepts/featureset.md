@@ -98,6 +98,14 @@ extractors and find a path via extractors to go from a set of input features
 to a set of output features. This allows you to reuse feature logic and not have
 every feature depend on root level inputs like uid.
 
+### Features on Features
+A natural consequence of the extractor resolution is that it's trivial to build
+features using other features - just have the extractor for a feature `f1` take 
+another feature `f2` of the same featureset as an input. Example:
+<pre snippet="featuresets/overview#featureset_feature_on_feature"
+   status="success" message="Deriving a feature from another feature"
+></pre>
+
 ## Dataset Lookups
 A large fraction of real world ML features are built on top of stored data.
 However, featuresets don't have any storage of their own and are completely

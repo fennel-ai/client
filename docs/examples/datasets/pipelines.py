@@ -169,8 +169,35 @@ def test_fraud(client):
             )
 
     # /docsnip
+    # docsnip transform_pipeline_expr
+    # docsnip-highlight next-line
+    from fennel.expr import col
+
+    @dataset
+    class FraudActivityDataset:
+        uid: int
+        merchant_id: int
+        amount_cents: float
+        timestamp: datetime
+
+        @pipeline
+        @inputs(Activity)
+        def create_fraud_dataset(cls, activity: Dataset):
+            return (
+                activity
+                # docsnip-highlight start
+                .filter(col("action_type") == "report").assign(
+                    amount_cents=(
+                        col("amount").str.parse(float) / 100.0
+                    ).astype(float)
+                )
+                # docsnip-highlight end
+                .drop("action_type", "amount")
+            )
+
+    # /docsnip
     # # Sync the dataset
-    client.commit(message="msg", datasets=[Activity, FraudActivity])
+    client.commit(message="msg", datasets=[Activity, FraudActivityDataset])
     now = datetime.now(timezone.utc)
     minute_ago = now - timedelta(minutes=1)
     data = [
@@ -216,7 +243,7 @@ def test_fraud(client):
     assert response.status_code == requests.codes.OK, response.json()
     # Only the mock client contains the data parameter to access the data
     # directly for all datasets.
-    assert client.get_dataset_df("FraudActivity").shape == (3, 4)
+    assert client.get_dataset_df("FraudActivityDataset").shape == (3, 4)
 
 
 @mock
