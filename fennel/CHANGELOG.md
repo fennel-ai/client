@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.29] - 2024-09-23
+- Support expressions in where field of source
+
 ## [1.5.28] - 2024-09-21
 - Add FirstK aggregation
 

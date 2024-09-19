@@ -2297,7 +2297,7 @@ def test_valid_preproc_value():
     )
 
 
-def test_filter_preproc():
+def test_where():
     if sys.version_info >= (3, 10):
 
         @source(
@@ -2356,13 +2356,115 @@ def test_filter_preproc():
             "cdc": "Upsert",
             "bounded": True,
             "idleness": "3600s",
-            "filter": {
-                "entryPoint": "UserInfoDataset_wrapper_2e6e95b302_filter",
-                "sourceCode": 'lambda df: df["user_id"] == 1',
-                "coreCode": 'lambda df: df["user_id"] == 1',
-                "generatedCode": '\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    gender: str\n    # Users date of birth\n    dob: str\n    age: int\n    account_creation_date: datetime\n    country: Optional[str]\n    timestamp: datetime = field(timestamp=True)\n\n\n    @classmethod\n    def wrapper_2e6e95b302(cls, *args, **kwargs):\n        _fennel_internal = lambda df: df["user_id"] == 1\n        return _fennel_internal(*args, **kwargs)\n\n\ndef UserInfoDataset_wrapper_2e6e95b302(*args, **kwargs):\n    _fennel_internal = UserInfoDataset.__fennel_original_cls__\n    return getattr(_fennel_internal, "wrapper_2e6e95b302")(*args, **kwargs)\n\ndef UserInfoDataset_wrapper_2e6e95b302_filter(df: pd.DataFrame) -> pd.DataFrame:\n    return df[UserInfoDataset_wrapper_2e6e95b302(df)]\n    ',
-                "imports": "__fennel_gen_code__=True\nimport pandas as pd\nimport numpy as np\nimport json\nimport os\nimport sys\nfrom datetime import datetime, date\nimport time\nimport random\nimport math\nimport re\nfrom enum import Enum\nfrom typing import *\nfrom collections import defaultdict\nfrom fennel.connectors.connectors import *\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.featuresets import feature\nfrom fennel.featuresets import feature as F\nfrom fennel.lib.expectations import *\nfrom fennel.internal_lib.schema import *\nfrom fennel.internal_lib.utils import *\nfrom fennel.lib.params import *\nfrom fennel.dtypes.dtypes import *\nfrom fennel.datasets.aggregate import *\nfrom fennel.lib.includes import includes\nfrom fennel.lib.metadata import meta\nfrom fennel.lib import secrets, bucketize\nfrom fennel.datasets.datasets import dataset_lookup\nfrom fennel.expr import col, lit, when\n",
+            "whereValue": {
+                "pycode": {
+                    "entryPoint": "UserInfoDataset_wrapper_2e6e95b302_filter",
+                    "sourceCode": 'lambda df: df["user_id"] == 1',
+                    "coreCode": 'lambda df: df["user_id"] == 1',
+                    "generatedCode": '\n\n@meta(owner="test@test.com")\n@dataset\nclass UserInfoDataset:\n    user_id: int = field(key=True)\n    name: str\n    gender: str\n    # Users date of birth\n    dob: str\n    age: int\n    account_creation_date: datetime\n    country: Optional[str]\n    timestamp: datetime = field(timestamp=True)\n\n\n    @classmethod\n    def wrapper_2e6e95b302(cls, *args, **kwargs):\n        _fennel_internal = lambda df: df["user_id"] == 1\n        return _fennel_internal(*args, **kwargs)\n\n\ndef UserInfoDataset_wrapper_2e6e95b302(*args, **kwargs):\n    _fennel_internal = UserInfoDataset.__fennel_original_cls__\n    return getattr(_fennel_internal, "wrapper_2e6e95b302")(*args, **kwargs)\n\ndef UserInfoDataset_wrapper_2e6e95b302_filter(df: pd.DataFrame) -> pd.DataFrame:\n    return df[UserInfoDataset_wrapper_2e6e95b302(df)]\n    ',
+                    "imports": "__fennel_gen_code__=True\nimport pandas as pd\nimport numpy as np\nimport json\nimport os\nimport sys\nfrom datetime import datetime, date\nimport time\nimport random\nimport math\nimport re\nfrom enum import Enum\nfrom typing import *\nfrom collections import defaultdict\nfrom fennel.connectors.connectors import *\nfrom fennel.datasets import *\nfrom fennel.featuresets import *\nfrom fennel.featuresets import feature\nfrom fennel.featuresets import feature as F\nfrom fennel.lib.expectations import *\nfrom fennel.internal_lib.schema import *\nfrom fennel.internal_lib.utils import *\nfrom fennel.lib.params import *\nfrom fennel.dtypes.dtypes import *\nfrom fennel.datasets.aggregate import *\nfrom fennel.lib.includes import includes\nfrom fennel.lib.metadata import meta\nfrom fennel.lib import secrets, bucketize\nfrom fennel.datasets.datasets import dataset_lookup\nfrom fennel.expr import col, lit, when\n",
+                }
             },
+        }
+        expected_source_request = ParseDict(s, connector_proto.Source())
+        assert source_request == expected_source_request, error_message(
+            source_request, expected_source_request
+        )
+
+
+def test_where_expression():
+    if sys.version_info >= (3, 10):
+
+        @source(
+            mysql.table(
+                "users",
+                cursor="added_on",
+            ),
+            every="1h",
+            disorder="20h",
+            bounded=True,
+            idleness="1h",
+            cdc="upsert",
+            where=eval(col("user_id") == 1, schema={"user_id": int}),
+        )
+        @meta(owner="test@test.com")
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        view = InternalTestClient()
+        view.add(UserInfoDataset)
+        sync_request = view._get_sync_request_proto()
+
+        assert len(sync_request.sources) == 1
+        source_request = sync_request.sources[0]
+        s = {
+            "table": {
+                "mysqlTable": {
+                    "db": {
+                        "name": "mysql",
+                        "mysql": {
+                            "host": "localhost",
+                            "database": "test",
+                            "user": "root",
+                            "password": "root",
+                            "port": 3306,
+                        },
+                    },
+                    "tableName": "users",
+                }
+            },
+            "dataset": "UserInfoDataset",
+            "dsVersion": 1,
+            "every": "3600s",
+            "cursor": "added_on",
+            "disorder": "72000s",
+            "timestampField": "timestamp",
+            "cdc": "Upsert",
+            "bounded": True,
+            "idleness": "3600s",
+            "whereValue": {
+                "eval": {
+                    "schema": {
+                        "fields": [
+                            {
+                                "name": "user_id",
+                                "dtype": {
+                                    "intType": {
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "expr": {
+                        "binary": {
+                            "left": {
+                                "ref": {
+                                    "name": "user_id"
+                                }
+                            },
+                            "right": {
+                                "jsonLiteral": {
+                                    "literal": "1",
+                                    "dtype": {
+                                        "intType": {
+                                        }
+                                    }
+                                }
+                            },
+                            'op': 'EQ'
+                        }
+                    }
+                }
+            }
         }
         expected_source_request = ParseDict(s, connector_proto.Source())
         assert source_request == expected_source_request, error_message(

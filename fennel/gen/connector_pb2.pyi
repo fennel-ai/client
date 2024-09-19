@@ -898,32 +898,34 @@ class PubSubTopic(google.protobuf.message.Message):
 global___PubSubTopic = PubSubTopic
 
 @typing_extensions.final
-class PreProcValue(google.protobuf.message.Message):
+class Eval(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
-    class Eval(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    SCHEMA_FIELD_NUMBER: builtins.int
+    EXPR_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
+    @property
+    def schema(self) -> schema_pb2.Schema: ...
+    @property
+    def expr(self) -> expr_pb2.Expr: ...
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    def __init__(
+        self,
+        *,
+        schema: schema_pb2.Schema | None = ...,
+        expr: expr_pb2.Expr | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["eval_type", b"eval_type"]) -> typing_extensions.Literal["expr", "pycode"] | None: ...
 
-        SCHEMA_FIELD_NUMBER: builtins.int
-        EXPR_FIELD_NUMBER: builtins.int
-        PYCODE_FIELD_NUMBER: builtins.int
-        @property
-        def schema(self) -> schema_pb2.Schema: ...
-        @property
-        def expr(self) -> expr_pb2.Expr: ...
-        @property
-        def pycode(self) -> pycode_pb2.PyCode: ...
-        def __init__(
-            self,
-            *,
-            schema: schema_pb2.Schema | None = ...,
-            expr: expr_pb2.Expr | None = ...,
-            pycode: pycode_pb2.PyCode | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> None: ...
-        def WhichOneof(self, oneof_group: typing_extensions.Literal["eval_type", b"eval_type"]) -> typing_extensions.Literal["expr", "pycode"] | None: ...
+global___Eval = Eval
+
+@typing_extensions.final
+class PreProcValue(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     REF_FIELD_NUMBER: builtins.int
     VALUE_FIELD_NUMBER: builtins.int
@@ -932,19 +934,41 @@ class PreProcValue(google.protobuf.message.Message):
     @property
     def value(self) -> schema_pb2.Value: ...
     @property
-    def eval(self) -> global___PreProcValue.Eval: ...
+    def eval(self) -> global___Eval: ...
     def __init__(
         self,
         *,
         ref: builtins.str = ...,
         value: schema_pb2.Value | None = ...,
-        eval: global___PreProcValue.Eval | None = ...,
+        eval: global___Eval | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["eval", b"eval", "ref", b"ref", "value", b"value", "variant", b"variant"]) -> builtins.bool: ...
     def ClearField(self, field_name: typing_extensions.Literal["eval", b"eval", "ref", b"ref", "value", b"value", "variant", b"variant"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["ref", "value", "eval"] | None: ...
 
 global___PreProcValue = PreProcValue
+
+@typing_extensions.final
+class WhereValue(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    PYCODE_FIELD_NUMBER: builtins.int
+    EVAL_FIELD_NUMBER: builtins.int
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    @property
+    def eval(self) -> global___Eval: ...
+    def __init__(
+        self,
+        *,
+        pycode: pycode_pb2.PyCode | None = ...,
+        eval: global___Eval | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["eval", b"eval", "pycode", b"pycode", "variant", b"variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["eval", b"eval", "pycode", b"pycode", "variant", b"variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["pycode", "eval"] | None: ...
+
+global___WhereValue = WhereValue
 
 @typing_extensions.final
 class MongoCollection(google.protobuf.message.Message):
@@ -1072,6 +1096,7 @@ class Source(google.protobuf.message.Message):
     IDLENESS_FIELD_NUMBER: builtins.int
     UNTIL_FIELD_NUMBER: builtins.int
     FILTER_FIELD_NUMBER: builtins.int
+    WHERE_VALUE_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -1095,6 +1120,8 @@ class Source(google.protobuf.message.Message):
     def until(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     @property
     def filter(self) -> pycode_pb2.PyCode: ...
+    @property
+    def where_value(self) -> global___WhereValue: ...
     def __init__(
         self,
         *,
@@ -1113,15 +1140,18 @@ class Source(google.protobuf.message.Message):
         idleness: google.protobuf.duration_pb2.Duration | None = ...,
         until: google.protobuf.timestamp_pb2.Timestamp | None = ...,
         filter: pycode_pb2.PyCode | None = ...,
+        where_value: global___WhereValue | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "filter", b"filter", "idleness", b"idleness", "starting_from", b"starting_from", "table", b"table", "until", b"until"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "filter", b"filter", "idleness", b"idleness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "until", b"until", "version", b"version"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "_where_value", b"_where_value", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "filter", b"filter", "idleness", b"idleness", "starting_from", b"starting_from", "table", b"table", "until", b"until", "where_value", b"where_value"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "_where_value", b"_where_value", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "filter", b"filter", "idleness", b"idleness", "pre_proc", b"pre_proc", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "until", b"until", "version", b"version", "where_value", b"where_value"]) -> None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_filter", b"_filter"]) -> typing_extensions.Literal["filter"] | None: ...
     @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_idleness", b"_idleness"]) -> typing_extensions.Literal["idleness"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_where_value", b"_where_value"]) -> typing_extensions.Literal["where_value"] | None: ...
 
 global___Source = Source
 

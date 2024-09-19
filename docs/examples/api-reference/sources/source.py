@@ -2,6 +2,7 @@ import os
 import sys
 from datetime import datetime
 
+from fennel.expr import col
 from fennel.testing import mock
 
 __owner__ = "nikhil@fennel.ai"
@@ -40,6 +41,7 @@ def test_source_decorator(client):
                     schema={"age": str},
                 ),  # converting age dtype to int
             },
+            where=eval(col("age") >= 18, schema={"age": int}),
             env="prod",
             bounded=True,
             idleness="1h",

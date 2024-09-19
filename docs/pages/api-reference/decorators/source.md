@@ -112,6 +112,15 @@ for other parent types apart from struct, please reach out to Fennel support.
 
 </Expandable>
 
+<Expandable title="where" type="Optional[Union[Callable, Eval]]", defaultVal="None">
+When present, filters source dataset rows with the input value.
+
+As of now there are two kinds of values of where:
+* `Callable`: In this case the input is a lambda which is used to filter rows.
+* `Eval`: Similar to eval value in preproc, the input here is an expression which is
+  used to filter rows.
+</Expandable>
+
 
 <Expandable title="bounded" type="bool" defaultVal="False">
 When not set or set as `False`, it indicates that the source possesses infinite 

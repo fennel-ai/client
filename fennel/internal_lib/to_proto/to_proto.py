@@ -748,6 +748,19 @@ def _to_field_lookup_proto(
 # ------------------------------------------------------------------------------
 
 
+def _preproc_assign_to_pycode(
+    dataset: Dataset, column_name: str, func: Callable
+) -> pycode_proto.PyCode:
+    return wrap_function(
+        dataset._name,
+        get_dataset_core_code(dataset),
+        "",
+        to_includes_proto(func),
+        is_assign=True,
+        column_name=column_name,
+    )
+
+
 def _pre_proc_value_to_proto(
     dataset: Dataset,
     column_name: str,
@@ -774,14 +787,14 @@ def _pre_proc_value_to_proto(
             else:
                 root = pre_proc_value.eval_type.expr.root
             return connector_proto.PreProcValue(
-                eval=connector_proto.PreProcValue.Eval(
+                eval=connector_proto.Eval(
                     schema=schema,
                     expr=serializer.serialize(root),
                 )
             )
         else:
             return connector_proto.PreProcValue(
-                eval=connector_proto.PreProcValue.Eval(
+                eval=connector_proto.Eval(
                     schema=schema,
                     pycode=_preproc_assign_to_pycode(
                         dataset, column_name, pre_proc_value.eval_type
@@ -841,11 +854,9 @@ def _pre_proc_to_proto(
     return proto_pre_proc
 
 
-def _preproc_filter_to_pycode(
-    dataset: Dataset, func: Optional[Callable]
+def _where_value_filter_to_pycode(
+    dataset: Dataset, func: Callable
 ) -> Optional[pycode_proto.PyCode]:
-    if func is None:
-        return None
     return wrap_function(
         dataset._name,
         get_dataset_core_code(dataset),
@@ -855,17 +866,50 @@ def _preproc_filter_to_pycode(
     )
 
 
-def _preproc_assign_to_pycode(
-    dataset: Dataset, column_name: str, func: Callable
-) -> pycode_proto.PyCode:
-    return wrap_function(
-        dataset._name,
-        get_dataset_core_code(dataset),
-        "",
-        to_includes_proto(func),
-        is_assign=True,
-        column_name=column_name,
-    )
+def _where_value_to_proto(
+    dataset: Dataset, where: Optional[connectors.WhereValue]
+) -> Optional[connector_proto.WhereValue]:
+    if where is None:
+        return None
+    elif isinstance(where, Callable):
+        return connector_proto.WhereValue(
+            pycode=_where_value_filter_to_pycode(
+                dataset, where
+            ),
+        )
+    else:
+        assert isinstance(where, connectors.Eval)
+
+        schema = None
+        if where.additional_schema:
+            fields = [
+                schema_proto.Field(name=name, dtype=get_datatype(dtype))
+                for (name, dtype) in where.additional_schema.items()
+            ]
+            schema = schema_proto.Schema(fields=fields)
+
+        if isinstance(where.eval_type, (Expr, TypedExpr)):
+            serializer = ExprSerializer()
+            if isinstance(where.eval_type, Expr):
+                root = where.eval_type.root
+            else:
+                root = where.eval_type.expr.root
+            return connector_proto.WhereValue(
+                eval=connector_proto.Eval(
+                    schema=schema,
+                    expr=serializer.serialize(root),
+                )
+            )
+        else:
+            assert isinstance(where.eval_type, Callable)
+            return connector_proto.WhereValue(
+                eval=connector_proto.Eval(
+                    schema=schema,
+                    pycode=_where_value_filter_to_pycode(
+                        dataset, where.eval_type
+                    ),
+                )
+            )
 
 
 def _conn_to_source_proto(
@@ -938,7 +982,7 @@ def _webhook_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -981,7 +1025,7 @@ def _kafka_conn_to_source_proto(
             if connector.idleness
             else None
         ),
-        filter=_preproc_filter_to_pycode(dataset, connector.where),
+        where_value=_where_value_to_proto(dataset, connector.where),
     )
     return (ext_db, source)
 
@@ -1082,7 +1126,7 @@ def _s3_conn_to_source_proto(
             if connector.idleness
             else None
         ),
-        filter=_preproc_filter_to_pycode(dataset, connector.where),
+        where_value=_where_value_to_proto(dataset, connector.where),
     )
     return (ext_db, source)
 
@@ -1277,7 +1321,7 @@ def _bigquery_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1351,7 +1395,7 @@ def _redshift_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1447,7 +1491,7 @@ def _mongo_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1517,7 +1561,7 @@ def _pubsub_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1562,7 +1606,7 @@ def _snowflake_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1644,7 +1688,7 @@ def _mysql_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1735,7 +1779,7 @@ def _pg_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 
@@ -1822,7 +1866,7 @@ def _kinesis_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            where_value=_where_value_to_proto(dataset, connector.where),
         ),
     )
 

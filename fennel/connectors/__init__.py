@@ -28,6 +28,7 @@ from fennel.connectors.connectors import (
     Ref,
     ref,
     PreProcValue,
+    WhereValue,
     at_timestamp,
     Eval,
     eval,
