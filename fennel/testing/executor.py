@@ -582,6 +582,33 @@ class Executor(Visitor):
             if left_df[col].apply(lambda x: isinstance(x, dict)).any():
                 left_df[col] = left_df[col].apply(lambda x: frozendict(x))
 
+        # Drop fields from right which are not in fields
+        if obj.fields is not None and len(obj.fields) > 0:
+            all_right_fields = [f.name for f in right_ret.fields]  # type: ignore
+            for col_name in obj.fields:
+                if col_name in right_ret.key_fields:  # type: ignore
+                    raise Exception(
+                        f"fields member {col_name} cannot be one of right dataframe's "  # type: ignore
+                        f"key fields {right_ret.key_fields}"
+                    )
+                if col_name not in all_right_fields:
+                    raise Exception(
+                        f"fields member {col_name} not present in right dataframe's "  # type: ignore
+                        f"fields {right_ret.fields}"  # type: ignore
+                    )
+
+            cols_to_drop = []
+            for field in right_ret.fields:  # type: ignore
+                col_name = field.name
+                if (
+                    col_name not in right_ret.key_fields  # type: ignore
+                    and col_name != right_ret.timestamp_field  # type: ignore
+                    and col_name not in obj.fields
+                ):
+                    cols_to_drop.append(col_name)
+
+            right_df.drop(columns=cols_to_drop, inplace=True)
+
         try:
             # TODO(Nitin): Use FENNEL_DELETE_TIMESTAMP to filter out deleted rows appropriately
             right_df = right_df.drop(columns=[FENNEL_DELETE_TIMESTAMP])
@@ -667,32 +694,6 @@ class Executor(Visitor):
             columns=[tmp_ts_low, ts_query_field, tmp_left_ts, tmp_right_ts],
             inplace=True,
         )
-
-        if obj.fields is not None and len(obj.fields) > 0:
-            all_right_fields = [f.name for f in right_ret.fields]  # type: ignore
-            for col_name in obj.fields:
-                if col_name in right_ret.key_fields:  # type: ignore
-                    raise Exception(
-                        f"fields member {col_name} cannot be one of right dataframe's "
-                        f"key fields {right_ret.key_fields}"  # type: ignore
-                    )
-                if col_name not in all_right_fields:
-                    raise Exception(
-                        f"fields member {col_name} not present in right dataframe's "  # type: ignore
-                        f"fields {right_ret.fields}"
-                    )
-
-            cols_to_drop = []
-            for field in right_ret.fields:  # type: ignore
-                col_name = field.name
-                if (
-                    col_name not in right_ret.key_fields  # type: ignore
-                    and col_name != right_ret.timestamp_field  # type: ignore
-                    and col_name not in obj.fields
-                ):
-                    cols_to_drop.append(col_name)
-
-            merged_df.drop(columns=cols_to_drop, inplace=True)
 
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)

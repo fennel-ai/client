@@ -1551,6 +1551,65 @@ class TestBasicJoinWithRightFields(unittest.TestCase):
         assert "extra_field" not in df.columns
 
 
+@meta(owner="test@test.com")
+@source(webhook.endpoint("A"), cdc="upsert", disorder="14d")
+@dataset
+class A:
+    id: int = field(key=True)
+    x: int
+    y: str
+    ts: datetime
+
+
+@meta(owner="test@test.com")
+@source(webhook.endpoint("B"), cdc="upsert", disorder="14d")
+@dataset(index=True)
+class B:
+    id: int = field(key=True)
+    x: int
+    w: str
+    ts: datetime
+
+
+@meta(owner="test@test.com")
+@dataset(index=True)
+class C:
+    id: int = field(key=True)
+    x: int
+    y: str
+    w: str
+    ts: datetime
+
+    @pipeline
+    @inputs(A, B)
+    def join_datasets(cls, a: Dataset, b: Dataset):
+        return a.join(b, how="inner", on=["id"], fields=["w"])
+
+
+class TestJoinWithSameField(unittest.TestCase):
+    @pytest.mark.integration
+    @mock
+    def test_join_with_same_field(self, client):
+        client.commit(
+            message="dummy",
+            datasets=[A, B, C],
+        )
+
+        now = datetime.now(timezone.utc)
+
+        data = [[1, 10, "ab", now], [2, 5, "0x", now]]
+        columns = ["id", "x", "y", "ts"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "A", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+        data = [[1, 10, "cd", now], [2, 35, "0y", now]]
+        columns = ["id", "x", "w", "ts"]
+        df = pd.DataFrame(data, columns=columns)
+        response = client.log("fennel_webhook", "B", df)
+        assert response.status_code == requests.codes.OK, response.json()
+
+
 class TestBasicAggregate(unittest.TestCase):
     @pytest.mark.integration
     @mock

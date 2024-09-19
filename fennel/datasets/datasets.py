@@ -1063,16 +1063,20 @@ class Join(_Node):
         # Add right value columns to left schema. Check for column name collisions. Filter keys present in fields.
         joined_dsschema = copy.deepcopy(left_dsschema)
         for col, dtype in right_value_schema.items():
-            if col in left_schema:
-                raise ValueError(
-                    f"Column name collision. `{col}` already exists in schema of left input {left_dsschema.name}, while joining with {self.dataset.dsschema().name}"
-                )
             if (
                 self.fields is not None
                 and len(self.fields) > 0
                 and col not in self.fields
             ):
                 continue
+
+            if col in left_schema:
+                raise ValueError(
+                    f"Column name collision. `{col}` already exists in schema of "
+                    f"left input {left_dsschema.name}, while joining "
+                    f"with {self.dataset.dsschema().name}"
+                )
+
             joined_dsschema.append_value_column(col, dtype)
 
         # Add timestamp column if present in fields
