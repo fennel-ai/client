@@ -179,7 +179,7 @@ class ExprPrinter(Visitor):
         return str(obj)
 
     def visitUnary(self, obj):
-        return "%s(%s)" % (obj.op, self.visit(obj.expr))
+        return "%s(%s)" % (obj.op, self.visit(obj.operand))
 
     def visitBinary(self, obj):
         return "(%s %s %s)" % (
