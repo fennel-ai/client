@@ -11,6 +11,7 @@ database
 4. Sink refers to a (table, dataset) along with some config
 5. This whole module is called connector.
 """
+
 import builtins
 import collections.abc
 import expression_pb2
@@ -39,7 +40,12 @@ class _CDCStrategy:
     ValueType = typing.NewType("ValueType", builtins.int)
     V: typing_extensions.TypeAlias = ValueType
 
-class _CDCStrategyEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[_CDCStrategy.ValueType], builtins.type):
+class _CDCStrategyEnumTypeWrapper(
+    google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[
+        _CDCStrategy.ValueType
+    ],
+    builtins.type,
+):
     DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
     Append: _CDCStrategy.ValueType  # 0
     Upsert: _CDCStrategy.ValueType  # 1
@@ -89,6 +95,7 @@ class ExtDatabase(google.protobuf.message.Message):
         """When a source has already been created on the console
         Or via code and is specified by name ONLY.
         """
+
     @property
     def s3(self) -> global___S3: ...
     @property
@@ -127,9 +134,94 @@ class ExtDatabase(google.protobuf.message.Message):
         pubsub: global___PubSub | None = ...,
         http: global___Http | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "http", b"http", "kafka", b"kafka", "kinesis", b"kinesis", "mongo", b"mongo", "mysql", b"mysql", "postgres", b"postgres", "pubsub", b"pubsub", "redshift", b"redshift", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant", "webhook", b"webhook"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery", b"bigquery", "http", b"http", "kafka", b"kafka", "kinesis", b"kinesis", "mongo", b"mongo", "mysql", b"mysql", "name", b"name", "postgres", b"postgres", "pubsub", b"pubsub", "redshift", b"redshift", "reference", b"reference", "s3", b"s3", "snowflake", b"snowflake", "variant", b"variant", "webhook", b"webhook"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql", "postgres", "reference", "s3", "bigquery", "snowflake", "kafka", "webhook", "kinesis", "redshift", "mongo", "pubsub", "http"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bigquery",
+            b"bigquery",
+            "http",
+            b"http",
+            "kafka",
+            b"kafka",
+            "kinesis",
+            b"kinesis",
+            "mongo",
+            b"mongo",
+            "mysql",
+            b"mysql",
+            "postgres",
+            b"postgres",
+            "pubsub",
+            b"pubsub",
+            "redshift",
+            b"redshift",
+            "reference",
+            b"reference",
+            "s3",
+            b"s3",
+            "snowflake",
+            b"snowflake",
+            "variant",
+            b"variant",
+            "webhook",
+            b"webhook",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bigquery",
+            b"bigquery",
+            "http",
+            b"http",
+            "kafka",
+            b"kafka",
+            "kinesis",
+            b"kinesis",
+            "mongo",
+            b"mongo",
+            "mysql",
+            b"mysql",
+            "name",
+            b"name",
+            "postgres",
+            b"postgres",
+            "pubsub",
+            b"pubsub",
+            "redshift",
+            b"redshift",
+            "reference",
+            b"reference",
+            "s3",
+            b"s3",
+            "snowflake",
+            b"snowflake",
+            "variant",
+            b"variant",
+            "webhook",
+            b"webhook",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["variant", b"variant"]
+    ) -> (
+        typing_extensions.Literal[
+            "mysql",
+            "postgres",
+            "reference",
+            "s3",
+            "bigquery",
+            "snowflake",
+            "kafka",
+            "webhook",
+            "kinesis",
+            "redshift",
+            "mongo",
+            "pubsub",
+            "http",
+        ]
+        | None
+    ): ...
 
 global___ExtDatabase = ExtDatabase
 
@@ -141,15 +233,25 @@ class SamplingStrategy(google.protobuf.message.Message):
     COLUMNS_USED_FIELD_NUMBER: builtins.int
     sampling_rate: builtins.float
     @property
-    def columns_used(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+    def columns_used(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        builtins.str
+    ]:
         """columns_used is a list of columns used for sampling"""
+
     def __init__(
         self,
         *,
         sampling_rate: builtins.float = ...,
         columns_used: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["columns_used", b"columns_used", "sampling_rate", b"sampling_rate"]) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "columns_used", b"columns_used", "sampling_rate", b"sampling_rate"
+        ],
+    ) -> None: ...
 
 global___SamplingStrategy = SamplingStrategy
 
@@ -165,9 +267,21 @@ class PubSubFormat(google.protobuf.message.Message):
         *,
         json: global___JsonFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["json", b"json", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["json", b"json", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "json", b"json", "variant", b"variant"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "json", b"json", "variant", b"variant"
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["variant", b"variant"]
+    ) -> typing_extensions.Literal["json"] | None: ...
 
 global___PubSubFormat = PubSubFormat
 
@@ -191,9 +305,35 @@ class KafkaFormat(google.protobuf.message.Message):
         avro: global___AvroFormat | None = ...,
         protobuf: global___ProtobufFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "protobuf", b"protobuf", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["avro", b"avro", "json", b"json", "protobuf", b"protobuf", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["json", "avro", "protobuf"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "avro",
+            b"avro",
+            "json",
+            b"json",
+            "protobuf",
+            b"protobuf",
+            "variant",
+            b"variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "avro",
+            b"avro",
+            "json",
+            b"json",
+            "protobuf",
+            b"protobuf",
+            "variant",
+            b"variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["variant", b"variant"]
+    ) -> typing_extensions.Literal["json", "avro", "protobuf"] | None: ...
 
 global___KafkaFormat = KafkaFormat
 
@@ -229,8 +369,18 @@ class AvroFormat(google.protobuf.message.Message):
         *,
         schema_registry: schema_registry_pb2.SchemaRegistry | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "schema_registry", b"schema_registry"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "schema_registry", b"schema_registry"
+        ],
+    ) -> None: ...
 
 global___AvroFormat = AvroFormat
 
@@ -246,8 +396,18 @@ class ProtobufFormat(google.protobuf.message.Message):
         *,
         schema_registry: schema_registry_pb2.SchemaRegistry | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["schema_registry", b"schema_registry"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "schema_registry", b"schema_registry"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "schema_registry", b"schema_registry"
+        ],
+    ) -> None: ...
 
 global___ProtobufFormat = ProtobufFormat
 
@@ -259,7 +419,12 @@ class Reference(google.protobuf.message.Message):
         ValueType = typing.NewType("ValueType", builtins.int)
         V: typing_extensions.TypeAlias = ValueType
 
-    class _ExtDBTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Reference._ExtDBType.ValueType], builtins.type):  # noqa: F821
+    class _ExtDBTypeEnumTypeWrapper(
+        google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[
+            Reference._ExtDBType.ValueType
+        ],
+        builtins.type,
+    ):  # noqa: F821
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
         MYSQL: Reference._ExtDBType.ValueType  # 0
         POSTGRES: Reference._ExtDBType.ValueType  # 1
@@ -293,7 +458,9 @@ class Reference(google.protobuf.message.Message):
         *,
         dbtype: global___Reference.ExtDBType.ValueType = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dbtype", b"dbtype"]) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["dbtype", b"dbtype"]
+    ) -> None: ...
 
 global___Reference = Reference
 
@@ -312,8 +479,15 @@ class Webhook(google.protobuf.message.Message):
         name: builtins.str = ...,
         retention: google.protobuf.duration_pb2.Duration | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["retention", b"retention"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["name", b"name", "retention", b"retention"]) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["retention", b"retention"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "name", b"name", "retention", b"retention"
+        ],
+    ) -> None: ...
 
 global___Webhook = Webhook
 
@@ -352,12 +526,62 @@ class MySQL(google.protobuf.message.Message):
         port: builtins.int = ...,
         jdbc_params: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "jdbc_params", b"jdbc_params", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "port", b"port", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "database",
+            b"database",
+            "host",
+            b"host",
+            "jdbc_params",
+            b"jdbc_params",
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "port",
+            b"port",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "password_variant", b"password_variant"
+        ],
+    ) -> typing_extensions.Literal["password", "password_secret"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "username_variant", b"username_variant"
+        ],
+    ) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___MySQL = MySQL
 
@@ -396,12 +620,62 @@ class Postgres(google.protobuf.message.Message):
         port: builtins.int = ...,
         jdbc_params: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "jdbc_params", b"jdbc_params", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "port", b"port", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "database",
+            b"database",
+            "host",
+            b"host",
+            "jdbc_params",
+            b"jdbc_params",
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "port",
+            b"port",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "password_variant", b"password_variant"
+        ],
+    ) -> typing_extensions.Literal["password", "password_secret"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "username_variant", b"username_variant"
+        ],
+    ) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___Postgres = Postgres
 
@@ -431,14 +705,76 @@ class S3(google.protobuf.message.Message):
         aws_access_key_id_secret: secret_pb2.SecretRef | None = ...,
         role_arn: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "aws_access_key_id", b"aws_access_key_id", "aws_access_key_id_secret", b"aws_access_key_id_secret", "aws_access_key_id_variant", b"aws_access_key_id_variant", "aws_secret_access_key", b"aws_secret_access_key", "aws_secret_access_key_secret", b"aws_secret_access_key_secret", "aws_secret_access_key_variant", b"aws_secret_access_key_variant", "role_arn", b"role_arn"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "aws_access_key_id", b"aws_access_key_id", "aws_access_key_id_secret", b"aws_access_key_id_secret", "aws_access_key_id_variant", b"aws_access_key_id_variant", "aws_secret_access_key", b"aws_secret_access_key", "aws_secret_access_key_secret", b"aws_secret_access_key_secret", "aws_secret_access_key_variant", b"aws_secret_access_key_variant", "role_arn", b"role_arn"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_role_arn",
+            b"_role_arn",
+            "aws_access_key_id",
+            b"aws_access_key_id",
+            "aws_access_key_id_secret",
+            b"aws_access_key_id_secret",
+            "aws_access_key_id_variant",
+            b"aws_access_key_id_variant",
+            "aws_secret_access_key",
+            b"aws_secret_access_key",
+            "aws_secret_access_key_secret",
+            b"aws_secret_access_key_secret",
+            "aws_secret_access_key_variant",
+            b"aws_secret_access_key_variant",
+            "role_arn",
+            b"role_arn",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_role_arn",
+            b"_role_arn",
+            "aws_access_key_id",
+            b"aws_access_key_id",
+            "aws_access_key_id_secret",
+            b"aws_access_key_id_secret",
+            "aws_access_key_id_variant",
+            b"aws_access_key_id_variant",
+            "aws_secret_access_key",
+            b"aws_secret_access_key",
+            "aws_secret_access_key_secret",
+            b"aws_secret_access_key_secret",
+            "aws_secret_access_key_variant",
+            b"aws_secret_access_key_variant",
+            "role_arn",
+            b"role_arn",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_role_arn", b"_role_arn"]) -> typing_extensions.Literal["role_arn"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_role_arn", b"_role_arn"]
+    ) -> typing_extensions.Literal["role_arn"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["aws_access_key_id_variant", b"aws_access_key_id_variant"]) -> typing_extensions.Literal["aws_access_key_id", "aws_access_key_id_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "aws_access_key_id_variant", b"aws_access_key_id_variant"
+        ],
+    ) -> (
+        typing_extensions.Literal[
+            "aws_access_key_id", "aws_access_key_id_secret"
+        ]
+        | None
+    ): ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["aws_secret_access_key_variant", b"aws_secret_access_key_variant"]) -> typing_extensions.Literal["aws_secret_access_key", "aws_secret_access_key_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "aws_secret_access_key_variant", b"aws_secret_access_key_variant"
+        ],
+    ) -> (
+        typing_extensions.Literal[
+            "aws_secret_access_key", "aws_secret_access_key_secret"
+        ]
+        | None
+    ): ...
 
 global___S3 = S3
 
@@ -464,9 +800,43 @@ class Bigquery(google.protobuf.message.Message):
         dataset_id: builtins.str = ...,
         project_id: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset_id", b"dataset_id", "project_id", b"project_id", "service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["service_account_key_variant", b"service_account_key_variant"]) -> typing_extensions.Literal["service_account_key", "service_account_key_secret"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "service_account_key",
+            b"service_account_key",
+            "service_account_key_secret",
+            b"service_account_key_secret",
+            "service_account_key_variant",
+            b"service_account_key_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "dataset_id",
+            b"dataset_id",
+            "project_id",
+            b"project_id",
+            "service_account_key",
+            b"service_account_key",
+            "service_account_key_secret",
+            b"service_account_key_secret",
+            "service_account_key_variant",
+            b"service_account_key_variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "service_account_key_variant", b"service_account_key_variant"
+        ],
+    ) -> (
+        typing_extensions.Literal[
+            "service_account_key", "service_account_key_secret"
+        ]
+        | None
+    ): ...
 
 global___Bigquery = Bigquery
 
@@ -508,12 +878,64 @@ class Snowflake(google.protobuf.message.Message):
         role: builtins.str = ...,
         database: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "role", b"role", "schema", b"schema", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant", "warehouse", b"warehouse"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "account",
+            b"account",
+            "database",
+            b"database",
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "role",
+            b"role",
+            "schema",
+            b"schema",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+            "warehouse",
+            b"warehouse",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "password_variant", b"password_variant"
+        ],
+    ) -> typing_extensions.Literal["password", "password_secret"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "username_variant", b"username_variant"
+        ],
+    ) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___Snowflake = Snowflake
 
@@ -555,12 +977,70 @@ class Kafka(google.protobuf.message.Message):
         sasl_jaas_config: builtins.str = ...,
         group_id: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["sasl_password_secret", b"sasl_password_secret", "sasl_password_variant", b"sasl_password_variant", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "sasl_username_secret", b"sasl_username_secret", "sasl_username_variant", b"sasl_username_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_password_secret", b"sasl_password_secret", "sasl_password_variant", b"sasl_password_variant", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "sasl_username_secret", b"sasl_username_secret", "sasl_username_variant", b"sasl_username_variant", "security_protocol", b"security_protocol"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "sasl_password_secret",
+            b"sasl_password_secret",
+            "sasl_password_variant",
+            b"sasl_password_variant",
+            "sasl_plain_password",
+            b"sasl_plain_password",
+            "sasl_plain_username",
+            b"sasl_plain_username",
+            "sasl_username_secret",
+            b"sasl_username_secret",
+            "sasl_username_variant",
+            b"sasl_username_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bootstrap_servers",
+            b"bootstrap_servers",
+            "group_id",
+            b"group_id",
+            "sasl_jaas_config",
+            b"sasl_jaas_config",
+            "sasl_mechanism",
+            b"sasl_mechanism",
+            "sasl_password_secret",
+            b"sasl_password_secret",
+            "sasl_password_variant",
+            b"sasl_password_variant",
+            "sasl_plain_password",
+            b"sasl_plain_password",
+            "sasl_plain_username",
+            b"sasl_plain_username",
+            "sasl_username_secret",
+            b"sasl_username_secret",
+            "sasl_username_variant",
+            b"sasl_username_variant",
+            "security_protocol",
+            b"security_protocol",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["sasl_password_variant", b"sasl_password_variant"]) -> typing_extensions.Literal["sasl_plain_password", "sasl_password_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "sasl_password_variant", b"sasl_password_variant"
+        ],
+    ) -> (
+        typing_extensions.Literal["sasl_plain_password", "sasl_password_secret"]
+        | None
+    ): ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["sasl_username_variant", b"sasl_username_variant"]) -> typing_extensions.Literal["sasl_plain_username", "sasl_username_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "sasl_username_variant", b"sasl_username_variant"
+        ],
+    ) -> (
+        typing_extensions.Literal["sasl_plain_username", "sasl_username_secret"]
+        | None
+    ): ...
 
 global___Kafka = Kafka
 
@@ -575,7 +1055,9 @@ class Kinesis(google.protobuf.message.Message):
         *,
         role_arn: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["role_arn", b"role_arn"]) -> None: ...
+    def ClearField(
+        self, field_name: typing_extensions.Literal["role_arn", b"role_arn"]
+    ) -> None: ...
 
 global___Kinesis = Kinesis
 
@@ -603,12 +1085,54 @@ class Credentials(google.protobuf.message.Message):
         password: builtins.str = ...,
         password_secret: secret_pb2.SecretRef | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "username", b"username", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "username", b"username", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "username",
+            b"username",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "username",
+            b"username",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "password_variant", b"password_variant"
+        ],
+    ) -> typing_extensions.Literal["password", "password_secret"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["username", "username_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "username_variant", b"username_variant"
+        ],
+    ) -> typing_extensions.Literal["username", "username_secret"] | None: ...
 
 global___Credentials = Credentials
 
@@ -627,9 +1151,33 @@ class RedshiftAuthentication(google.protobuf.message.Message):
         s3_access_role_arn: builtins.str = ...,
         credentials: global___Credentials | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["credentials", b"credentials", "s3_access_role_arn", b"s3_access_role_arn", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["credentials", b"credentials", "s3_access_role_arn", b"s3_access_role_arn", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["s3_access_role_arn", "credentials"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "credentials",
+            b"credentials",
+            "s3_access_role_arn",
+            b"s3_access_role_arn",
+            "variant",
+            b"variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "credentials",
+            b"credentials",
+            "s3_access_role_arn",
+            b"s3_access_role_arn",
+            "variant",
+            b"variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["variant", b"variant"]
+    ) -> (
+        typing_extensions.Literal["s3_access_role_arn", "credentials"] | None
+    ): ...
 
 global___RedshiftAuthentication = RedshiftAuthentication
 
@@ -657,8 +1205,27 @@ class Redshift(google.protobuf.message.Message):
         schema: builtins.str = ...,
         redshift_authentication: global___RedshiftAuthentication | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["redshift_authentication", b"redshift_authentication"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "port", b"port", "redshift_authentication", b"redshift_authentication", "schema", b"schema"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "redshift_authentication", b"redshift_authentication"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "database",
+            b"database",
+            "host",
+            b"host",
+            "port",
+            b"port",
+            "redshift_authentication",
+            b"redshift_authentication",
+            "schema",
+            b"schema",
+        ],
+    ) -> None: ...
 
 global___Redshift = Redshift
 
@@ -691,12 +1258,58 @@ class Mongo(google.protobuf.message.Message):
         host: builtins.str = ...,
         database: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "database",
+            b"database",
+            "host",
+            b"host",
+            "password",
+            b"password",
+            "password_secret",
+            b"password_secret",
+            "password_variant",
+            b"password_variant",
+            "user",
+            b"user",
+            "username_secret",
+            b"username_secret",
+            "username_variant",
+            b"username_variant",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "password_variant", b"password_variant"
+        ],
+    ) -> typing_extensions.Literal["password", "password_secret"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "username_variant", b"username_variant"
+        ],
+    ) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___Mongo = Mongo
 
@@ -719,9 +1332,41 @@ class PubSub(google.protobuf.message.Message):
         service_account_key_secret: secret_pb2.SecretRef | None = ...,
         project_id: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["project_id", b"project_id", "service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["service_account_key_variant", b"service_account_key_variant"]) -> typing_extensions.Literal["service_account_key", "service_account_key_secret"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "service_account_key",
+            b"service_account_key",
+            "service_account_key_secret",
+            b"service_account_key_secret",
+            "service_account_key_variant",
+            b"service_account_key_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "project_id",
+            b"project_id",
+            "service_account_key",
+            b"service_account_key",
+            "service_account_key_secret",
+            b"service_account_key_secret",
+            "service_account_key_variant",
+            b"service_account_key_variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "service_account_key_variant", b"service_account_key_variant"
+        ],
+    ) -> (
+        typing_extensions.Literal[
+            "service_account_key", "service_account_key_secret"
+        ]
+        | None
+    ): ...
 
 global___PubSub = PubSub
 
@@ -740,9 +1385,34 @@ class SensitiveDatum(google.protobuf.message.Message):
         secret: builtins.str = ...,
         secret_ref: secret_pb2.SecretRef | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["secret", b"secret", "secret_ref", b"secret_ref", "sensitive_datum_variant", b"sensitive_datum_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["secret", b"secret", "secret_ref", b"secret_ref", "sensitive_datum_variant", b"sensitive_datum_variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["sensitive_datum_variant", b"sensitive_datum_variant"]) -> typing_extensions.Literal["secret", "secret_ref"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "secret",
+            b"secret",
+            "secret_ref",
+            b"secret_ref",
+            "sensitive_datum_variant",
+            b"sensitive_datum_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "secret",
+            b"secret",
+            "secret_ref",
+            b"secret_ref",
+            "sensitive_datum_variant",
+            b"sensitive_datum_variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "sensitive_datum_variant", b"sensitive_datum_variant"
+        ],
+    ) -> typing_extensions.Literal["secret", "secret_ref"] | None: ...
 
 global___SensitiveDatum = SensitiveDatum
 
@@ -763,6 +1433,7 @@ class Http(google.protobuf.message.Message):
         """Making this optional for now since local testing doesn't require it
         Next id: 5
         """
+
     def __init__(
         self,
         *,
@@ -771,12 +1442,47 @@ class Http(google.protobuf.message.Message):
         healthz: builtins.str = ...,
         ca_cert: global___SensitiveDatum | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_ca_cert", b"_ca_cert", "ca_cert", b"ca_cert", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_ca_cert", b"_ca_cert", "ca_cert", b"ca_cert", "healthz", b"healthz", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_ca_cert",
+            b"_ca_cert",
+            "ca_cert",
+            b"ca_cert",
+            "host",
+            b"host",
+            "host_secret",
+            b"host_secret",
+            "host_variant",
+            b"host_variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_ca_cert",
+            b"_ca_cert",
+            "ca_cert",
+            b"ca_cert",
+            "healthz",
+            b"healthz",
+            "host",
+            b"host",
+            "host_secret",
+            b"host_secret",
+            "host_variant",
+            b"host_variant",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ca_cert", b"_ca_cert"]) -> typing_extensions.Literal["ca_cert"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_ca_cert", b"_ca_cert"]
+    ) -> typing_extensions.Literal["ca_cert"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["host_variant", b"host_variant"]) -> typing_extensions.Literal["host", "host_secret"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal["host_variant", b"host_variant"],
+    ) -> typing_extensions.Literal["host", "host_secret"] | None: ...
 
 global___Http = Http
 
@@ -841,9 +1547,87 @@ class ExtTable(google.protobuf.message.Message):
         pubsub_topic: global___PubSubTopic | None = ...,
         http_path: global___HttpPath | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "http_path", b"http_path", "kafka_topic", b"kafka_topic", "kinesis_stream", b"kinesis_stream", "mongo_collection", b"mongo_collection", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "pubsub_topic", b"pubsub_topic", "redshift_table", b"redshift_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["bigquery_table", b"bigquery_table", "endpoint", b"endpoint", "http_path", b"http_path", "kafka_topic", b"kafka_topic", "kinesis_stream", b"kinesis_stream", "mongo_collection", b"mongo_collection", "mysql_table", b"mysql_table", "pg_table", b"pg_table", "pubsub_topic", b"pubsub_topic", "redshift_table", b"redshift_table", "s3_table", b"s3_table", "snowflake_table", b"snowflake_table", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["mysql_table", "pg_table", "s3_table", "kafka_topic", "snowflake_table", "bigquery_table", "endpoint", "kinesis_stream", "redshift_table", "mongo_collection", "pubsub_topic", "http_path"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bigquery_table",
+            b"bigquery_table",
+            "endpoint",
+            b"endpoint",
+            "http_path",
+            b"http_path",
+            "kafka_topic",
+            b"kafka_topic",
+            "kinesis_stream",
+            b"kinesis_stream",
+            "mongo_collection",
+            b"mongo_collection",
+            "mysql_table",
+            b"mysql_table",
+            "pg_table",
+            b"pg_table",
+            "pubsub_topic",
+            b"pubsub_topic",
+            "redshift_table",
+            b"redshift_table",
+            "s3_table",
+            b"s3_table",
+            "snowflake_table",
+            b"snowflake_table",
+            "variant",
+            b"variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "bigquery_table",
+            b"bigquery_table",
+            "endpoint",
+            b"endpoint",
+            "http_path",
+            b"http_path",
+            "kafka_topic",
+            b"kafka_topic",
+            "kinesis_stream",
+            b"kinesis_stream",
+            "mongo_collection",
+            b"mongo_collection",
+            "mysql_table",
+            b"mysql_table",
+            "pg_table",
+            b"pg_table",
+            "pubsub_topic",
+            b"pubsub_topic",
+            "redshift_table",
+            b"redshift_table",
+            "s3_table",
+            b"s3_table",
+            "snowflake_table",
+            b"snowflake_table",
+            "variant",
+            b"variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["variant", b"variant"]
+    ) -> (
+        typing_extensions.Literal[
+            "mysql_table",
+            "pg_table",
+            "s3_table",
+            "kafka_topic",
+            "snowflake_table",
+            "bigquery_table",
+            "endpoint",
+            "kinesis_stream",
+            "redshift_table",
+            "mongo_collection",
+            "pubsub_topic",
+            "http_path",
+        ]
+        | None
+    ): ...
 
 global___ExtTable = ExtTable
 
@@ -862,8 +1646,15 @@ class MySQLTable(google.protobuf.message.Message):
         db: global___ExtDatabase | None = ...,
         table_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["db", b"db"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "table_name", b"table_name"
+        ],
+    ) -> None: ...
 
 global___MySQLTable = MySQLTable
 
@@ -885,9 +1676,29 @@ class PostgresTable(google.protobuf.message.Message):
         table_name: builtins.str = ...,
         slot_name: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_slot_name", b"_slot_name", "db", b"db", "slot_name", b"slot_name"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_slot_name", b"_slot_name", "db", b"db", "slot_name", b"slot_name", "table_name", b"table_name"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_slot_name", b"_slot_name"]) -> typing_extensions.Literal["slot_name"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_slot_name", b"_slot_name", "db", b"db", "slot_name", b"slot_name"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_slot_name",
+            b"_slot_name",
+            "db",
+            b"db",
+            "slot_name",
+            b"slot_name",
+            "table_name",
+            b"table_name",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal["_slot_name", b"_slot_name"],
+    ) -> typing_extensions.Literal["slot_name"] | None: ...
 
 global___PostgresTable = PostgresTable
 
@@ -915,7 +1726,11 @@ class S3Table(google.protobuf.message.Message):
     @property
     def spread(self) -> google.protobuf.duration_pb2.Duration: ...
     @property
-    def headers(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    def headers(
+        self,
+    ) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[
+        builtins.str
+    ]: ...
     def __init__(
         self,
         *,
@@ -929,9 +1744,40 @@ class S3Table(google.protobuf.message.Message):
         spread: google.protobuf.duration_pb2.Duration | None = ...,
         headers: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "db", b"db", "spread", b"spread"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_spread", b"_spread", "bucket", b"bucket", "db", b"db", "delimiter", b"delimiter", "format", b"format", "headers", b"headers", "path_prefix", b"path_prefix", "path_suffix", b"path_suffix", "pre_sorted", b"pre_sorted", "spread", b"spread"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_spread", b"_spread"]) -> typing_extensions.Literal["spread"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_spread", b"_spread", "db", b"db", "spread", b"spread"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_spread",
+            b"_spread",
+            "bucket",
+            b"bucket",
+            "db",
+            b"db",
+            "delimiter",
+            b"delimiter",
+            "format",
+            b"format",
+            "headers",
+            b"headers",
+            "path_prefix",
+            b"path_prefix",
+            "path_suffix",
+            b"path_suffix",
+            "pre_sorted",
+            b"pre_sorted",
+            "spread",
+            b"spread",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_spread", b"_spread"]
+    ) -> typing_extensions.Literal["spread"] | None: ...
 
 global___S3Table = S3Table
 
@@ -954,8 +1800,16 @@ class KafkaTopic(google.protobuf.message.Message):
         topic: builtins.str = ...,
         format: global___KafkaFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format", "topic", b"topic"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal["db", b"db", "format", b"format"],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "format", b"format", "topic", b"topic"
+        ],
+    ) -> None: ...
 
 global___KafkaTopic = KafkaTopic
 
@@ -974,8 +1828,15 @@ class BigqueryTable(google.protobuf.message.Message):
         db: global___ExtDatabase | None = ...,
         table_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["db", b"db"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "table_name", b"table_name"
+        ],
+    ) -> None: ...
 
 global___BigqueryTable = BigqueryTable
 
@@ -994,8 +1855,15 @@ class SnowflakeTable(google.protobuf.message.Message):
         db: global___ExtDatabase | None = ...,
         table_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["db", b"db"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "table_name", b"table_name"
+        ],
+    ) -> None: ...
 
 global___SnowflakeTable = SnowflakeTable
 
@@ -1018,8 +1886,18 @@ class WebhookEndpoint(google.protobuf.message.Message):
         endpoint: builtins.str = ...,
         duration: google.protobuf.duration_pb2.Duration | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "duration", b"duration"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "duration", b"duration", "endpoint", b"endpoint"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "duration", b"duration"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "duration", b"duration", "endpoint", b"endpoint"
+        ],
+    ) -> None: ...
 
 global___WebhookEndpoint = WebhookEndpoint
 
@@ -1048,8 +1926,27 @@ class KinesisStream(google.protobuf.message.Message):
         format: builtins.str = ...,
         db: global___ExtDatabase | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "init_timestamp", b"init_timestamp"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format", "init_position", b"init_position", "init_timestamp", b"init_timestamp", "stream_arn", b"stream_arn"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "init_timestamp", b"init_timestamp"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db",
+            b"db",
+            "format",
+            b"format",
+            "init_position",
+            b"init_position",
+            "init_timestamp",
+            b"init_timestamp",
+            "stream_arn",
+            b"stream_arn",
+        ],
+    ) -> None: ...
 
 global___KinesisStream = KinesisStream
 
@@ -1068,8 +1965,15 @@ class RedshiftTable(google.protobuf.message.Message):
         db: global___ExtDatabase | None = ...,
         table_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "table_name", b"table_name"]) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["db", b"db"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "table_name", b"table_name"
+        ],
+    ) -> None: ...
 
 global___RedshiftTable = RedshiftTable
 
@@ -1092,8 +1996,16 @@ class PubSubTopic(google.protobuf.message.Message):
         topic_id: builtins.str = ...,
         format: global___PubSubFormat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["db", b"db", "format", b"format", "topic_id", b"topic_id"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal["db", b"db", "format", b"format"],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "db", b"db", "format", b"format", "topic_id", b"topic_id"
+        ],
+    ) -> None: ...
 
 global___PubSubTopic = PubSubTopic
 
@@ -1115,7 +2027,12 @@ class HttpPath(google.protobuf.message.Message):
             key: builtins.str = ...,
             value: builtins.str = ...,
         ) -> None: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "key", b"key", "value", b"value"
+            ],
+        ) -> None: ...
 
     DB_FIELD_NUMBER: builtins.int
     ENDPOINT_FIELD_NUMBER: builtins.int
@@ -1126,48 +2043,103 @@ class HttpPath(google.protobuf.message.Message):
     endpoint: builtins.str
     limit: builtins.int
     @property
-    def headers(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]: ...
+    def headers(
+        self,
+    ) -> google.protobuf.internal.containers.ScalarMap[
+        builtins.str, builtins.str
+    ]: ...
     def __init__(
         self,
         *,
         db: global___ExtDatabase | None = ...,
         endpoint: builtins.str = ...,
         limit: builtins.int | None = ...,
-        headers: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
+        headers: (
+            collections.abc.Mapping[builtins.str, builtins.str] | None
+        ) = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_limit", b"_limit", "db", b"db", "limit", b"limit"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_limit", b"_limit", "db", b"db", "endpoint", b"endpoint", "headers", b"headers", "limit", b"limit"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_limit", b"_limit"]) -> typing_extensions.Literal["limit"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_limit", b"_limit", "db", b"db", "limit", b"limit"
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_limit",
+            b"_limit",
+            "db",
+            b"db",
+            "endpoint",
+            b"endpoint",
+            "headers",
+            b"headers",
+            "limit",
+            b"limit",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_limit", b"_limit"]
+    ) -> typing_extensions.Literal["limit"] | None: ...
 
 global___HttpPath = HttpPath
 
 @typing_extensions.final
-class PreProcValue(google.protobuf.message.Message):
+class Eval(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    @typing_extensions.final
-    class Eval(google.protobuf.message.Message):
-        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+    SCHEMA_FIELD_NUMBER: builtins.int
+    EXPR_FIELD_NUMBER: builtins.int
+    PYCODE_FIELD_NUMBER: builtins.int
+    @property
+    def schema(self) -> schema_pb2.Schema: ...
+    @property
+    def expr(self) -> expression_pb2.Expr: ...
+    @property
+    def pycode(self) -> pycode_pb2.PyCode: ...
+    def __init__(
+        self,
+        *,
+        schema: schema_pb2.Schema | None = ...,
+        expr: expression_pb2.Expr | None = ...,
+        pycode: pycode_pb2.PyCode | None = ...,
+    ) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "eval_type",
+            b"eval_type",
+            "expr",
+            b"expr",
+            "pycode",
+            b"pycode",
+            "schema",
+            b"schema",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "eval_type",
+            b"eval_type",
+            "expr",
+            b"expr",
+            "pycode",
+            b"pycode",
+            "schema",
+            b"schema",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["eval_type", b"eval_type"]
+    ) -> typing_extensions.Literal["expr", "pycode"] | None: ...
 
-        SCHEMA_FIELD_NUMBER: builtins.int
-        EXPR_FIELD_NUMBER: builtins.int
-        PYCODE_FIELD_NUMBER: builtins.int
-        @property
-        def schema(self) -> schema_pb2.Schema: ...
-        @property
-        def expr(self) -> expression_pb2.Expr: ...
-        @property
-        def pycode(self) -> pycode_pb2.PyCode: ...
-        def __init__(
-            self,
-            *,
-            schema: schema_pb2.Schema | None = ...,
-            expr: expression_pb2.Expr | None = ...,
-            pycode: pycode_pb2.PyCode | None = ...,
-        ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> None: ...
-        def WhichOneof(self, oneof_group: typing_extensions.Literal["eval_type", b"eval_type"]) -> typing_extensions.Literal["expr", "pycode"] | None: ...
+global___Eval = Eval
+
+@typing_extensions.final
+class PreProcValue(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     REF_FIELD_NUMBER: builtins.int
     VALUE_FIELD_NUMBER: builtins.int
@@ -1176,17 +2148,43 @@ class PreProcValue(google.protobuf.message.Message):
     @property
     def value(self) -> schema_pb2.Value: ...
     @property
-    def eval(self) -> global___PreProcValue.Eval: ...
+    def eval(self) -> global___Eval: ...
     def __init__(
         self,
         *,
         ref: builtins.str = ...,
         value: schema_pb2.Value | None = ...,
-        eval: global___PreProcValue.Eval | None = ...,
+        eval: global___Eval | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["eval", b"eval", "ref", b"ref", "value", b"value", "variant", b"variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["eval", b"eval", "ref", b"ref", "value", b"value", "variant", b"variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["variant", b"variant"]) -> typing_extensions.Literal["ref", "value", "eval"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "eval",
+            b"eval",
+            "ref",
+            b"ref",
+            "value",
+            b"value",
+            "variant",
+            b"variant",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "eval",
+            b"eval",
+            "ref",
+            b"ref",
+            "value",
+            b"value",
+            "variant",
+            b"variant",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["variant", b"variant"]
+    ) -> typing_extensions.Literal["ref", "value", "eval"] | None: ...
 
 global___PreProcValue = PreProcValue
 
@@ -1205,8 +2203,15 @@ class MongoCollection(google.protobuf.message.Message):
         db: global___ExtDatabase | None = ...,
         collection_name: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["db", b"db"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["collection_name", b"collection_name", "db", b"db"]) -> None: ...
+    def HasField(
+        self, field_name: typing_extensions.Literal["db", b"db"]
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "collection_name", b"collection_name", "db", b"db"
+        ],
+    ) -> None: ...
 
 global___MongoCollection = MongoCollection
 
@@ -1224,7 +2229,12 @@ class SnapshotData(google.protobuf.message.Message):
         marker: builtins.str = ...,
         num_retain: builtins.int = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["marker", b"marker", "num_retain", b"num_retain"]) -> None: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "marker", b"marker", "num_retain", b"num_retain"
+        ],
+    ) -> None: ...
 
 global___SnapshotData = SnapshotData
 
@@ -1268,9 +2278,37 @@ class Style(google.protobuf.message.Message):
         recreate: global___Recreate | None = ...,
         snapshot: global___SnapshotData | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["Style", b"Style", "incremental", b"incremental", "recreate", b"recreate", "snapshot", b"snapshot"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["Style", b"Style", "incremental", b"incremental", "recreate", b"recreate", "snapshot", b"snapshot"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["Style", b"Style"]) -> typing_extensions.Literal["incremental", "recreate", "snapshot"] | None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "Style",
+            b"Style",
+            "incremental",
+            b"incremental",
+            "recreate",
+            b"recreate",
+            "snapshot",
+            b"snapshot",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "Style",
+            b"Style",
+            "incremental",
+            b"incremental",
+            "recreate",
+            b"recreate",
+            "snapshot",
+            b"snapshot",
+        ],
+    ) -> None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["Style", b"Style"]
+    ) -> (
+        typing_extensions.Literal["incremental", "recreate", "snapshot"] | None
+    ): ...
 
 global___Style = Style
 
@@ -1298,8 +2336,15 @@ class Source(google.protobuf.message.Message):
             key: builtins.str = ...,
             value: global___PreProcValue | None = ...,
         ) -> None: ...
-        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+        def HasField(
+            self, field_name: typing_extensions.Literal["value", b"value"]
+        ) -> builtins.bool: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "key", b"key", "value", b"value"
+            ],
+        ) -> None: ...
 
     TABLE_FIELD_NUMBER: builtins.int
     DATASET_FIELD_NUMBER: builtins.int
@@ -1317,6 +2362,8 @@ class Source(google.protobuf.message.Message):
     UNTIL_FIELD_NUMBER: builtins.int
     FILTER_FIELD_NUMBER: builtins.int
     SAMPLING_STRATEGY_FIELD_NUMBER: builtins.int
+    FILTER_EXPR_FIELD_NUMBER: builtins.int
+    FILTER_SCHEMA_FIELD_NUMBER: builtins.int
     @property
     def table(self) -> global___ExtTable: ...
     dataset: builtins.str
@@ -1331,7 +2378,11 @@ class Source(google.protobuf.message.Message):
     @property
     def starting_from(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     @property
-    def pre_proc(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___PreProcValue]: ...
+    def pre_proc(
+        self,
+    ) -> google.protobuf.internal.containers.MessageMap[
+        builtins.str, global___PreProcValue
+    ]: ...
     version: builtins.int
     bounded: builtins.bool
     @property
@@ -1342,6 +2393,12 @@ class Source(google.protobuf.message.Message):
     def filter(self) -> pycode_pb2.PyCode: ...
     @property
     def sampling_strategy(self) -> global___SamplingStrategy: ...
+    @property
+    def filter_expr(self) -> expression_pb2.Expr: ...
+    @property
+    def filter_schema(self) -> schema_pb2.Schema:
+        """next id: 19"""
+
     def __init__(
         self,
         *,
@@ -1354,24 +2411,141 @@ class Source(google.protobuf.message.Message):
         timestamp_field: builtins.str = ...,
         cdc: global___CDCStrategy.ValueType = ...,
         starting_from: google.protobuf.timestamp_pb2.Timestamp | None = ...,
-        pre_proc: collections.abc.Mapping[builtins.str, global___PreProcValue] | None = ...,
+        pre_proc: (
+            collections.abc.Mapping[builtins.str, global___PreProcValue] | None
+        ) = ...,
         version: builtins.int = ...,
         bounded: builtins.bool = ...,
         idleness: google.protobuf.duration_pb2.Duration | None = ...,
         until: google.protobuf.timestamp_pb2.Timestamp | None = ...,
         filter: pycode_pb2.PyCode | None = ...,
         sampling_strategy: global___SamplingStrategy | None = ...,
+        filter_expr: expression_pb2.Expr | None = ...,
+        filter_schema: schema_pb2.Schema | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "_sampling_strategy", b"_sampling_strategy", "cursor", b"cursor", "disorder", b"disorder", "every", b"every", "filter", b"filter", "idleness", b"idleness", "sampling_strategy", b"sampling_strategy", "starting_from", b"starting_from", "table", b"table", "until", b"until"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cursor", b"_cursor", "_filter", b"_filter", "_idleness", b"_idleness", "_sampling_strategy", b"_sampling_strategy", "bounded", b"bounded", "cdc", b"cdc", "cursor", b"cursor", "dataset", b"dataset", "disorder", b"disorder", "ds_version", b"ds_version", "every", b"every", "filter", b"filter", "idleness", b"idleness", "pre_proc", b"pre_proc", "sampling_strategy", b"sampling_strategy", "starting_from", b"starting_from", "table", b"table", "timestamp_field", b"timestamp_field", "until", b"until", "version", b"version"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_cursor",
+            b"_cursor",
+            "_filter",
+            b"_filter",
+            "_filter_expr",
+            b"_filter_expr",
+            "_filter_schema",
+            b"_filter_schema",
+            "_idleness",
+            b"_idleness",
+            "_sampling_strategy",
+            b"_sampling_strategy",
+            "cursor",
+            b"cursor",
+            "disorder",
+            b"disorder",
+            "every",
+            b"every",
+            "filter",
+            b"filter",
+            "filter_expr",
+            b"filter_expr",
+            "filter_schema",
+            b"filter_schema",
+            "idleness",
+            b"idleness",
+            "sampling_strategy",
+            b"sampling_strategy",
+            "starting_from",
+            b"starting_from",
+            "table",
+            b"table",
+            "until",
+            b"until",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_cursor",
+            b"_cursor",
+            "_filter",
+            b"_filter",
+            "_filter_expr",
+            b"_filter_expr",
+            "_filter_schema",
+            b"_filter_schema",
+            "_idleness",
+            b"_idleness",
+            "_sampling_strategy",
+            b"_sampling_strategy",
+            "bounded",
+            b"bounded",
+            "cdc",
+            b"cdc",
+            "cursor",
+            b"cursor",
+            "dataset",
+            b"dataset",
+            "disorder",
+            b"disorder",
+            "ds_version",
+            b"ds_version",
+            "every",
+            b"every",
+            "filter",
+            b"filter",
+            "filter_expr",
+            b"filter_expr",
+            "filter_schema",
+            b"filter_schema",
+            "idleness",
+            b"idleness",
+            "pre_proc",
+            b"pre_proc",
+            "sampling_strategy",
+            b"sampling_strategy",
+            "starting_from",
+            b"starting_from",
+            "table",
+            b"table",
+            "timestamp_field",
+            b"timestamp_field",
+            "until",
+            b"until",
+            "version",
+            b"version",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]) -> typing_extensions.Literal["cursor"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_cursor", b"_cursor"]
+    ) -> typing_extensions.Literal["cursor"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_filter", b"_filter"]) -> typing_extensions.Literal["filter"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_filter", b"_filter"]
+    ) -> typing_extensions.Literal["filter"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_idleness", b"_idleness"]) -> typing_extensions.Literal["idleness"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal["_filter_expr", b"_filter_expr"],
+    ) -> typing_extensions.Literal["filter_expr"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sampling_strategy", b"_sampling_strategy"]) -> typing_extensions.Literal["sampling_strategy"] | None: ...
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "_filter_schema", b"_filter_schema"
+        ],
+    ) -> typing_extensions.Literal["filter_schema"] | None: ...
+    @typing.overload
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_idleness", b"_idleness"]
+    ) -> typing_extensions.Literal["idleness"] | None: ...
+    @typing.overload
+    def WhichOneof(
+        self,
+        oneof_group: typing_extensions.Literal[
+            "_sampling_strategy", b"_sampling_strategy"
+        ],
+    ) -> typing_extensions.Literal["sampling_strategy"] | None: ...
 
 global___Source = Source
 
@@ -1393,7 +2567,12 @@ class Sink(google.protobuf.message.Message):
             key: builtins.str = ...,
             value: builtins.str = ...,
         ) -> None: ...
-        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+        def ClearField(
+            self,
+            field_name: typing_extensions.Literal[
+                "key", b"key", "value", b"value"
+            ],
+        ) -> None: ...
 
     TABLE_FIELD_NUMBER: builtins.int
     DATASET_FIELD_NUMBER: builtins.int
@@ -1416,7 +2595,11 @@ class Sink(google.protobuf.message.Message):
     def how(self) -> global___Style: ...
     create: builtins.bool
     @property
-    def renames(self) -> google.protobuf.internal.containers.ScalarMap[builtins.str, builtins.str]: ...
+    def renames(
+        self,
+    ) -> google.protobuf.internal.containers.ScalarMap[
+        builtins.str, builtins.str
+    ]: ...
     @property
     def since(self) -> google.protobuf.timestamp_pb2.Timestamp: ...
     @property
@@ -1431,19 +2614,85 @@ class Sink(google.protobuf.message.Message):
         every: google.protobuf.duration_pb2.Duration | None = ...,
         how: global___Style | None = ...,
         create: builtins.bool = ...,
-        renames: collections.abc.Mapping[builtins.str, builtins.str] | None = ...,
+        renames: (
+            collections.abc.Mapping[builtins.str, builtins.str] | None
+        ) = ...,
         since: google.protobuf.timestamp_pb2.Timestamp | None = ...,
         until: google.protobuf.timestamp_pb2.Timestamp | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_cdc", b"_cdc", "_how", b"_how", "_since", b"_since", "_until", b"_until", "cdc", b"cdc", "every", b"every", "how", b"how", "since", b"since", "table", b"table", "until", b"until"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_cdc", b"_cdc", "_how", b"_how", "_since", b"_since", "_until", b"_until", "cdc", b"cdc", "create", b"create", "dataset", b"dataset", "ds_version", b"ds_version", "every", b"every", "how", b"how", "renames", b"renames", "since", b"since", "table", b"table", "until", b"until"]) -> None: ...
+    def HasField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_cdc",
+            b"_cdc",
+            "_how",
+            b"_how",
+            "_since",
+            b"_since",
+            "_until",
+            b"_until",
+            "cdc",
+            b"cdc",
+            "every",
+            b"every",
+            "how",
+            b"how",
+            "since",
+            b"since",
+            "table",
+            b"table",
+            "until",
+            b"until",
+        ],
+    ) -> builtins.bool: ...
+    def ClearField(
+        self,
+        field_name: typing_extensions.Literal[
+            "_cdc",
+            b"_cdc",
+            "_how",
+            b"_how",
+            "_since",
+            b"_since",
+            "_until",
+            b"_until",
+            "cdc",
+            b"cdc",
+            "create",
+            b"create",
+            "dataset",
+            b"dataset",
+            "ds_version",
+            b"ds_version",
+            "every",
+            b"every",
+            "how",
+            b"how",
+            "renames",
+            b"renames",
+            "since",
+            b"since",
+            "table",
+            b"table",
+            "until",
+            b"until",
+        ],
+    ) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_cdc", b"_cdc"]) -> typing_extensions.Literal["cdc"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_cdc", b"_cdc"]
+    ) -> typing_extensions.Literal["cdc"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_how", b"_how"]) -> typing_extensions.Literal["how"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_how", b"_how"]
+    ) -> typing_extensions.Literal["how"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_since", b"_since"]) -> typing_extensions.Literal["since"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_since", b"_since"]
+    ) -> typing_extensions.Literal["since"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_until", b"_until"]) -> typing_extensions.Literal["until"] | None: ...
+    def WhichOneof(
+        self, oneof_group: typing_extensions.Literal["_until", b"_until"]
+    ) -> typing_extensions.Literal["until"] | None: ...
 
 global___Sink = Sink

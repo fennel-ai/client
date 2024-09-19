@@ -26,6 +26,7 @@ import fennel.gen.connector_pb2 as connector_proto
 import fennel.gen.secret_pb2 as secret_proto
 import fennel.gen.dataset_pb2 as ds_proto
 import fennel.gen.expectations_pb2 as exp_proto
+import fennel.gen.expression_pb2 as expression_proto
 import fennel.gen.featureset_pb2 as fs_proto
 import fennel.gen.http_auth_pb2 as http_auth_proto
 import fennel.gen.kinesis_pb2 as kinesis_proto
@@ -41,6 +42,7 @@ from fennel.connectors.connectors import (
     Sample,
     PreProcValue,
     Certificate,
+    WhereValue,
 )
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
@@ -498,6 +500,43 @@ def _validate_source_pre_proc(
                 )
 
 
+def _validate_source_where(where: WhereValue, ds: Dataset):
+    if isinstance(where, Callable):  # type: ignore
+        return
+    elif isinstance(where, connectors.Eval):
+        # Run output col dtype validation for Expr.
+        if isinstance(where.eval_type, (Expr, TypedExpr)):
+            expr = (
+                where.eval_type
+                if isinstance(where.eval_type, Expr)
+                else where.eval_type.expr
+            )
+            typed_dtype = (
+                None
+                if isinstance(where.eval_type, Expr)
+                else where.eval_type.dtype
+            )
+            input_schema = ds.schema()
+            if where.additional_schema:
+                for name, dtype in where.additional_schema.items():
+                    input_schema[name] = dtype
+            expr_type = expr.typeof(input_schema)
+            if expr_type != bool:
+                printer = ExprPrinter()
+                raise TypeError(
+                    f"expression in source where is of type `{dtype_to_string(expr_type)}` in Dataset `{ds._name}`, "
+                    f"can not be cast to bool. Full expression: `{printer.print(expr.root)}`"
+                )
+            if typed_dtype and expr_type != typed_dtype:
+                printer = ExprPrinter()
+                raise TypeError(
+                    f"expression in source where in Dataset `{ds._name}` can not be cast to `{dtype_to_string(typed_dtype)}`, "
+                    f"evaluated dtype is `{dtype_to_string(expr_type)}`. Full expression: `{printer.print(expr.root)}`"
+                )
+    else:
+        return
+
+
 def source_from_ds(
     ds: Dataset, env: Optional[str] = None
 ) -> List[connectors.DataConnector]:
@@ -526,6 +565,8 @@ def source_proto_from_ds(
     for src in sources:
         if src.pre_proc:
             _validate_source_pre_proc(src.pre_proc, ds)
+        if src.where:
+            _validate_source_where(src.where, ds)
         ret.append(_conn_to_source_proto(src, ds))
     return ret  # type: ignore
 
@@ -757,6 +798,19 @@ def _to_field_lookup_proto(
 # ------------------------------------------------------------------------------
 
 
+def _preproc_assign_to_pycode(
+    dataset: Dataset, column_name: str, func: Callable
+) -> pycode_proto.PyCode:
+    return wrap_function(
+        dataset._name,
+        get_dataset_core_code(dataset),
+        "",
+        to_includes_proto(func),
+        is_assign=True,
+        column_name=column_name,
+    )
+
+
 def _pre_proc_value_to_proto(
     dataset: Dataset,
     column_name: str,
@@ -783,14 +837,14 @@ def _pre_proc_value_to_proto(
             else:
                 root = pre_proc_value.eval_type.expr.root
             return connector_proto.PreProcValue(
-                eval=connector_proto.PreProcValue.Eval(
+                eval=connector_proto.Eval(
                     schema=schema,
                     expr=serializer.serialize(root),
                 )
             )
         else:
             return connector_proto.PreProcValue(
-                eval=connector_proto.PreProcValue.Eval(
+                eval=connector_proto.Eval(
                     schema=schema,
                     pycode=_preproc_assign_to_pycode(
                         dataset, column_name, pre_proc_value.eval_type
@@ -850,11 +904,9 @@ def _pre_proc_to_proto(
     return proto_pre_proc
 
 
-def _preproc_filter_to_pycode(
-    dataset: Dataset, func: Optional[Callable]
+def _where_filter_to_pycode(
+    dataset: Dataset, func: Callable
 ) -> Optional[pycode_proto.PyCode]:
-    if func is None:
-        return None
     return wrap_function(
         dataset._name,
         get_dataset_core_code(dataset),
@@ -864,17 +916,46 @@ def _preproc_filter_to_pycode(
     )
 
 
-def _preproc_assign_to_pycode(
-    dataset: Dataset, column_name: str, func: Callable
-) -> pycode_proto.PyCode:
-    return wrap_function(
-        dataset._name,
-        get_dataset_core_code(dataset),
-        "",
-        to_includes_proto(func),
-        is_assign=True,
-        column_name=column_name,
-    )
+def _where_value_to_proto(
+    dataset: Dataset, where: Optional[connectors.WhereValue]
+) -> Tuple[
+    Optional[pycode_proto.PyCode],
+    Optional[expression_proto.Expr],
+    Optional[schema_proto.Schema],
+]:
+    if where is None:
+        return None, None, None
+    elif isinstance(where, Callable):  # type: ignore
+        return _where_filter_to_pycode(dataset, where), None, None  # type: ignore
+    else:
+        assert isinstance(where, connectors.Eval)
+
+        schema = None
+        if where.additional_schema:
+            fields = [
+                schema_proto.Field(name=name, dtype=get_datatype(dtype))
+                for (name, dtype) in where.additional_schema.items()
+            ]
+            schema = schema_proto.Schema(fields=fields)
+
+        if isinstance(where.eval_type, (Expr, TypedExpr)):
+            serializer = ExprSerializer()
+            if isinstance(where.eval_type, Expr):
+                root = where.eval_type.root
+            else:
+                root = where.eval_type.expr.root
+            return (
+                None,
+                serializer.serialize(root),
+                schema,
+            )
+        else:
+            assert isinstance(where.eval_type, Callable)  # type: ignore
+            return (
+                _where_filter_to_pycode(dataset, where.eval_type),
+                None,
+                schema,
+            )
 
 
 def _conn_to_source_proto(
@@ -928,6 +1009,9 @@ def _webhook_to_source_proto(
             retention=to_duration_proto(data_source.retention),
         ),
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     if not connector.cdc:
         raise ValueError("CDC should always be set for webhook source")
     return (
@@ -954,7 +1038,9 @@ def _webhook_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -975,6 +1061,9 @@ def _kafka_conn_to_source_proto(
         data_source.sasl_mechanism,
         data_source.sasl_plain_username,
         data_source.sasl_plain_password,
+    )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
     )
     source = connector_proto.Source(
         table=connector_proto.ExtTable(
@@ -1000,7 +1089,9 @@ def _kafka_conn_to_source_proto(
             if connector.idleness
             else None
         ),
-        filter=_preproc_filter_to_pycode(dataset, connector.where),
+        filter=filter_proto,
+        filter_expr=filter_expr,
+        filter_schema=filter_schema,
     )
     return (ext_db, source)
 
@@ -1150,6 +1241,9 @@ def _s3_conn_to_source_proto(
         presorted=connector.presorted,
         spread=connector.spread,
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     source = connector_proto.Source(
         table=ext_table,
         dataset=dataset._name,
@@ -1171,7 +1265,9 @@ def _s3_conn_to_source_proto(
             if connector.idleness
             else None
         ),
-        filter=_preproc_filter_to_pycode(dataset, connector.where),
+        filter=filter_proto,
+        filter_expr=filter_expr,
+        filter_schema=filter_schema,
     )
     return (ext_db, source)
 
@@ -1290,7 +1386,6 @@ def _how_to_proto(
         )
 
     raise ValueError("Invalid value for how to convert to proto {}".format(how))
-    ...
 
 
 def _s3_conn_to_sink_proto(
@@ -1449,6 +1544,9 @@ def _bigquery_conn_to_source_proto(
         ext_db,
         table_name=connector.table_name,
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -1472,7 +1570,9 @@ def _bigquery_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -1529,6 +1629,9 @@ def _redshift_conn_to_source_proto(
         db=ext_db,
         table_name=connector.table_name,
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -1552,7 +1655,9 @@ def _redshift_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -1633,6 +1738,9 @@ def _mongo_conn_to_source_proto(
         db=ext_db,
         table_name=connector.table_name,
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -1656,7 +1764,9 @@ def _mongo_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -1711,6 +1821,9 @@ def _pubsub_conn_to_source_proto(
             service_account_key_secret=to_secret_proto(service_account_key),
         ),
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -1735,7 +1848,9 @@ def _pubsub_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -1802,6 +1917,9 @@ def _snowflake_conn_to_source_proto(
     ext_table = _snowflake_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -1825,7 +1943,9 @@ def _snowflake_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -1913,6 +2033,9 @@ def _mysql_conn_to_source_proto(
     ext_table = _mysql_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -1936,7 +2059,9 @@ def _mysql_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -2011,6 +2136,9 @@ def _pg_conn_to_source_proto(
     ext_table = _pg_to_ext_table_proto(
         db=ext_db, table_name=connector.table_name
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -2034,7 +2162,9 @@ def _pg_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -2106,6 +2236,9 @@ def _kinesis_conn_to_source_proto(
         init_position=connector.init_position,
         format=connector.format,
     )
+    filter_proto, filter_expr, filter_schema = _where_value_to_proto(
+        dataset, connector.where
+    )
     return (
         ext_db,
         connector_proto.Source(
@@ -2126,7 +2259,9 @@ def _kinesis_conn_to_source_proto(
                 if connector.idleness
                 else None
             ),
-            filter=_preproc_filter_to_pycode(dataset, connector.where),
+            filter=filter_proto,
+            filter_expr=filter_expr,
+            filter_schema=filter_schema,
         ),
     )
 
@@ -2298,7 +2433,7 @@ def to_extractor_pycode(
     extractor: Extractor,
     featureset: Featureset,
     fs_obj_map: Dict[str, Featureset],
-) -> pycode_proto.PyCode:
+) -> Optional[pycode_proto.PyCode]:
     if extractor.extractor_type != ExtractorType.PY_FUNC:
         return None
     if not extractor.func:

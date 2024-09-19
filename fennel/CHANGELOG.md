@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.5.52] - 2024-11-12
+- Source: support expressions in where
+
 ## [1.5.51] - 2024-11-09
 - Fix bug in mock client for session based dedup operator
 
