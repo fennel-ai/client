@@ -53,18 +53,19 @@ class Eval:
         arbitrary_types_allowed = True
 
 
-def ref(ref_name: str) -> PreProcValue:
+def ref(ref_name: str) -> Ref:
     return Ref(name=ref_name)
 
 
 def eval(
     eval_type: Union[Callable, Expr, TypedExpr],
     schema: Optional[Dict[str, Type]] = None,
-) -> PreProcValue:
+) -> Eval:
     return Eval(eval_type=eval_type, additional_schema=schema)
 
 
 PreProcValue = Union[Ref, Any, Eval]
+WhereValue = Union[Callable, Eval]
 
 
 def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
@@ -120,7 +121,7 @@ def source(
     preproc: Optional[Dict[str, PreProcValue]] = None,
     bounded: bool = False,
     idleness: Optional[Duration] = None,
-    where: Optional[Callable] = None,
+    where: Optional[WhereValue] = None,
     sample: Optional[Union[float, Sample]] = None,
 ) -> Callable[[T], Any]:
     """
@@ -815,7 +816,7 @@ class DataConnector:
     pre_proc: Optional[Dict[str, PreProcValue]] = None
     bounded: bool = False
     idleness: Optional[Duration] = None
-    where: Optional[Callable] = None
+    where: Optional[WhereValue] = None
     sample: Optional[Union[float, Sample]] = None
     how: Optional[Literal["incremental", "recreate"] | SnapshotData] = None
     create: Optional[bool] = None

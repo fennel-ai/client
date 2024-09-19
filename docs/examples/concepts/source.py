@@ -1,8 +1,9 @@
 import sys
 from datetime import datetime
 
-from fennel.connectors import Kafka, S3, source
+from fennel.connectors import Kafka, S3, eval, source
 from fennel.datasets import dataset
+from fennel.expr import col
 from fennel.testing import mock
 
 __owner__ = "owner@example.com"
@@ -70,7 +71,7 @@ def test_stacked_sources_in_env(client):
 
 
 @mock
-def test_filter_preproc_source(client):
+def test_where_source(client):
     if sys.version_info >= (3, 10):
         s3 = S3(name="mys3")
 
@@ -81,6 +82,33 @@ def test_filter_preproc_source(client):
             disorder="1w",
             cdc="append",
             where=lambda x: x["skuid"] >= 1000,
+        )
+        # docsnip-highlight end
+        @dataset
+        class Order:
+            uid: int
+            skuid: int
+            at: datetime
+
+        client.commit(
+            message="some commit msg",
+            datasets=[Order],
+        )
+        # /docsnip
+
+
+@mock
+def test_expression_where_source(client):
+    if sys.version_info >= (3, 10):
+        s3 = S3(name="mys3")
+
+        # docsnip where
+        # docsnip-highlight start
+        @source(
+            s3.bucket("data", path="*"),
+            disorder="1w",
+            cdc="append",
+            where=eval(col("skuid") >= 1000, schema={"skuid": int}),
         )
         # docsnip-highlight end
         @dataset
