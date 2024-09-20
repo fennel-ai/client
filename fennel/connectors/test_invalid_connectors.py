@@ -940,6 +940,6 @@ def test_invalid_eval_assign_preproc(client):
         client.commit(datasets=[UserInfoDataset], message="test")
 
     assert (
-        "`age` is of type `int` in Dataset `UserInfoDataset`, can not be cast to `float`. Full expression: `col('val1')`"
+        '`age` is of type `int` in Dataset `UserInfoDataset`, can not be cast to `float`. Full expression: `col("val1")`'
         == str(e.value)
     )

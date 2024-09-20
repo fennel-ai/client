@@ -27,8 +27,8 @@ def test_invalid_datetime():
         expr.eval(df, {"a": str})
 
     assert (
-        str(e.value)
-        == "Failed to compile expression: invalid timezone: America/NonYork"
+        "Failed to compile expression: invalid timezone: `America/NonYork`"
+        in str(e.value)
     )
 
     df = pd.DataFrame(
@@ -45,7 +45,7 @@ def test_invalid_datetime():
         expr.eval(df, {"a": str})
     assert (
         str(e.value)
-        == 'Failed to evaluate expression: failed to eval expression: col(a).str.parse_datetime("%Y-%m-%d", timezone=""America/New_York""), error: invalid operation: conversion from `str` to `datetime[μs, America/New_York]` failed in column \'a\' for 3 out of 3 values: ["1", "2", "3"]'
+        == 'Failed to evaluate expression: failed to eval expression: col("a").str.parse_datetime("%Y-%m-%d", timezone="America/New_York"), error: invalid operation: conversion from `str` to `datetime[μs, America/New_York]` failed in column \'a\' for 3 out of 3 values: ["1", "2", "3"]'
     )
 
     with pytest.raises(ValueError) as e:
@@ -64,7 +64,7 @@ def test_missing_then():
     df = pd.DataFrame({"a": [1, 2, 3]})
     with pytest.raises(InvalidExprException) as e:
         expr.eval(df, {"a": int})
-    assert str(e.value) == "THEN clause missing for WHEN clause col('a') == 1"
+    assert str(e.value) == 'THEN clause missing for WHEN clause col("a") == 1'
 
     with pytest.raises(AttributeError) as e:
         expr = when(col("a") == 1).when(col("a") == 2)
@@ -88,7 +88,7 @@ def test_struct():
 
     assert (
         str(e.value)
-        == "invalid field access for struct, expected string but got col('b')"
+        == 'invalid field access for struct, expected string but got col("b")'
     )
 
 

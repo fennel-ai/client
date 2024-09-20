@@ -62,7 +62,7 @@ def test_unary_expr():
 def test_basic_expr2():
     expr = col("a") + col("b") + 3
     printer = ExprPrinter()
-    expected = "((col('a') + col('b')) + 3)"
+    expected = '((col("a") + col("b")) + 3)'
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -102,7 +102,7 @@ def test_basic_expr2():
 def test_math_expr():
     expr = (col("a").num.floor() + 3.2).num.ceil()
     printer = ExprPrinter()
-    expected = "CEIL((FLOOR(col('a')) + 3.2))"
+    expected = 'CEIL((FLOOR(col("a")) + 3.2))'
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -164,7 +164,7 @@ def test_math_expr():
 def test_bool_expr():
     expr = (col("a") == 5) | ((col("b") == "random") & (col("c") == 3.2))
     printer = ExprPrinter()
-    expected = """((col('a') == 5) or ((col('b') == "random") and (col('c') == 3.2)))"""
+    expected = """((col("a") == 5) or ((col("b") == "random") and (col("c") == 3.2)))"""
     assert expected == printer.print(expr.root)
 
     df = pd.DataFrame(
@@ -186,7 +186,7 @@ def test_bool_expr():
 def test_str_expr():
     expr = (col("a").str.concat(col("b"))).str.lower().len().ceil()
     printer = ExprPrinter()
-    expected = "CEIL(LEN(LOWER(col('a') + col('b'))))"
+    expected = 'CEIL(LEN(LOWER(col("a") + col("b"))))'
     assert expected == printer.print(expr.root)
     ref_extractor = FetchReferences()
     ref_extractor.visit(expr.root)
@@ -199,7 +199,7 @@ def test_str_expr():
         .then(col("b"))
         .otherwise("No Match")
     )
-    expected = """WHEN CONTAINS(UPPER(col('a') + col('b')), col('c')) THEN col('b') ELSE "No Match\""""
+    expected = """WHEN CONTAINS(UPPER(col("a") + col("b")), col("c")) THEN col("b") ELSE "No Match\""""
     assert expected == printer.print(expr.root)
     ref_extractor = FetchReferences()
     assert ref_extractor.fetch(expr.root) == {"a", "b", "c"}
@@ -232,7 +232,7 @@ def test_str_expr():
         .then(col("c"))
         .otherwise("No Match")
     )
-    expected = """WHEN CONTAINS(col('a'), "p") THEN col('b') WHEN CONTAINS(col('b'), "b") THEN col('a') WHEN CONTAINS(col('c'), "C") THEN col('c') ELSE "No Match\""""
+    expected = """WHEN CONTAINS(col("a"), "p") THEN col("b") WHEN CONTAINS(col("b"), "b") THEN col("a") WHEN CONTAINS(col("c"), "C") THEN col("c") ELSE "No Match\""""
     assert expected == printer.print(expr.root)
     serializer = ExprSerializer()
     proto_expr = serializer.serialize(expr.root)
@@ -322,7 +322,7 @@ def test_dict_op():
     ).dict.len()
     printer = ExprPrinter()
     expected = (
-        """(CEIL((col('a').get("x") + col('a').get("y"))) + LEN(col('a')))"""
+        """(CEIL((col("a").get("x") + col("a").get("y"))) + LEN(col("a")))"""
     )
     ref_extractor = FetchReferences()
     ref_extractor.visit(expr.root)
@@ -476,7 +476,7 @@ def test_datetime_expr():
             {"a": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"]}
         ),
         schema={"a": str},
-        display="STRPTIME(col('a'), %Y-%m-%d, UTC)",
+        display='STRPTIME(col("a"), %Y-%m-%d, UTC)',
         refs={"a"},
         eval_result=[
             pd.Timestamp("2021-01-01 00:00:00+0000", tz="UTC"),
@@ -494,7 +494,7 @@ def test_datetime_expr():
             {"a": ["2021-01-01", "2021-01-02", "2021-01-03", "2021-01-04"]}
         ),
         schema={"a": str},
-        display="STRPTIME(col('a'), %Y-%m-%d, America/New_York)",
+        display='STRPTIME(col("a"), %Y-%m-%d, America/New_York)',
         refs={"a"},
         eval_result=[
             pd.Timestamp("2021-01-01 05:00:00+0000", tz="UTC"),
@@ -542,13 +542,12 @@ def test_parse():
             expr=(col("a").str.parse(int)),
             df=pd.DataFrame({"a": ["1", "2", "3", "4"]}),
             schema={"a": str},
-            display="PARSE(col('a'), <class 'int'>)",
+            display="PARSE(col(\"a\"), <class 'int'>)",
             refs={"a"},
             eval_result=[1, 2, 3, 4],
             expected_dtype=int,
             proto_json=None,
         ),
-        # Parse a struct
         ExprTestCase(
             expr=(col("a").str.parse(A)),
             df=pd.DataFrame(
@@ -560,7 +559,7 @@ def test_parse():
                 }
             ),
             schema={"a": str},
-            display="PARSE(col('a'), <class 'fennel.expr.test_expr.A'>)",
+            display="PARSE(col(\"a\"), <class 'fennel.expr.test_expr.A'>)",
             refs={"a"},
             eval_result=[A(1, 2, "a"), A(2, 3, "b")],
             expected_dtype=A,
@@ -571,7 +570,7 @@ def test_parse():
             expr=(col("a").str.parse(List[int])),
             df=pd.DataFrame({"a": ["[1, 2, 3]", "[4, 5, 6]"]}),
             schema={"a": str},
-            display="PARSE(col('a'), typing.List[int])",
+            display='PARSE(col("a"), typing.List[int])',
             refs={"a"},
             eval_result=[[1, 2, 3], [4, 5, 6]],
             expected_dtype=List[int],
@@ -588,7 +587,7 @@ def test_parse():
                 }
             ),
             schema={"a": str},
-            display="PARSE(col('a'), <class 'fennel.expr.test_expr.Nested'>)",
+            display="PARSE(col(\"a\"), <class 'fennel.expr.test_expr.Nested'>)",
             refs={"a"},
             eval_result=[Nested(A(1, 2, "a"), B(1, "b"), [1, 2, 3])],
             expected_dtype=Nested,
@@ -599,7 +598,7 @@ def test_parse():
             expr=(col("a").str.parse(float)),
             df=pd.DataFrame({"a": ["1.1", "2.2", "3.3", "4.4"]}),
             schema={"a": str},
-            display="PARSE(col('a'), <class 'float'>)",
+            display="PARSE(col(\"a\"), <class 'float'>)",
             refs={"a"},
             eval_result=[1.1, 2.2, 3.3, 4.4],
             expected_dtype=float,
@@ -610,7 +609,7 @@ def test_parse():
             expr=(col("a").str.parse(bool)),
             df=pd.DataFrame({"a": ["true", "false", "true", "false"]}),
             schema={"a": str},
-            display="PARSE(col('a'), <class 'bool'>)",
+            display="PARSE(col(\"a\"), <class 'bool'>)",
             refs={"a"},
             eval_result=[True, False, True, False],
             expected_dtype=bool,
@@ -621,7 +620,7 @@ def test_parse():
             expr=(col("a").str.parse(str)),
             df=pd.DataFrame({"a": ['"a1"', '"b"', '"c"', '"d"']}),
             schema={"a": str},
-            display="PARSE(col('a'), <class 'str'>)",
+            display="PARSE(col(\"a\"), <class 'str'>)",
             refs={"a"},
             eval_result=["a1", "b", "c", "d"],
             expected_dtype=str,
@@ -713,7 +712,6 @@ def test_parse():
             proto_json={},
         ),
     ]
-
     for case in cases:
         check_test_case(case)
 
@@ -724,7 +722,7 @@ def test_list():
             expr=(col("a").list.at(0)),
             df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
             schema={"a": List[int]},
-            display="col('a')[0]",
+            display='col("a")[0]',
             refs={"a"},
             eval_result=[1, 4, 7],
             expected_dtype=Optional[int],
@@ -745,7 +743,7 @@ def test_list():
                 }
             ),
             schema={"a": List[int], "b": int, "c": int},
-            display="col('a')[(col('b') + col('c'))]",
+            display='col("a")[(col("b") + col("c"))]',
             refs={"a", "b", "c"},
             eval_result=[2, 12, 9],
             expected_dtype=Optional[int],
@@ -761,7 +759,7 @@ def test_list():
                 }
             ),
             schema={"a": List[int], "b": int},
-            display="col('a')[col('b')]",
+            display='col("a")[col("b")]',
             refs={"a", "b"},
             eval_result=[1, pd.NA, pd.NA],
             expected_dtype=Optional[int],
@@ -772,7 +770,7 @@ def test_list():
             expr=(~col("a").list.contains(3)),
             df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], [7, 8, 9]]}),
             schema={"a": List[int]},
-            display="~(CONTAINS(col('a'), 3))",
+            display='~(CONTAINS(col("a"), 3))',
             refs={"a"},
             eval_result=[False, True, True],
             expected_dtype=bool,
@@ -789,7 +787,7 @@ def test_list():
                 }
             ),
             schema={"a": List[int], "b": int, "c": int},
-            display="CONTAINS(col('a'), (col('b') * col('c')))",
+            display='CONTAINS(col("a"), (col("b") * col("c")))',
             refs={"a", "b", "c"},
             eval_result=[True, True, False],
             expected_dtype=bool,
@@ -810,7 +808,7 @@ def test_list():
                 }
             ),
             schema={"a2": List[str], "b2": str},
-            display="""CONTAINS(col('a2'), col('b2'))""",
+            display="""CONTAINS(col("a2"), col("b2"))""",
             refs={"a2", "b2"},
             eval_result=[True, True, False, False],
             expected_dtype=bool,
@@ -827,7 +825,7 @@ def test_list():
                 {"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}
             ),
             schema={"a": List[A]},
-            display="""CONTAINS(col('a'), STRUCT(x=1, y=2, z="a"))""",
+            display="""CONTAINS(col("a"), STRUCT(x=1, y=2, z="a"))""",
             refs={"a"},
             eval_result=[True],
             expected_dtype=bool,
@@ -839,7 +837,7 @@ def test_list():
                 {"a": [[A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]]}
             ),
             schema={"a": List[A]},
-            display="LEN(col('a'))",
+            display='LEN(col("a"))',
             refs={"a"},
             eval_result=[3],
             expected_dtype=int,
@@ -850,7 +848,7 @@ def test_list():
             expr=(col("a").list.len()),
             df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6, 12], [7, 8, 9, 19]]}),
             schema={"a": List[int]},
-            display="LEN(col('a'))",
+            display='LEN(col("a"))',
             refs={"a"},
             eval_result=[3, 4, 4],
             expected_dtype=int,
@@ -861,7 +859,7 @@ def test_list():
             expr=(col("a").list.len()),
             df=pd.DataFrame({"a": [[], [4, 5, 6, 12], [7, 8, 9, 19]]}),
             schema={"a": List[int]},
-            display="LEN(col('a'))",
+            display='LEN(col("a"))',
             refs={"a"},
             eval_result=[0, 4, 4],
             expected_dtype=int,
@@ -880,7 +878,7 @@ def test_struct():
             expr=(col("a").struct.get("x")),
             df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]}),
             schema={"a": A},
-            display="col('a').x",
+            display='col("a").x',
             refs={"a"},
             eval_result=[1, 2, 4],
             expected_dtype=int,
@@ -890,7 +888,7 @@ def test_struct():
             expr=(col("a").struct.get("x") + col("a").struct.get("y")),
             df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), A(4, 5, "c")]}),
             schema={"a": A},
-            display="(col('a').x + col('a').y)",
+            display='(col("a").x + col("a").y)',
             refs={"a"},
             eval_result=[3, 5, 9],
             expected_dtype=int,
@@ -906,7 +904,7 @@ def test_datetime():
     cases = [
         # Extract year from a datetime
         ExprTestCase(
-            expr=(col("a").dt.year),
+            expr=(col("a").dt.year()),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -917,7 +915,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="DATEPART(col('a'), TimeUnit.YEAR)",
+            display='DATEPART(col("a"), TimeUnit.YEAR)',
             refs={"a"},
             eval_result=[2021, 2021, 2021],
             expected_dtype=int,
@@ -925,7 +923,7 @@ def test_datetime():
         ),
         # Extract month from a datetime
         ExprTestCase(
-            expr=(col("a").dt.month),
+            expr=(col("a").dt.month()),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -936,7 +934,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="DATEPART(col('a'), TimeUnit.MONTH)",
+            display='DATEPART(col("a"), TimeUnit.MONTH)',
             refs={"a"},
             eval_result=[1, 2, 3],
             expected_dtype=int,
@@ -944,7 +942,7 @@ def test_datetime():
         ),
         # Extract week from a datetime
         ExprTestCase(
-            expr=(col("a").dt.week),
+            expr=(col("a").dt.week()),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -955,7 +953,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="DATEPART(col('a'), TimeUnit.WEEK)",
+            display='DATEPART(col("a"), TimeUnit.WEEK)',
             refs={"a"},
             eval_result=[53, 5, 9],
             expected_dtype=int,
@@ -981,7 +979,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="""SINCE(col('a'), STRPTIME("2021-01-01 00:01:00+0000", %Y-%m-%d %H:%M:%S%z, UTC), unit=TimeUnit.DAY)""",
+            display="""SINCE(col("a"), STRPTIME("2021-01-01 00:01:00+0000", %Y-%m-%d %H:%M:%S%z, UTC), unit=TimeUnit.DAY)""",
             refs={"a"},
             eval_result=[0, 32, 61],
             expected_dtype=int,
@@ -1007,7 +1005,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="""SINCE(col('a'), STRPTIME("2021-01-01 00:01:00+0000", %Y-%m-%d %H:%M:%S%z, UTC), unit=TimeUnit.YEAR)""",
+            display="""SINCE(col("a"), STRPTIME("2021-01-01 00:01:00+0000", %Y-%m-%d %H:%M:%S%z, UTC), unit=TimeUnit.YEAR)""",
             refs={"a"},
             eval_result=[0, 0, 5],
             expected_dtype=int,
@@ -1026,7 +1024,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="SINCE_EPOCH(col('a'), unit=TimeUnit.DAY)",
+            display='SINCE_EPOCH(col("a"), unit=TimeUnit.DAY)',
             refs={"a"},
             eval_result=[18628, 18660, 18689],
             expected_dtype=int,
@@ -1045,7 +1043,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="SINCE_EPOCH(col('a'), unit=TimeUnit.YEAR)",
+            display='SINCE_EPOCH(col("a"), unit=TimeUnit.YEAR)',
             refs={"a"},
             eval_result=[51, 51, 56],
             expected_dtype=int,
@@ -1064,7 +1062,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="STRFTIME(col('a'), %Y-%m-%d)",
+            display='STRFTIME(col("a"), %Y-%m-%d)',
             refs={"a"},
             eval_result=["2021-01-01", "2021-02-02", "2021-03-03"],
             expected_dtype=str,
@@ -1083,7 +1081,7 @@ def test_datetime():
                 }
             ),
             schema={"a": datetime},
-            display="STRFTIME(col('a'), %Y-%m-%d %H:%M:%S)",
+            display='STRFTIME(col("a"), %Y-%m-%d %H:%M:%S)',
             refs={"a"},
             eval_result=[
                 "2021-01-01 00:01:00",
@@ -1135,7 +1133,7 @@ def test_make_struct():
             ),
             df=pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
             schema={"a": int, "b": int},
-            display="""STRUCT(x=col('a'), y=(col('a') + col('b')), z="constant")""",
+            display="""STRUCT(x=col("a"), y=(col("a") + col("b")), z="constant")""",
             refs={"a", "b"},
             eval_result=[
                 A(1, 5, "constant"),
@@ -1177,7 +1175,7 @@ def test_make_struct():
                 "e": str,
                 "f": List[int],
             },
-            display="""STRUCT(a=STRUCT(x=col('a'), y=col('b'), z=col('c')), b=STRUCT(p=col('d'), q=col('e')), c=col('f'))""",
+            display="""STRUCT(a=STRUCT(x=col("a"), y=col("b"), z=col("c")), b=STRUCT(p=col("d"), q=col("e")), c=col("f"))""",
             refs={"a", "b", "c", "d", "e", "f"},
             eval_result=[
                 Nested(A(1, 4, "str_1"), B(10, "a"), [1, 2, 3]),
@@ -1200,7 +1198,7 @@ def test_from_epoch():
             expr=(from_epoch(col("a"), unit="second")),
             df=pd.DataFrame({"a": [1725321570, 1725321570]}),
             schema={"a": int},
-            display="""FROM_EPOCH(col('a'), unit=TimeUnit.SECOND)""",
+            display="""FROM_EPOCH(col("a"), unit=TimeUnit.SECOND)""",
             refs={"a"},
             eval_result=[
                 pd.Timestamp("2024-09-02 23:59:30+0000", tz="UTC"),
@@ -1214,7 +1212,7 @@ def test_from_epoch():
             expr=(from_epoch(col("a") * col("b"), unit="millisecond")),
             df=pd.DataFrame({"a": [1725321570, 1725321570], "b": [1000, 1000]}),
             schema={"a": int, "b": int},
-            display="""FROM_EPOCH((col('a') * col('b')), unit=TimeUnit.MILLISECOND)""",
+            display="""FROM_EPOCH((col("a") * col("b")), unit=TimeUnit.MILLISECOND)""",
             refs=set(["a", "b"]),
             eval_result=[
                 pd.Timestamp("2024-09-02 23:59:30+0000", tz="UTC"),
@@ -1235,7 +1233,7 @@ def test_fillnull():
             expr=(col("a").fillnull(0)),
             df=pd.DataFrame({"a": [1, 2, None, 4]}),
             schema={"a": Optional[int]},
-            display="FILL_NULL(col('a'), 0)",
+            display='FILL_NULL(col("a"), 0)',
             refs={"a"},
             eval_result=[1, 2, 0, 4],
             expected_dtype=int,
@@ -1245,7 +1243,7 @@ def test_fillnull():
             expr=(col("a").fillnull("missing")),
             df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
             schema={"a": Optional[str]},
-            display="FILL_NULL(col('a'), \"missing\")",
+            display='FILL_NULL(col("a"), "missing")',
             refs={"a"},
             eval_result=["a", "b", "missing", "d"],
             expected_dtype=str,
@@ -1260,7 +1258,7 @@ def test_fillnull():
             ),
             df=pd.DataFrame({"a": ["2021-01-01", None, "2021-01-03"]}),
             schema={"a": Optional[str]},
-            display="""FILL_NULL(STRPTIME(col('a'), %Y-%m-%d, UTC), STRPTIME("2021-01-01", %Y-%m-%d, UTC))""",
+            display="""FILL_NULL(STRPTIME(col("a"), %Y-%m-%d, UTC), STRPTIME("2021-01-01", %Y-%m-%d, UTC))""",
             refs={"a"},
             eval_result=[
                 pd.Timestamp("2021-01-01 00:00:00+0000", tz="UTC"),
@@ -1304,7 +1302,7 @@ def test_isnull():
             expr=(col("a").isnull()),
             df=pd.DataFrame({"a": [1, 2, None, 4]}),
             schema={"a": Optional[int]},
-            display="IS_NULL(col('a'))",
+            display='IS_NULL(col("a"))',
             refs={"a"},
             eval_result=[False, False, True, False],
             expected_dtype=bool,
@@ -1314,7 +1312,7 @@ def test_isnull():
             expr=(col("a").isnull()),
             df=pd.DataFrame({"a": ["a", "b", None, "d"]}),
             schema={"a": Optional[str]},
-            display="IS_NULL(col('a'))",
+            display='IS_NULL(col("a"))',
             refs={"a"},
             eval_result=[False, False, True, False],
             expected_dtype=bool,
@@ -1325,7 +1323,7 @@ def test_isnull():
             expr=(col("a").isnull()),
             df=pd.DataFrame({"a": [A(1, 2, "a"), A(2, 3, "b"), None]}),
             schema={"a": Optional[A]},
-            display="IS_NULL(col('a'))",
+            display='IS_NULL(col("a"))',
             refs={"a"},
             eval_result=[False, False, True],
             expected_dtype=bool,
@@ -1336,7 +1334,7 @@ def test_isnull():
             expr=(col("a").isnull()),
             df=pd.DataFrame({"a": [[1, 2, 3], [4, 5, 6], None]}),
             schema={"a": Optional[List[int]]},
-            display="IS_NULL(col('a'))",
+            display='IS_NULL(col("a"))',
             refs={"a"},
             eval_result=[False, False, True],
             expected_dtype=bool,

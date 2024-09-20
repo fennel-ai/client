@@ -4,6 +4,7 @@ from fennel.expr.expr import (
     DateTimeFromEpoch,
     DateTimeParts,
     DateTimeSince,
+    DateTimeLiteral,
     DateTimeSinceEpoch,
     DateTimeStrftime,
     ListContains,
@@ -22,6 +23,7 @@ from fennel.expr.expr import (
     Otherwise,
     Binary,
     IsNull,
+    Var,
     FillNull,
     _Bool,
     _Dict,
@@ -59,6 +61,12 @@ class Visitor(object):
 
         elif isinstance(obj, Ref):
             ret = self.visitRef(obj)
+
+        elif isinstance(obj, Var):
+            ret = self.visitVar(obj)
+
+        elif isinstance(obj, DateTimeLiteral):
+            ret = self.visitDateTimeLiteral(obj)
 
         elif isinstance(obj, Unary):
             ret = self.visitUnary(obj)
@@ -115,6 +123,9 @@ class Visitor(object):
     def visitLiteral(self, obj):
         raise NotImplementedError
 
+    def visitVar(self, obj):
+        raise NotImplementedError
+
     def visitRef(self, obj):
         raise NotImplementedError
 
@@ -166,6 +177,9 @@ class Visitor(object):
     def visitDateTimeFromEpoch(self, obj):
         raise NotImplementedError
 
+    def visitDateTimeLiteral(self, obj):
+        raise NotImplementedError
+
 
 class ExprPrinter(Visitor):
 
@@ -176,6 +190,9 @@ class ExprPrinter(Visitor):
         return obj.c
 
     def visitRef(self, obj):
+        return str(obj)
+
+    def visitVar(self, obj):
         return str(obj)
 
     def visitUnary(self, obj):
@@ -322,6 +339,9 @@ class ExprPrinter(Visitor):
     def visitDateTimeFromEpoch(self, obj):
         return f"FROM_EPOCH({self.visit(obj.duration)}, unit={obj.unit})"
 
+    def visitDateTimeLiteral(self, obj):
+        return f"DATETIME({obj.year}, {obj.month}, {obj.day}, {obj.hour}, {obj.minute}, {obj.second}, {obj.microsecond}, timezone={obj.timezone})"
+
 
 class FetchReferences(Visitor):
 
@@ -419,3 +439,6 @@ class FetchReferences(Visitor):
 
     def visitDateTimeFromEpoch(self, obj):
         self.visit(obj.duration)
+
+    def visitDateTimeLiteral(self, obj):
+        pass

@@ -130,6 +130,7 @@ class Expr(google.protobuf.message.Message):
     DATETIME_LITERAL_FIELD_NUMBER: builtins.int
     MAKE_STRUCT_FIELD_NUMBER: builtins.int
     FROM_EPOCH_FIELD_NUMBER: builtins.int
+    VAR_FIELD_NUMBER: builtins.int
     @property
     def ref(self) -> global___Ref: ...
     @property
@@ -163,6 +164,8 @@ class Expr(google.protobuf.message.Message):
     def make_struct(self) -> global___MakeStruct: ...
     @property
     def from_epoch(self) -> global___FromEpoch: ...
+    @property
+    def var(self) -> global___Var: ...
     def __init__(
         self,
         *,
@@ -182,12 +185,28 @@ class Expr(google.protobuf.message.Message):
         datetime_literal: global___DatetimeLiteral | None = ...,
         make_struct: global___MakeStruct | None = ...,
         from_epoch: global___FromEpoch | None = ...,
+        var: global___Var | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch", "var"] | None: ...
 
 global___Expr = Expr
+
+@typing_extensions.final
+class Var(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NAME_FIELD_NUMBER: builtins.int
+    name: builtins.str
+    def __init__(
+        self,
+        *,
+        name: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["name", b"name"]) -> None: ...
+
+global___Var = Var
 
 @typing_extensions.final
 class FromEpoch(google.protobuf.message.Message):
@@ -454,6 +473,14 @@ class ListOp(google.protobuf.message.Message):
     GET_FIELD_NUMBER: builtins.int
     CONTAINS_FIELD_NUMBER: builtins.int
     HAS_NULL_FIELD_NUMBER: builtins.int
+    SUM_FIELD_NUMBER: builtins.int
+    MIN_FIELD_NUMBER: builtins.int
+    MAX_FIELD_NUMBER: builtins.int
+    ALL_FIELD_NUMBER: builtins.int
+    ANY_FIELD_NUMBER: builtins.int
+    MEAN_FIELD_NUMBER: builtins.int
+    FILTER_FIELD_NUMBER: builtins.int
+    MAP_FIELD_NUMBER: builtins.int
     @property
     def len(self) -> global___Len: ...
     @property
@@ -464,6 +491,22 @@ class ListOp(google.protobuf.message.Message):
         """Check if the list contains an element"""
     @property
     def has_null(self) -> global___HasNull: ...
+    @property
+    def sum(self) -> global___ListSum: ...
+    @property
+    def min(self) -> global___ListMin: ...
+    @property
+    def max(self) -> global___ListMax: ...
+    @property
+    def all(self) -> global___ListAll: ...
+    @property
+    def any(self) -> global___ListAny: ...
+    @property
+    def mean(self) -> global___ListMean: ...
+    @property
+    def filter(self) -> global___ListFilter: ...
+    @property
+    def map(self) -> global___ListMap: ...
     def __init__(
         self,
         *,
@@ -471,12 +514,120 @@ class ListOp(google.protobuf.message.Message):
         get: global___Expr | None = ...,
         contains: global___Contains | None = ...,
         has_null: global___HasNull | None = ...,
+        sum: global___ListSum | None = ...,
+        min: global___ListMin | None = ...,
+        max: global___ListMax | None = ...,
+        all: global___ListAll | None = ...,
+        any: global___ListAny | None = ...,
+        mean: global___ListMean | None = ...,
+        filter: global___ListFilter | None = ...,
+        map: global___ListMap | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "get", b"get", "has_null", b"has_null", "len", b"len"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["contains", b"contains", "fn_type", b"fn_type", "get", b"get", "has_null", b"has_null", "len", b"len"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "get", "contains", "has_null"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["all", b"all", "any", b"any", "contains", b"contains", "filter", b"filter", "fn_type", b"fn_type", "get", b"get", "has_null", b"has_null", "len", b"len", "map", b"map", "max", b"max", "mean", b"mean", "min", b"min", "sum", b"sum"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["all", b"all", "any", b"any", "contains", b"contains", "filter", b"filter", "fn_type", b"fn_type", "get", b"get", "has_null", b"has_null", "len", b"len", "map", b"map", "max", b"max", "mean", b"mean", "min", b"min", "sum", b"sum"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "get", "contains", "has_null", "sum", "min", "max", "all", "any", "mean", "filter", "map"] | None: ...
 
 global___ListOp = ListOp
+
+@typing_extensions.final
+class ListFilter(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    VAR_FIELD_NUMBER: builtins.int
+    PREDICATE_FIELD_NUMBER: builtins.int
+    var: builtins.str
+    @property
+    def predicate(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        var: builtins.str = ...,
+        predicate: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["predicate", b"predicate"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["predicate", b"predicate", "var", b"var"]) -> None: ...
+
+global___ListFilter = ListFilter
+
+@typing_extensions.final
+class ListMap(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    VAR_FIELD_NUMBER: builtins.int
+    MAP_EXPR_FIELD_NUMBER: builtins.int
+    var: builtins.str
+    @property
+    def map_expr(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        var: builtins.str = ...,
+        map_expr: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["map_expr", b"map_expr"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["map_expr", b"map_expr", "var", b"var"]) -> None: ...
+
+global___ListMap = ListMap
+
+@typing_extensions.final
+class ListSum(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ListSum = ListSum
+
+@typing_extensions.final
+class ListMin(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ListMin = ListMin
+
+@typing_extensions.final
+class ListMean(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ListMean = ListMean
+
+@typing_extensions.final
+class ListMax(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ListMax = ListMax
+
+@typing_extensions.final
+class ListAll(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ListAll = ListAll
+
+@typing_extensions.final
+class ListAny(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ListAny = ListAny
 
 @typing_extensions.final
 class Len(google.protobuf.message.Message):
@@ -1023,13 +1174,18 @@ class Strftime(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     FORMAT_FIELD_NUMBER: builtins.int
+    TIMEZONE_FIELD_NUMBER: builtins.int
     format: builtins.str
+    @property
+    def timezone(self) -> global___Timezone: ...
     def __init__(
         self,
         *,
         format: builtins.str = ...,
+        timezone: global___Timezone | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["format", b"format"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["timezone", b"timezone"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["format", b"format", "timezone", b"timezone"]) -> None: ...
 
 global___Strftime = Strftime
 
@@ -1038,12 +1194,17 @@ class Part(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     UNIT_FIELD_NUMBER: builtins.int
+    TIMEZONE_FIELD_NUMBER: builtins.int
     unit: global___TimeUnit.ValueType
+    @property
+    def timezone(self) -> global___Timezone: ...
     def __init__(
         self,
         *,
         unit: global___TimeUnit.ValueType = ...,
+        timezone: global___Timezone | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["unit", b"unit"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["timezone", b"timezone"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["timezone", b"timezone", "unit", b"unit"]) -> None: ...
 
 global___Part = Part

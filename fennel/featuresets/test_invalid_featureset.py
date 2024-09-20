@@ -420,7 +420,7 @@ def test_invalid_expr_feature(client):
 
     assert (
         str(e.value)
-        == "error in expression based extractor 'col('age') * col('age')'; can not set default value for expressions, maybe use fillnull instead?"
+        == 'error in expression based extractor \'col("age") * col("age")\'; can not set default value for expressions, maybe use fillnull instead?'
     )
 
     # Incorrect type for an expression feature
@@ -436,7 +436,7 @@ def test_invalid_expr_feature(client):
 
     assert (
         str(e.value)
-        == "expression 'col('age') * col('age')' for feature 'age_squared' is of type 'str' not 'int'"
+        == "expression 'col(\"age\") * col(\"age\")' for feature 'age_squared' is of type 'str' not 'int'"
     )
 
     # Using dataset field in expression feature

@@ -3,6 +3,8 @@ from fennel.expr.expr import (
     lit,
     when,
     make_struct,
+    var,
+    datetime,
     from_epoch,
     Expr,
     InvalidExprException,
