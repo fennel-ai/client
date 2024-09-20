@@ -430,6 +430,14 @@ class _Bool(Expr):
         return f"{self.expr}"
 
 
+class Var(Expr):
+    def __init__(self, var: str):
+        self.var = var
+
+    def __str__(self) -> str:
+        return f"var({self.var})"
+
+
 #########################################################
 #                   Math Functions
 #########################################################
@@ -694,6 +702,7 @@ class TimeUnit(Enum):
 @dataclass
 class DateTimeParts(DateTimeOp):
     part: TimeUnit
+    timezone: Optional[str]
 
 
 @dataclass
@@ -710,6 +719,7 @@ class DateTimeSinceEpoch(DateTimeOp):
 @dataclass
 class DateTimeStrftime(DateTimeOp):
     format: str
+    timezone: Optional[str]
 
 
 @dataclass
@@ -718,65 +728,67 @@ class DateTimeFromEpoch(Expr):
     unit: TimeUnit
 
 
+@dataclass
+class DateTimeLiteral(DateTimeOp):
+    year: int
+    month: int
+    day: int
+    hour: int
+    minute: int
+    second: int
+    microsecond: int
+    timezone: Optional[str]
+
+
 class _DateTime(Expr):
     def __init__(self, expr: Expr, op: DateTimeOp):
         self.op = op
         self.operand = expr
         super(_DateTime, self).__init__()
 
-    def parts(self, part: TimeUnit) -> _Number:
+    def parts(self, part: TimeUnit, timezone: Optional[str] = "UTC") -> _Number:
         part = TimeUnit.from_string(part)
-        return _Number(_DateTime(self, DateTimeParts(part)), MathNoop())
+        return _Number(
+            _DateTime(self, DateTimeParts(part, timezone)), MathNoop()
+        )
 
-    def since(self, other: Expr, unit: TimeUnit) -> _Number:
+    def since(self, other: Expr, unit: TimeUnit = "second") -> _Number:
         unit = TimeUnit.from_string(unit)
         other_expr = make_expr(other)
         return _Number(
             _DateTime(self, DateTimeSince(other_expr, unit)), MathNoop()
         )
 
-    def since_epoch(self, unit: TimeUnit) -> _Number:
+    def since_epoch(self, unit: TimeUnit = "second") -> _Number:
         unit = TimeUnit.from_string(unit)
         return _Number(_DateTime(self, DateTimeSinceEpoch(unit)), MathNoop())
 
-    def strftime(self, format: str) -> _String:
-        return _String(_DateTime(self, DateTimeStrftime(format)), StringNoop())
+    def strftime(self, format: str, timezone: Optional[str] = "UTC") -> _String:
+        return _String(
+            _DateTime(self, DateTimeStrftime(format=format, timezone=timezone)),
+            StringNoop(),
+        )
 
-    @property
-    def year(self) -> _Number:
-        return self.parts(TimeUnit.YEAR)
+    def year(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.YEAR, timezone)
 
-    @property
-    def month(self) -> _Number:
-        return self.parts(TimeUnit.MONTH)
+    def month(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.MONTH, timezone)
 
-    @property
-    def week(self) -> _Number:
-        return self.parts(TimeUnit.WEEK)
+    def week(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.WEEK, timezone)
 
-    @property
-    def day(self) -> _Number:
-        return self.parts(TimeUnit.DAY)
+    def day(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.DAY, timezone)
 
-    @property
-    def hour(self) -> _Number:
-        return self.parts(TimeUnit.HOUR)
+    def hour(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.HOUR, timezone)
 
-    @property
-    def minute(self) -> _Number:
-        return self.parts(TimeUnit.MINUTE)
+    def minute(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.MINUTE, timezone)
 
-    @property
-    def second(self) -> _Number:
-        return self.parts(TimeUnit.SECOND)
-
-    @property
-    def millisecond(self) -> _Number:
-        return self.parts(TimeUnit.MILLISECOND)
-
-    @property
-    def microsecond(self) -> _Number:
-        return self.parts(TimeUnit.MICROSECOND)
+    def second(self, timezone: Optional[str] = "UTC") -> _Number:
+        return self.parts(TimeUnit.SECOND, timezone)
 
 
 #########################################################
@@ -790,6 +802,42 @@ class ListOp:
 
 class ListLen(ListOp):
     pass
+
+
+class ListSum(ListOp):
+    pass
+
+
+class ListMin(ListOp):
+    pass
+
+
+class ListMax(ListOp):
+    pass
+
+
+class ListAll(ListOp):
+    pass
+
+
+class ListAny(ListOp):
+    pass
+
+
+class ListMean(ListOp):
+    pass
+
+
+@dataclass
+class ListFilter(ListOp):
+    var: str
+    predicate: Expr
+
+
+@dataclass
+class ListMap(ListOp):
+    var: str
+    expr: Expr
 
 
 @dataclass
@@ -829,6 +877,30 @@ class _List(Expr):
 
     def hasnull(self) -> _Bool:
         return _Bool(_List(self, ListHasNull()))
+
+    def sum(self) -> _Number:
+        return _Number(_List(self, ListSum()), MathNoop())
+
+    def mean(self) -> _Number:
+        return _Number(_List(self, ListMean()), MathNoop())
+
+    def min(self) -> _Number:
+        return _Number(_List(self, ListMin()), MathNoop())
+
+    def max(self) -> _Number:
+        return _Number(_List(self, ListMax()), MathNoop())
+
+    def all(self) -> _Bool:
+        return _Bool(_List(self, ListAll()))
+
+    def any(self) -> _Bool:
+        return _Bool(_List(self, ListAny()))
+
+    def filter(self, var: str, predicate: Expr) -> _List:
+        return _List(self, ListFilter(var=var, predicate=predicate))
+
+    def map(self, var: str, expr: Expr) -> _List:
+        return _List(self, ListMap(var=var, expr=expr))
 
 
 #######################################################
@@ -961,7 +1033,7 @@ class Ref(Expr):
         super(Ref, self).__init__()
 
     def __str__(self) -> str:
-        return f"col('{self._col}')"
+        return f'col("{self._col}")'
 
 
 class IsNull(Expr):
@@ -1015,6 +1087,10 @@ def col(col: str) -> Expr:
     return Ref(col)
 
 
+def var(var: str) -> Expr:
+    return Var(var)
+
+
 def lit(v: Any, type: Optional[Type] = None) -> Expr:
     # TODO: Add support for more types recursively
     if type is not None:
@@ -1048,3 +1124,28 @@ def from_epoch(duration: Expr, unit: str | TimeUnit) -> _DateTime:
     duration = make_expr(duration)
     unit = TimeUnit.from_string(unit)
     return _DateTime(DateTimeFromEpoch(duration, unit), DateTimeNoop())
+
+
+def datetime(
+    year: int,
+    month: int,
+    day: int,
+    hour: int = 0,
+    minute: int = 0,
+    second: int = 0,
+    microsecond: int = 0,
+    timezone: Optional[str] = "UTC",
+) -> _DateTime:
+    return _DateTime(
+        DateTimeLiteral(
+            year=year,
+            month=month,
+            day=day,
+            hour=hour,
+            minute=minute,
+            second=second,
+            microsecond=microsecond,
+            timezone=timezone,
+        ),
+        DateTimeNoop(),
+    )

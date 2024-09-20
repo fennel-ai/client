@@ -17,6 +17,14 @@ from fennel.expr.expr import (
     ListHasNull,
     ListLen,
     ListNoop,
+    ListSum,
+    ListMean,
+    ListMin,
+    ListMax,
+    ListAll,
+    ListAny,
+    ListFilter,
+    ListMap,
     Literal,
     Ref,
     StructGet,
@@ -60,8 +68,8 @@ from fennel.expr.expr import (
 
 
 def time_unit_to_proto(unit: TimeUnit) -> proto.TimeUnit:
-    if unit == TimeUnit.MILLISECOND:
-        return proto.TimeUnit.MILLISECOND
+    if unit == TimeUnit.MICROSECOND:
+        return proto.TimeUnit.MICROSECOND
     elif unit == TimeUnit.MILLISECOND:
         return proto.TimeUnit.MILLISECOND
     elif unit == TimeUnit.SECOND:
@@ -102,6 +110,11 @@ class ExprSerializer(Visitor):
     def visitRef(self, obj):
         expr = proto.Expr()
         expr.ref.name = obj._col
+        return expr
+
+    def visitVar(self, obj):
+        expr = proto.Expr()
+        expr.var.name = obj.var
         return expr
 
     def visitUnary(self, obj):
@@ -321,8 +334,14 @@ class ExprSerializer(Visitor):
         if isinstance(obj.op, DateTimeNoop):
             return self.visit(obj.operand)
         elif isinstance(obj.op, DateTimeParts):
-            part = proto.Part()
-            part.unit = time_unit_to_proto(obj.op.part)
+            part = proto.Part(
+                unit=time_unit_to_proto(obj.op.part),
+                timezone=(
+                    proto.Timezone(timezone=obj.op.timezone)
+                    if obj.op.timezone is not None
+                    else None
+                ),
+            )
             expr.datetime_fn.fn.CopyFrom(proto.DateTimeOp(part=part))
         elif isinstance(obj.op, DateTimeSince):
             expr.datetime_fn.fn.CopyFrom(
@@ -346,6 +365,11 @@ class ExprSerializer(Visitor):
                 proto.DateTimeOp(
                     strftime=proto.Strftime(
                         format=obj.op.format,
+                        timezone=(
+                            proto.Timezone(timezone=obj.op.timezone)
+                            if obj.op.timezone is not None
+                            else None
+                        ),
                     )
                 )
             )
@@ -376,6 +400,35 @@ class ExprSerializer(Visitor):
             expr.list_fn.fn.CopyFrom(proto.ListOp(len=proto.Len()))
         elif isinstance(obj.op, ListHasNull):
             expr.list_fn.fn.CopyFrom(proto.ListOp(has_null=proto.HasNull()))
+        elif isinstance(obj.op, ListSum):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(sum=proto.ListSum()))
+        elif isinstance(obj.op, ListMean):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(mean=proto.ListMean()))
+        elif isinstance(obj.op, ListMin):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(min=proto.ListMin()))
+        elif isinstance(obj.op, ListMax):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(max=proto.ListMax()))
+        elif isinstance(obj.op, ListAll):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(all=proto.ListAll()))
+        elif isinstance(obj.op, ListAny):
+            expr.list_fn.fn.CopyFrom(proto.ListOp(any=proto.ListAny()))
+        elif isinstance(obj.op, ListFilter):
+            expr.list_fn.fn.CopyFrom(
+                proto.ListOp(
+                    filter=proto.ListFilter(
+                        var=obj.op.var, predicate=self.visit(obj.op.predicate)
+                    )
+                )
+            )
+        elif isinstance(obj.op, ListMap):
+            expr.list_fn.fn.CopyFrom(
+                proto.ListOp(
+                    map=proto.ListMap(
+                        var=obj.op.var, map_expr=self.visit(obj.op.expr)
+                    )
+                )
+            )
+
         expr.list_fn.list.CopyFrom(self.visit(obj.expr))
         return expr
 
@@ -413,6 +466,23 @@ class ExprSerializer(Visitor):
         from_epoch.unit = time_unit_to_proto(obj.unit)
         from_epoch.duration.CopyFrom(self.visit(obj.duration))
         expr.from_epoch.CopyFrom(from_epoch)
+        return expr
+
+    def visitDateTimeLiteral(self, obj):
+        expr = proto.Expr()
+        datetime_literal = proto.DatetimeLiteral()
+        datetime_literal.year = obj.year
+        datetime_literal.month = obj.month
+        datetime_literal.day = obj.day
+        datetime_literal.hour = obj.hour
+        datetime_literal.minute = obj.minute
+        datetime_literal.second = obj.second
+        datetime_literal.microsecond = obj.microsecond
+        if obj.timezone is not None:
+            datetime_literal.timezone.CopyFrom(
+                proto.Timezone(timezone=obj.timezone)
+            )
+        expr.datetime_literal.CopyFrom(datetime_literal)
         return expr
 
 
