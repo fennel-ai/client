@@ -1,6 +1,12 @@
 # Changelog
 
-## [1.5.25] - 2024-09-24
+## [1.5.26] - 2024-09-19
+- Add support for `datetime` literal, timezone to a few datetime expressions
+- Improve rendering of some expression related errors
+- Add support for list lambdas - filter, map and reduce functions - sum, max, 
+  min, mean, any, all.
+
+## [1.5.25] - 2024-09-19
 - Fix unary operator expressions
 
 ## [1.5.24] - 2024-09-18

@@ -12,6 +12,7 @@ Avro
 BigTable
 Bitwise
 Bytewax
+bools
 Ceil
 ceil
 Concat
@@ -204,6 +205,7 @@ datasets
 datastore
 datastores
 datetime
+datetimes
 dateutil
 deprovision
 deprovisioning
@@ -291,6 +293,7 @@ noqa
 np
 nullable
 observability
+optionals
 onboarding
 oneof
 onwards
@@ -352,6 +355,7 @@ sts
 subnets
 tiering
 timeframes
+timezones
 Typeof
 typeof
 TODO
@@ -367,6 +371,7 @@ uncomment
 unhashable
 unidirectionally
 unittest
+unix
 upsert
 uptime
 uptimes
