@@ -729,7 +729,7 @@ class DateTimeFromEpoch(Expr):
 
 
 @dataclass
-class DateTimeLiteral(DateTimeOp):
+class DateTimeLiteral(Expr):
     year: int
     month: int
     day: int
@@ -752,16 +752,18 @@ class _DateTime(Expr):
             _DateTime(self, DateTimeParts(part, timezone)), MathNoop()
         )
 
-    def since(self, other: Expr, unit: TimeUnit = "second") -> _Number:
-        unit = TimeUnit.from_string(unit)
+    def since(self, other: Expr, unit: str = "second") -> _Number:
+        time_unit = TimeUnit.from_string(unit)
         other_expr = make_expr(other)
         return _Number(
-            _DateTime(self, DateTimeSince(other_expr, unit)), MathNoop()
+            _DateTime(self, DateTimeSince(other_expr, time_unit)), MathNoop()
         )
 
-    def since_epoch(self, unit: TimeUnit = "second") -> _Number:
-        unit = TimeUnit.from_string(unit)
-        return _Number(_DateTime(self, DateTimeSinceEpoch(unit)), MathNoop())
+    def since_epoch(self, unit: str = "second") -> _Number:
+        time_unit = TimeUnit.from_string(unit)
+        return _Number(
+            _DateTime(self, DateTimeSinceEpoch(time_unit)), MathNoop()
+        )
 
     def strftime(self, format: str, timezone: Optional[str] = "UTC") -> _String:
         return _String(
