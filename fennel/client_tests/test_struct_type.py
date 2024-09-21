@@ -280,7 +280,9 @@ def test_struct_type_with_firstk(client):
     assert (
         len(df["MovieFeaturesWithFirstK.cast_list"][0]) == 2
     )  # 2 cast members for "Inception"
-    assert len(df["MovieFeaturesWithFirstK.cast_list"][1]) == 2  # 2 cast members for
+    assert (
+        len(df["MovieFeaturesWithFirstK.cast_list"][1]) == 2
+    )  # 2 cast members for
     # "Titanic"
     ellen = Cast(name="Ellen Page", actor_id=2, age=34)
     cast1 = df["MovieFeaturesWithFirstK.cast_list"][0][0]

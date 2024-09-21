@@ -310,7 +310,16 @@ def test_dataset_with_aggregates():
                     {"name": "count", "dtype": {"intType": {}}},
                     {"name": "avg_age", "dtype": {"doubleType": {}}},
                     {"name": "stddev_age", "dtype": {"doubleType": {}}},
-                    {"name": "countries", "dtype": {"arrayType": {"of": {"optionalType": {"of": {"stringType": {}}}}}}},
+                    {
+                        "name": "countries",
+                        "dtype": {
+                            "arrayType": {
+                                "of": {
+                                    "optionalType": {"of": {"stringType": {}}}
+                                }
+                            }
+                        },
+                    },
                 ]
             },
             "timestamp": "timestamp",
