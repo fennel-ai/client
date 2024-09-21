@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.5.27] - 2024-09-20
+- Fix schema validation for int64 columns during mock client. Earlier, float64
+  was considered valid for optional[int64] fields to account for typing limitation
+  of pandas 1. Now that Fennel is at Pandas 2, we can be stricter about the types.
+
 ## [1.5.26] - 2024-09-19
 - Add support for `datetime` literal, timezone to a few datetime expressions
 - Improve rendering of some expression related errors

@@ -243,6 +243,7 @@ def test_valid_schema():
         "timestamp",
     ]
     df = pd.DataFrame(data, columns=columns)
+    df["age"] = df["age"].astype(pd.Int64Dtype())
     dsschema = proto.DSSchema(
         keys=proto.Schema(
             fields=[
@@ -299,6 +300,7 @@ def test_valid_schema():
         ]
     )
     df = pd.DataFrame(data, columns=columns)
+    df["age"] = df["age"].astype(pd.Int64Dtype())
     exceptions = data_schema_check(dsschema, df)
     assert len(exceptions) == 0
 

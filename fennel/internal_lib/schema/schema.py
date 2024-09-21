@@ -561,33 +561,17 @@ def validate_field_in_df(
         )
 
     if dtype == schema_proto.DataType(int_type=schema_proto.IntType()):
-        if is_nullable:
-            # If the dtype is nullable int64 gets converted to Float64
-            if (
-                df[name].dtype != np.int64
-                and df[name].dtype != pd.Int64Dtype()
-                and df[name].dtype != np.float64
-                and df[name].dtype != pd.Float64Dtype()
-                and df[name].dtype != pd.ArrowDtype(arrow_type)
-            ):
-                raise ValueError(
-                    f"Field `{name}` is of type int, but the "
-                    f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
-        else:
-            if (
-                df[name].dtype != np.int64
-                and df[name].dtype != pd.Int64Dtype()
-                and df[name].dtype != pd.ArrowDtype(arrow_type)
-            ):
-                raise ValueError(
-                    f"Field `{name}` is of type int, but the "
-                    f"column in the dataframe is of type "
-                    f"`{df[name].dtype}`. Error found during "
-                    f"checking schema for `{entity_name}`."
-                )
+        if (
+            df[name].dtype != np.int64
+            and df[name].dtype != pd.Int64Dtype()
+            and df[name].dtype != pd.ArrowDtype(arrow_type)
+        ):
+            raise ValueError(
+                f"Field `{name}` is of type int, but the "
+                f"column in the dataframe is of type "
+                f"`{df[name].dtype}`. Error found during "
+                f"checking schema for `{entity_name}`."
+            )
     elif dtype == schema_proto.DataType(double_type=schema_proto.DoubleType()):
         if (
             df[name].dtype != np.float64
