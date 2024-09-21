@@ -19,6 +19,7 @@ from fennel.datasets import (
     Sum,
     Quantile,
     ExpDecaySum,
+    FirstK,
 )
 from fennel.dtypes import Embedding, Window, Continuous, Session
 from fennel.gen.services_pb2 import SyncRequest
@@ -261,6 +262,7 @@ def test_dataset_with_aggregates():
         count: int
         avg_age: float
         stddev_age: float
+        countries: List[Optional[str]]
 
         @pipeline
         @inputs(UserInfoDataset)
@@ -280,6 +282,13 @@ def test_dataset_with_aggregates():
                         of="age",
                         window=Continuous("forever"),
                         into_field=str(cls.stddev_age),
+                    ),
+                    FirstK(
+                        of="country",
+                        limit=3,
+                        dedup=True,
+                        window=Continuous("forever"),
+                        into_field=str(cls.countries),
                     ),
                 ]
             )
@@ -301,6 +310,16 @@ def test_dataset_with_aggregates():
                     {"name": "count", "dtype": {"intType": {}}},
                     {"name": "avg_age", "dtype": {"doubleType": {}}},
                     {"name": "stddev_age", "dtype": {"doubleType": {}}},
+                    {
+                        "name": "countries",
+                        "dtype": {
+                            "arrayType": {
+                                "of": {
+                                    "optionalType": {"of": {"stringType": {}}}
+                                }
+                            }
+                        },
+                    },
                 ]
             },
             "timestamp": "timestamp",
@@ -312,6 +331,7 @@ def test_dataset_with_aggregates():
             "count": {},
             "gender": {},
             "stddev_age": {},
+            "countries": {},
             "timestamp": {},
         },
         "pycode": {},

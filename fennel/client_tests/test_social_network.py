@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import fennel._vendor.requests as requests
-from fennel import LastK
+from fennel import LastK, FirstK
 from fennel.connectors import source, Webhook
 from fennel.datasets import dataset, field, Dataset, pipeline, Count
 from fennel.dtypes import regex, oneof, Continuous
@@ -166,6 +166,27 @@ class LastViewedPostByAgg:
         )
 
 
+@meta(owner="ml-eng@myspace.com")
+@dataset(index=True)
+class FirstViewedPostByAgg:
+    user_id: str = field(key=True)
+    post_id: List[int]
+    time_stamp: datetime
+
+    @pipeline
+    @inputs(ViewData)
+    def first_viewed_post(cls, view_data: Dataset):
+        return view_data.groupby("user_id").aggregate(
+            FirstK(
+                into_field="post_id",
+                of="post_id",
+                window=Continuous("forever"),
+                limit=1,
+                dedup=False,
+            )
+        )
+
+
 # --- Featuresets ---
 
 
@@ -187,6 +208,9 @@ class UserFeatures:
     last_viewed_post: int = F(LastViewedPost.post_id, default=-1)  # type: ignore
     last_viewed_post2: List[int] = F(
         LastViewedPostByAgg.post_id, default=[-1]  # type: ignore
+    )
+    first_viewed_post: List[int] = F(
+        FirstViewedPostByAgg.post_id, default=[-1]  # type: ignore
     )
 
     @extractor(deps=[UserViewsDataset])  # type: ignore
@@ -234,6 +258,7 @@ def test_social_network(client):
             UserCategoryDataset,
             LastViewedPost,
             LastViewedPostByAgg,
+            FirstViewedPostByAgg,
         ],
         featuresets=[Request, UserFeatures],
     )
@@ -306,6 +331,11 @@ def test_social_network(client):
     ]
     assert last_post_viewed == [936609766, 735291550]
     assert last_post_viewed2 == last_post_viewed
+
+    first_post_viewed = [
+        x[0] for x in feature_df["UserFeatures.first_viewed_post"].to_list()
+    ]
+    assert first_post_viewed == [508698801, 43094523]
 
     if client.is_integration_client():
         return
@@ -427,6 +457,7 @@ def test_social_network_with_mock_log(client):
             UserCategoryDataset,
             LastViewedPost,
             LastViewedPostByAgg,
+            FirstViewedPostByAgg,
         ],
         featuresets=[Request, UserFeatures],
     )
@@ -493,6 +524,11 @@ def test_social_network_with_mock_log(client):
     ]
     assert last_post_viewed == [936609766, 735291550]
     assert last_post_viewed2 == last_post_viewed
+
+    first_post_viewed = [
+        x[0] for x in feature_df["UserFeatures.first_viewed_post"].to_list()
+    ]
+    assert first_post_viewed == [508698801, 43094523]
 
     df = client.get_dataset_df("UserCategoryDataset")
     assert df.shape == (1998, 4)

@@ -9,6 +9,7 @@ from fennel.datasets import (
     Distinct,
     Sum,
     LastK,
+    FirstK,
     Min,
     Max,
     Average,

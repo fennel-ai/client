@@ -23,6 +23,7 @@ from fennel.datasets.aggregate import (
     Min,
     Max,
     LastK,
+    FirstK,
     Quantile,
     Stddev,
 )
@@ -347,7 +348,7 @@ class Executor(Visitor):
                     final_df[aggregate.into_field] = final_df[
                         aggregate.into_field
                     ].fillna(0)
-                if isinstance(aggregate, (LastK, Distinct)):
+                if isinstance(aggregate, (LastK, FirstK, Distinct)):
                     # final_df[aggregate.into_field] = final_df[
                     #     aggregate.into_field
                     # ].fillna([])

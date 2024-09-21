@@ -18,6 +18,7 @@ from fennel.datasets import (
     Sum,
     Average,
     LastK,
+    FirstK,
     Min,
     Max,
     Stddev,
@@ -182,6 +183,43 @@ class LastKState(AggState):
             if len(output) == self.k:
                 break
         return list(output[: self.k])
+
+
+class FirstKState(AggState):
+    def __init__(self, k, dedup):
+        self.k = k
+        self.dedeup = dedup
+        self.vals = []
+
+    def add_val_to_state(self, val, _ts):
+        self.vals.append(val)
+        if not self.dedeup:
+            return list(self.vals[: self.k])
+        else:
+            to_ret = []
+            for v in self.vals:
+                if v not in to_ret:
+                    to_ret.append(v)
+                if len(to_ret) == self.k:
+                    break
+        return list(to_ret[: self.k])
+
+    def del_val_from_state(self, val, _ts):
+        if val in self.vals:
+            self.vals.remove(val)
+        if not self.dedeup:
+            return list(self.vals[: self.k])
+
+        ret = []
+        for v in self.vals:
+            if v not in ret:
+                ret.append(v)
+            if len(ret) == self.k:
+                break
+        return list(ret[: self.k])
+
+    def get_val(self):
+        return list(self.vals[: self.k])
 
 
 class Heap:
@@ -809,6 +847,8 @@ def get_aggregated_df(
                     state[key] = LastKState(
                         aggregate.limit, aggregate.dedup, aggregate.dropnull
                     )
+                elif isinstance(aggregate, FirstK):
+                    state[key] = FirstKState(aggregate.limit, aggregate.dedup)
                 elif isinstance(aggregate, Min):
                     state[key] = MinState(aggregate.default)
                 elif isinstance(aggregate, Max):

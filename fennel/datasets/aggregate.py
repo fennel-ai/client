@@ -264,7 +264,7 @@ class LastK(AggregateType):
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for LastK")
         return spec_proto.PreSpec(
             last_k=spec_proto.LastK(
                 window=self.window.to_proto(),
@@ -278,6 +278,28 @@ class LastK(AggregateType):
 
     def signature(self):
         return f"lastk_{self.of}_{self.window.signature()}"
+
+
+class FirstK(AggregateType):
+    of: str
+    limit: int
+    dedup: bool
+
+    def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for FirstK")
+        return spec_proto.PreSpec(
+            first_k=spec_proto.FirstK(
+                window=self.window.to_proto(),
+                name=self.into_field,
+                of=self.of,
+                limit=self.limit,
+                dedup=self.dedup,
+            )
+        )
+
+    def signature(self):
+        return f"firstk_{self.of}_{self.window.signature()}"
 
 
 class Stddev(AggregateType):

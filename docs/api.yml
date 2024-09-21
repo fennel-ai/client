@@ -76,6 +76,7 @@ sidebar:
       - "api-reference/aggregations/count"
       - "api-reference/aggregations/distinct"
       - "api-reference/aggregations/lastk"
+      - "api-reference/aggregations/firstk"
       - "api-reference/aggregations/max"
       - "api-reference/aggregations/min"
       - "api-reference/aggregations/stddev"

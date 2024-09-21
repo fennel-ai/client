@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.28] - 2024-09-21
+- Add FirstK aggregation
+
 ## [1.5.27] - 2024-09-20
 - Fix schema validation for int64 columns during mock client. Earlier, float64
   was considered valid for optional[int64] fields to account for typing limitation

@@ -4,6 +4,7 @@ from fennel.datasets.aggregate import (
     Distinct,
     Sum,
     LastK,
+    FirstK,
     Min,
     Max,
     Average,
