@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.29] - 2024-09-22
+- Enable support for complex literals (e.g. list literals or struct literals)
+
 ## [1.5.28] - 2024-09-21
 - Add FirstK aggregation
 

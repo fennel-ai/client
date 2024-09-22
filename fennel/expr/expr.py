@@ -619,6 +619,12 @@ class _Dict(Expr):
         self.expr = expr
         super(_Dict, self).__init__()
 
+    # Gets the value of the key in the dict
+    # When default is None and the key is not present, the result is None (and
+    # consequently type of the `get` expression is Optional[T]). However, when
+    # the default is not None and the key is not present, the result is the
+    # default value (and consequently type of the `get` expression is the common
+    # type of the default value and the value of the key).
     def get(self, key: str, default: Optional[Expr] = None) -> Expr:
         key = make_expr(key)
         default = make_expr(default) if default is not None else None  # type: ignore

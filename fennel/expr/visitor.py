@@ -305,9 +305,11 @@ class ExprPrinter(Visitor):
             )
         elif isinstance(obj.op, DictGet):
             if obj.op.default is None:
-                return f"{self.visit(obj.expr)}.get({self.visit(obj.op.key)})"
+                return (
+                    f"{self.visit(obj.expr)}.dict.get({self.visit(obj.op.key)})"
+                )
             else:
-                return f"{self.visit(obj.expr)}.get('{self.visit(obj.op.key)}', {self.visit(obj.op.default)})"
+                return f"{self.visit(obj.expr)}.dict.get('{self.visit(obj.op.key)}', {self.visit(obj.op.default)})"
         elif isinstance(obj.op, DictLen):
             return f"LEN({self.visit(obj.expr)})"
 
