@@ -51,7 +51,7 @@ class PostInfoWithRightFields:
     category: str  # type: ignore
     post_id: int = field(key=True)
     timestamp: datetime
-    extra_field: str
+    extra_field: int
 
 
 @meta(owner="data-eng@myspace.com")
