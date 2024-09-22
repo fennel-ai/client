@@ -321,9 +321,7 @@ def test_dict_op():
         "a"
     ).dict.len()
     printer = ExprPrinter()
-    expected = (
-        """(CEIL((col("a").get("x") + col("a").get("y"))) + LEN(col("a")))"""
-    )
+    expected = """(CEIL((col("a").dict.get("x") + col("a").dict.get("y"))) + LEN(col("a")))"""
     ref_extractor = FetchReferences()
     ref_extractor.visit(expr.root)
     assert ref_extractor.refs == {"a"}
@@ -378,6 +376,10 @@ def test_dict_op():
     }
     expected_expr = ParseDict(d, Expr())
     assert expected_expr == proto_expr, error_message(proto_expr, expected_expr)
+    assert expr.typeof({"a": Dict[str, int]}) == Optional[int]
+
+    # but types change when default is not None
+    expr = col("a").dict.get("x", 10)
     assert expr.typeof({"a": Dict[str, int]}) == int
 
 
@@ -1268,29 +1270,28 @@ def test_fillnull():
             expected_dtype=datetime,
             proto_json=None,
         ),
-        # TODO(Nikhil): Add support for filling nulls for complex types
         # Fill null for struct
-        # ExprTestCase(
-        #     expr=(col("a").fillnull(lit(A(1, 2, "a"), A))),
-        #     df=pd.DataFrame({"a": [A(1, 2, "a"), None, A(3, 4, "b")]}),
-        #     schema={"a": Optional[A]},
-        #     display="""FILL_NULL(col('a'), {"x": 1, "y": 2, "z": "a"})""",
-        #     refs={"a"},
-        #     eval_result=[A(1, 2, "a"), A(1, 2, "a"), A(3, 4, "b")],
-        #     expected_dtype=A,
-        #     proto_json=None,
-        # ),
+        ExprTestCase(
+            expr=(col("a").fillnull(lit(A(1, 2, "a"), A))),
+            df=pd.DataFrame({"a": [A(1, 2, "a"), None, A(3, 4, "b")]}),
+            schema={"a": Optional[A]},
+            display="""FILL_NULL(col("a"), {"x": 1, "y": 2, "z": "a"})""",
+            refs={"a"},
+            eval_result=[A(1, 2, "a"), A(1, 2, "a"), A(3, 4, "b")],
+            expected_dtype=A,
+            proto_json=None,
+        ),
         # Fill null for Optional[List[int]]
-        # ExprTestCase(
-        #     expr=(col("a").fillnull(lit([1, 2, 3], List[int]))),
-        #     df=pd.DataFrame({"a": [[1, 2, 3], None, [4, 5, 6]]}),
-        #     schema={"a": Optional[List[int]]},
-        #     display="FILL_NULL(col('a'), [1, 2, 3])",
-        #     refs={"a"},
-        #     eval_result=[[1, 2, 3], [1, 2, 3], [4, 5, 6]],
-        #     expected_dtype=List[int],
-        #     proto_json=None,
-        # ),
+        ExprTestCase(
+            expr=(col("a").fillnull(lit([1, 2, 3], List[int]))),
+            df=pd.DataFrame({"a": [[1, 2, 3], None, [4, 5, 6]]}),
+            schema={"a": Optional[List[int]]},
+            display='FILL_NULL(col("a"), [1, 2, 3])',
+            refs={"a"},
+            eval_result=[[1, 2, 3], [1, 2, 3], [4, 5, 6]],
+            expected_dtype=List[int],
+            proto_json=None,
+        ),
     ]
     for case in cases:
         check_test_case(case)
