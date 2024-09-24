@@ -9,7 +9,7 @@ def test_year():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").dt.year()
+    expr = col("x").dt.year
 
     # year works for any datetime type or optional datetime type
     assert expr.typeof(schema={"x": datetime}) == int
@@ -30,7 +30,7 @@ def test_year():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.year(timezone="US/Eastern")
+    expr = col("x").dt.with_tz(timezone="US/Eastern").year
     assert expr.eval(df, schema=schema).tolist() == [2023, 2024, 2024]
     # /docsnip
 
@@ -40,7 +40,7 @@ def test_month():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").dt.month()
+    expr = col("x").dt.month
 
     # month works for any datetime type or optional datetime type
     assert expr.typeof(schema={"x": datetime}) == int
@@ -61,7 +61,7 @@ def test_month():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.month(timezone="US/Eastern")
+    expr = col("x").dt.with_tz(timezone="US/Eastern").month
     assert expr.eval(df, schema=schema).tolist() == [12, 1, 1]
     # /docsnip
 
@@ -94,7 +94,7 @@ def test_day():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").dt.day()
+    expr = col("x").dt.day
 
     # day works for any datetime type or optional datetime type
     assert expr.typeof(schema={"x": datetime}) == int
@@ -115,7 +115,7 @@ def test_day():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.day(timezone="US/Eastern")
+    expr = col("x").dt.with_tz(timezone="US/Eastern").day
     assert expr.eval(df, schema=schema).tolist() == [31, 1, 1]
     # /docsnip
 
@@ -125,7 +125,7 @@ def test_hour():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").dt.hour()
+    expr = col("x").dt.hour
 
     # hour works for any datetime type or optional datetime type
     assert expr.typeof(schema={"x": datetime}) == int
@@ -146,7 +146,7 @@ def test_hour():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.hour(timezone="US/Eastern")
+    expr = col("x").dt.with_tz(timezone="US/Eastern").hour
     assert expr.eval(df, schema=schema).tolist() == [19, 5, 15]
     # /docsnip
 
@@ -156,7 +156,7 @@ def test_minute():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").dt.minute()
+    expr = col("x").dt.minute
 
     # minute works for any datetime type or optional datetime type
     assert expr.typeof(schema={"x": datetime}) == int
@@ -177,7 +177,7 @@ def test_minute():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.minute(timezone="US/Eastern")
+    expr = col("x").dt.with_tz(timezone="US/Eastern").minute
     assert expr.eval(df, schema=schema).tolist() == [0, 0, 20]
     # /docsnip
 
@@ -187,7 +187,7 @@ def test_second():
     from fennel.expr import col
 
     # docsnip-highlight next-line
-    expr = col("x").dt.second()
+    expr = col("x").dt.second
 
     # second works for any datetime type or optional datetime type
     assert expr.typeof(schema={"x": datetime}) == int
@@ -208,7 +208,7 @@ def test_second():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.second(timezone="Asia/Kathmandu")
+    expr = col("x").dt.with_tz(timezone="Asia/Kathmandu").second
     assert expr.eval(df, schema=schema).tolist() == [1, 2, 3]
     # /docsnip
 
@@ -374,7 +374,7 @@ def test_strftime():
 
     # also works with timezone aware datetimes
     # docsnip-highlight next-line
-    expr = col("x").dt.strftime("%Y-%m-%d", timezone="US/Eastern")
+    expr = col("x").dt.with_tz(timezone="US/Eastern").strftime("%Y-%m-%d")
     assert expr.eval(df, schema=schema).tolist() == [
         "2023-12-31",
         "2024-01-02",

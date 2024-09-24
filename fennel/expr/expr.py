@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+import copy
 import json
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
@@ -747,9 +748,12 @@ class DateTimeLiteral(Expr):
 
 
 class _DateTime(Expr):
-    def __init__(self, expr: Expr, op: DateTimeOp):
+    def __init__(
+        self, expr: Expr, op: DateTimeOp, timezone: Optional[str] = "UTC"
+    ):
         self.op = op
         self.operand = expr
+        self.timezone = timezone
         super(_DateTime, self).__init__()
 
     def parts(self, part: TimeUnit, timezone: Optional[str] = "UTC") -> _Number:
@@ -771,32 +775,54 @@ class _DateTime(Expr):
             _DateTime(self, DateTimeSinceEpoch(time_unit)), MathNoop()
         )
 
-    def strftime(self, format: str, timezone: Optional[str] = "UTC") -> _String:
+    def strftime(self, format: str) -> _String:
         return _String(
-            _DateTime(self, DateTimeStrftime(format=format, timezone=timezone)),
+            _DateTime(
+                self, DateTimeStrftime(format=format, timezone=self.timezone)
+            ),
             StringNoop(),
         )
 
-    def year(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.YEAR, timezone)
+    def with_tz(self, timezone: str) -> _DateTime:
+        new_dt = copy.deepcopy(self)
+        new_dt.timezone = timezone
+        return new_dt
 
-    def month(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.MONTH, timezone)
+    @property
+    def microsecond(self) -> _Number:
+        return self.parts(TimeUnit.MICROSECOND, self.timezone)
 
-    def week(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.WEEK, timezone)
+    @property
+    def millisecond(self) -> _Number:
+        return self.parts(TimeUnit.MILLISECOND, self.timezone)
 
-    def day(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.DAY, timezone)
+    @property
+    def second(self) -> _Number:
+        return self.parts(TimeUnit.SECOND, self.timezone)
 
-    def hour(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.HOUR, timezone)
+    @property
+    def minute(self) -> _Number:
+        return self.parts(TimeUnit.MINUTE, self.timezone)
 
-    def minute(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.MINUTE, timezone)
+    @property
+    def hour(self) -> _Number:
+        return self.parts(TimeUnit.HOUR, self.timezone)
 
-    def second(self, timezone: Optional[str] = "UTC") -> _Number:
-        return self.parts(TimeUnit.SECOND, timezone)
+    @property
+    def day(self) -> _Number:
+        return self.parts(TimeUnit.DAY, self.timezone)
+
+    @property
+    def week(self) -> _Number:
+        return self.parts(TimeUnit.WEEK, self.timezone)
+
+    @property
+    def month(self) -> _Number:
+        return self.parts(TimeUnit.MONTH, self.timezone)
+
+    @property
+    def year(self) -> _Number:
+        return self.parts(TimeUnit.YEAR, self.timezone)
 
 
 #########################################################
