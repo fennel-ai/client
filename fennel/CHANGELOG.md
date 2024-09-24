@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.30] - 2024-09-24
+- Add hour, minute, second, millisecond, microsecond, day, week accessors as properties instead of methods.
+
 ## [1.5.29] - 2024-09-22
 - Enable support for complex literals (e.g. list literals or struct literals)
 

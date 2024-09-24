@@ -2,6 +2,7 @@ import sys
 import unittest
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, List
+from fennel.lib import meta
 
 import numpy as np
 import pandas as pd
@@ -1229,3 +1230,36 @@ def test_auto_extractor_removal(client):
         message="third_commit",
     )
     assert response.status_code == requests.codes.OK, response.json()
+
+
+@mock
+def test_query_time_features(client):
+    @meta(owner="decision-systems@theporter.in")
+    @featureset
+    class QueryTimeFeatures:
+        query_time: datetime
+        hour_utc: int = F(col("query_time").dt.hour)
+        bucket_3hour_utc: int = F((col("hour_utc") / lit(3)).floor() + lit(1))
+        bucket_6hour_utc: int = F((col("hour_utc") / lit(6)).floor() + lit(1))
+        day_utc: int = F(col("query_time").dt.day)
+        day_of_week_utc: int
+        week_of_month_utc: int = F((col("day_utc") / lit(7)).ceil())
+        week_bucket_utc: int
+
+        @extractor(version=1)
+        @outputs("query_time")
+        def current_time(cls, ts: pd.Series):
+            return pd.Series(name="query_time", data=ts)
+
+        @extractor(version=8)
+        @outputs(
+            "day_of_week_utc",
+            "week_bucket_utc",
+        )
+        def time_feature_extractor(cls, ts: pd.Series) -> pd.DataFrame:
+            pass
+
+    client.commit(
+        featuresets=[QueryTimeFeatures],
+        message="first_commit",
+    )

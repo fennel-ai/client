@@ -906,7 +906,7 @@ def test_datetime():
     cases = [
         # Extract year from a datetime
         ExprTestCase(
-            expr=(col("a").dt.year()),
+            expr=(col("a").dt.year),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -925,7 +925,7 @@ def test_datetime():
         ),
         # Extract month from a datetime
         ExprTestCase(
-            expr=(col("a").dt.month()),
+            expr=(col("a").dt.month),
             df=pd.DataFrame(
                 {
                     "a": [
@@ -944,7 +944,7 @@ def test_datetime():
         ),
         # Extract week from a datetime
         ExprTestCase(
-            expr=(col("a").dt.week()),
+            expr=(col("a").dt.week),
             df=pd.DataFrame(
                 {
                     "a": [
