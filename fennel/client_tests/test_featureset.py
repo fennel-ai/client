@@ -1232,6 +1232,32 @@ def test_auto_extractor_removal(client):
     assert response.status_code == requests.codes.OK, response.json()
 
 
+<<<<<<< HEAD
+=======
+@featureset
+class QueryOffline:
+    MER_TRN_COUNT_1H: int
+    MER_TRN_COUNT_1H_SQ: int = F(col("MER_TRN_COUNT_1H") * col("MER_TRN_COUNT_1H"))
+    MER_TRN_COUNT_1H_DOUBLE: float = F(col("MER_TRN_COUNT_1H") * 2.0) 
+    MER_TRN_COUNT_1H_HALF: float
+    MER_TRN_COUNT_1H_QUARTER: float
+    MER_TRN_COUNT_1H_RANDOM: float
+    
+    @extractor
+    @inputs("MER_TRN_COUNT_1H")
+    @outputs("MER_TRN_COUNT_1H_HALF")
+    def calc(cls, ts: pd.Series, MER_TRN_COUNT_1H: pd.Series):
+        df = pd.DataFrame({"MER_TRN_COUNT_1H_HALF": MER_TRN_COUNT_1H * 0.5})
+        return df
+    
+    @extractor
+    @inputs("MER_TRN_COUNT_1H")
+    @outputs("MER_TRN_COUNT_1H_QUARTER", "MER_TRN_COUNT_1H_RANDOM")
+    def calc2(cls, ts: pd.Series, MER_TRN_COUNT_1H: pd.Series):
+        df = pd.DataFrame({"MER_TRN_COUNT_1H_QUARTER": MER_TRN_COUNT_1H * 0.25, "MER_TRN_COUNT_1H_RANDOM": np.random.rand(len(MER_TRN_COUNT_1H))})
+        return df
+
+@pytest.mark.integration
 @mock
 def test_query_time_features(client):
     @meta(owner="decision-systems@theporter.in")
