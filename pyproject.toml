@@ -22,6 +22,7 @@ sortedcontainers = "^2.4.0"
 typing-extensions = "^4.12.0"
 fennel-data-lib = "0.1.21"
 pyarrow = "^14.0.2"
+pyspark = "^3.5.3"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
@@ -40,6 +41,7 @@ twine = "^4.0.0"
 pyspelling = "^2.8.2"
 # A pyyaml bug when using cython, https://github.com/yaml/pyyaml/issues/601
 pyyaml = "^6.0.1"
+pyspark = "^3.5.0"
 
 # For production, we use poetry to build the python package
 

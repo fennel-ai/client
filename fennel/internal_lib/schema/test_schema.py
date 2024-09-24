@@ -6,6 +6,7 @@ import unittest
 from datetime import datetime, date, timedelta, timezone
 from decimal import Decimal as PythonDecimal
 from typing import Dict, List, Optional, Union, get_type_hints
+from dataclasses import dataclass
 
 import fennel.gen.schema_pb2 as proto
 from fennel.dtypes.dtypes import (
@@ -26,8 +27,26 @@ from fennel.internal_lib.schema.schema import (
     is_hashable,
     parse_json,
     convert_dtype_to_arrow_type,
+    to_spark_type,
     validate_val_with_dtype,
 )
+from pyspark.sql.types import (
+    DataType,
+    LongType,
+    DoubleType,
+    StringType,
+    BooleanType,
+    TimestampType,
+    DateType,
+    BinaryType,
+    DecimalType,
+    NullType,
+    ArrayType,
+    MapType,
+    StructType,
+    StructField,
+)
+
 
 
 def test_get_data_type():
@@ -960,3 +979,73 @@ class TestDataTypeConversions(unittest.TestCase):
         proto = get_datatype(original_type)
         converted_type = from_proto(proto)
         assert_struct_fields_match(self, original_type, converted_type)
+
+
+def test_to_spark_type():
+    assert to_spark_type(int) == LongType()
+    assert to_spark_type(float) == DoubleType()
+    assert to_spark_type(str) == StringType()
+    assert to_spark_type(datetime) == TimestampType()
+    assert to_spark_type(date) == DateType()
+    assert to_spark_type(Optional[int]) == LongType()
+
+    # Test complex types
+    assert to_spark_type(List[int]) == ArrayType(LongType(), containsNull=True)
+    assert to_spark_type(Dict[str, float]) == MapType(StringType(), DoubleType(), valueContainsNull=True)
+    assert to_spark_type(Optional[List[str]]) == ArrayType(StringType(), containsNull=True)
+    
+    # Test nested complex types
+    assert to_spark_type(List[Dict[str, List[float]]]) == ArrayType(
+        MapType(StringType(), ArrayType(DoubleType(), containsNull=True), valueContainsNull=True),
+        containsNull=True
+    )
+    
+    assert to_spark_type(Union[int, str, float]) == StringType()
+    
+    
+    # Test Embedding type (should default to ArrayType of DoubleType)
+    assert to_spark_type(Embedding[10]) == ArrayType(DoubleType(), containsNull=False)
+    
+    # Test complex nested structure
+    complex_type = Dict[str, List[Optional[Dict[int, Union[str, float]]]]]
+    expected_complex_type = MapType(
+        StringType(),
+        ArrayType(
+            MapType(
+                LongType(),
+                StringType(),  # Union defaults to StringType
+                valueContainsNull=True
+            ),
+            containsNull=True
+        ),
+        valueContainsNull=True
+    )
+    assert to_spark_type(complex_type) == expected_complex_type
+
+    @struct
+    class Address:
+        street: str
+        city: str
+        zip_code: Optional[int]
+
+    @struct
+    class Person:
+        name: str
+        age: int
+        address: Address
+        emails: List[str]
+        
+    # Convert Person dataclass to StructType
+    spark_type = to_spark_type(Person)
+    
+    expected_spark_type = StructType([
+        StructField("name", StringType(), False),
+        StructField("age", LongType(), False),
+        StructField("address", StructType([
+            StructField("street", StringType(), False),
+            StructField("city", StringType(), False),
+            StructField("zip_code", LongType(), True)
+        ]), False),
+        StructField("emails", ArrayType(StringType()), False)
+    ])
+    assert spark_type == expected_spark_type

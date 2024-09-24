@@ -38,6 +38,28 @@ from fennel.internal_lib.utils.utils import (
     parse_datetime_in_value,
 )
 
+from typing import get_args, get_origin, Any, Union, List, Dict, Optional
+import dataclasses
+import datetime
+import decimal
+from pyspark.sql.types import (
+    DataType,
+    LongType,
+    DoubleType,
+    StringType,
+    BooleanType,
+    TimestampType,
+    DateType,
+    BinaryType,
+    DecimalType,
+    NullType,
+    ArrayType,
+    MapType,
+    StructType,
+    StructField,
+)
+
+
 FENNEL_STRUCT = "__fennel_struct__"
 FENNEL_STRUCT_SRC_CODE = "__fennel_struct_src_code__"
 FENNEL_STRUCT_DEPENDENCIES_SRC_CODE = "__fennel_struct_dependencies_src_code__"
@@ -976,3 +998,88 @@ def check_dtype_has_struct_type(dtype: schema_proto.DataType) -> bool:
     elif dtype.HasField("map_type"):
         return check_dtype_has_struct_type(dtype.map_type.value)
     return False
+
+
+def to_spark_type(py_type: Any, nullable: bool = True) -> DataType:
+    """
+    Recursively convert a Python type to a corresponding PySpark SQL DataType.
+
+    Args:
+        py_type: The Python type to convert.
+        nullable: Whether the resulting DataType should be nullable.
+
+    Returns:
+        A PySpark SQL DataType corresponding to the given Python type.
+    """
+    origin = get_origin(py_type)
+
+    # Handle Optional types (Union with None)
+    if origin is Union:
+        args = get_args(py_type)
+        if len(args) == 2 and type(None) in args:
+            # It's Optional[T]
+            non_none_type = args[0] if args[1] is type(None) else args[1]
+            return to_spark_type(non_none_type, nullable=True)
+        else:
+            # Unions of multiple types are not directly supported; default to StringType
+            return StringType()
+    elif isinstance(py_type, _Embedding):
+            return ArrayType(DoubleType(), containsNull=False)
+                             
+    # Handle List[T]
+    elif origin in (list, List):
+        element_type = get_args(py_type)[0]
+        spark_element_type = to_spark_type(element_type)
+        return ArrayType(spark_element_type, containsNull=True)
+
+    # Handle Dict[K, V]
+    elif origin in (dict, Dict):
+        key_type, value_type = get_args(py_type)
+        spark_key_type = to_spark_type(key_type, nullable=False)  # Keys cannot be null
+        spark_value_type = to_spark_type(value_type)
+        return MapType(spark_key_type, spark_value_type, valueContainsNull=True)
+
+    # Handle dataclass (StructType)
+    elif dataclasses.is_dataclass(py_type):
+        fields = []
+        for field in dataclasses.fields(py_type):
+            field_name = field.name
+            field_type = field.type
+            field_nullable = False
+
+            # Check for Optional fields
+            field_origin = get_origin(field_type)
+            if field_origin is Union:
+                field_args = get_args(field_type)
+                if len(field_args) == 2 and type(None) in field_args:
+                    field_nullable = True
+                    field_type = field_args[0] if field_args[1] is type(None) else field_args[1]
+
+            spark_field_type = to_spark_type(field_type, nullable=field_nullable)
+            fields.append(StructField(field_name, spark_field_type, nullable=field_nullable))
+        return StructType(fields)
+
+    # Handle basic types
+    elif py_type is int:
+        return LongType()
+    elif py_type is float:
+        return DoubleType()
+    elif py_type is str:
+        return StringType()
+    elif py_type is bool:
+        return BooleanType()
+    elif py_type is datetime.datetime:
+        return TimestampType()
+    elif py_type is datetime.date:
+        return DateType()
+    elif py_type is bytes:
+        return BinaryType()
+    elif py_type is decimal.Decimal:
+        # Default precision and scale; adjust as needed
+        return DecimalType(precision=38, scale=18)
+
+    elif py_type is type(None):
+        return NullType()
+
+    else:
+        raise ValueError(f"Unsupported type: {py_type}")
