@@ -943,3 +943,36 @@ def test_invalid_eval_assign_preproc(client):
         '`age` is of type `int` in Dataset `UserInfoDataset`, can not be cast to `float`. Full expression: `col("val1")`'
         == str(e.value)
     )
+
+
+@mock
+def test_invalid_eval_preproc_without_schema(client):
+    @source(
+        mysql.table(
+            "users",
+            cursor="added_on",
+        ),
+        every="1h",
+        disorder="20h",
+        bounded=True,
+        idleness="1h",
+        cdc="upsert",
+        preproc={"gender2": eval(col("gender"), schema={})},
+    )
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDataset:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        gender2: str
+        timestamp: datetime = field(timestamp=True)
+
+    # Setting timestamp field through assign preproc
+    with pytest.raises(ValueError) as e:
+        client.commit(datasets=[UserInfoDataset], message="test")
+
+    assert (
+        "Failed to compile expression: field 'gender' not found in the schema"
+        == str(e.value)
+    )

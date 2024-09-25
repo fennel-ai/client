@@ -110,9 +110,15 @@ def _preproc_df(
                 )
             new_df[col] = df[col_name]
         elif isinstance(pre_proc_value, connectors.Eval):
-            input_schema = copy.deepcopy(schema)
+            input_schema = {}
 
             # try casting the column in dataframe according to schema defined in additional schema in eval preproc
+            columns = (
+                list(pre_proc_value.additional_schema.keys())
+                if pre_proc_value.additional_schema
+                else []
+            )
+            eval_df = df.copy()[columns] if len(columns) > 0 else df.copy()
             if pre_proc_value.additional_schema:
                 for name, dtype in pre_proc_value.additional_schema.items():
                     if name not in df.columns:
@@ -120,11 +126,11 @@ def _preproc_df(
                             f"Field `{name}` defined in schema for eval preproc not found in dataframe."
                         )
                     try:
-                        new_df[name] = cast_col_to_arrow_dtype(
-                            new_df[name], get_datatype(dtype)
+                        eval_df[name] = cast_col_to_arrow_dtype(
+                            eval_df[name], get_datatype(dtype)
                         )
-                        new_df[name] = cast_col_to_pandas_dtype(
-                            new_df[name], get_datatype(dtype)
+                        eval_df[name] = cast_col_to_pandas_dtype(
+                            eval_df[name], get_datatype(dtype)
                         )
                     except Exception as e:
                         raise ValueError(
@@ -135,11 +141,11 @@ def _preproc_df(
             try:
                 if isinstance(pre_proc_value.eval_type, Expr):
                     new_df[col] = pre_proc_value.eval_type.eval(
-                        new_df, input_schema
+                        eval_df, input_schema
                     )
                 elif isinstance(pre_proc_value.eval_type, TypedExpr):
                     new_df[col] = pre_proc_value.eval_type.expr.eval(
-                        new_df, input_schema
+                        eval_df, input_schema
                     )
                 else:
                     assign_func_pycode = wrap_function(
@@ -150,7 +156,7 @@ def _preproc_df(
                         column_name=col,
                         is_assign=True,
                     )
-                    assign_df = new_df.copy()
+                    assign_df = eval_df.copy()
                     mod = types.ModuleType(assign_func_pycode.entry_point)
                     code = (
                         assign_func_pycode.imports
@@ -159,7 +165,7 @@ def _preproc_df(
                     )
                     exec(code, mod.__dict__)
                     func = mod.__dict__[assign_func_pycode.entry_point]
-                    new_df = func(assign_df)
+                    new_df[col] = func(assign_df)[col]
             except Exception as e:
                 raise Exception(
                     f"Error in assign preproc for field `{col}` for dataset `{dataset._name}`: {e} "

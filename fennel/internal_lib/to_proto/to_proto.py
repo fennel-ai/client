@@ -461,7 +461,7 @@ def _validate_source_pre_proc(
                     if isinstance(pre_proc_val.eval_type, Expr)
                     else pre_proc_val.eval_type.dtype
                 )
-                input_schema = ds.schema()
+                input_schema = {}
                 if pre_proc_val.additional_schema:
                     for name, dtype in pre_proc_val.additional_schema.items():
                         input_schema[name] = dtype

@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.31] - 2024-09-24
+- Make schema in eval preproc explicit.
+
 ## [1.5.30] - 2024-09-24
 - Add hour, minute, second, millisecond, microsecond, day, week accessors as properties instead of methods.
 
