@@ -27,7 +27,7 @@ def test_invalid_datetime():
         expr.eval(df, {"a": str})
 
     assert (
-        "Failed to compile expression: invalid timezone: `America/NonYork`"
+        "failed to compile expression: invalid timezone: `America/NonYork`"
         in str(e.value)
     )
 
@@ -45,14 +45,14 @@ def test_invalid_datetime():
         expr.eval(df, {"a": str})
     assert (
         str(e.value)
-        == 'Failed to evaluate expression: failed to eval expression: col("a").str.parse_datetime("%Y-%m-%d", timezone="America/New_York"), error: invalid operation: conversion from `str` to `datetime[μs, America/New_York]` failed in column \'a\' for 3 out of 3 values: ["1", "2", "3"]'
+        == 'failed to evaluate expression: failed to eval expression: col("a").str.parse_datetime("%Y-%m-%d", timezone="America/New_York"), error: invalid operation: conversion from `str` to `datetime[μs, America/New_York]` failed in column \'a\' for 3 out of 3 values: ["1", "2", "3"]'
     )
 
     with pytest.raises(ValueError) as e:
         expr.eval(df, {"a": int})
     assert (
         str(e.value)
-        == """Failed to compile expression: invalid expression: expected string type for function 'Strptime { format: "%Y-%m-%d", timezone: Some("America/New_York") }' but found Int"""
+        == """failed to compile expression: invalid expression: expected string type for function 'Strptime { format: "%Y-%m-%d", timezone: Some("America/New_York") }' but found Int"""
     )
 
 
@@ -99,5 +99,5 @@ def test_invalid_parse():
         expr.eval(df, {"a": str})
     assert (
         str(e.value)
-        == "Failed to evaluate expression: failed to convert polars array to fennel array for type 'Int'"
+        == "failed to evaluate expression: failed to convert polars array to fennel array for type 'Int'"
     )

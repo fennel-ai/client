@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
 import pandas as pd
 
+from fennel._vendor.pydantic import BaseModel  # type: ignore
 from fennel.dtypes.dtypes import FENNEL_STRUCT, FENNEL_STRUCT_SRC_CODE
 from fennel.internal_lib.schema.schema import (
     convert_dtype_to_arrow_type_with_nullable,
@@ -17,6 +18,7 @@ import pyarrow as pa
 from fennel_data_lib import assign, type_of, matches
 
 import fennel.gen.schema_pb2 as schema_proto
+import fennel.gen.expr_pb2 as expr_proto
 from fennel.internal_lib.schema import (
     get_datatype,
     cast_col_to_arrow_dtype,
@@ -25,6 +27,10 @@ from fennel.internal_lib.utils.utils import (
     cast_col_to_pandas,
     is_user_defined_class,
 )
+
+
+class EvalContext(BaseModel):
+    now_col_name: Optional[str] = None
 
 
 class InvalidExprException(Exception):
@@ -360,6 +366,7 @@ class Expr(object):
         schema: Dict,
         output_dtype: Optional[Type] = None,
         parse=True,
+        context: Optional[EvalContext] = None,
     ) -> pd.Series:
         from fennel.expr.serializer import ExprSerializer
 
@@ -410,8 +417,18 @@ class Expr(object):
             ret_type = output_dtype
 
         serialized_ret_type = get_datatype(ret_type).SerializeToString()
+        if context is None:
+            serialized_context = expr_proto.EvalContext().SerializeToString()
+        else:
+            serialized_context = expr_proto.EvalContext(
+                **context.dict()
+            ).SerializeToString()
         arrow_col = assign(
-            proto_bytes, df_pa, proto_schema, serialized_ret_type
+            proto_bytes,
+            df_pa,
+            proto_schema,
+            serialized_ret_type,
+            serialized_context,
         )
         return pa_to_pd(arrow_col, ret_type, parse)
 
@@ -1089,6 +1106,14 @@ class FillNull(Expr):
         return f"fillnull({self.expr}, {self.fill})"
 
 
+class Now(Expr):
+    def __init__(self):
+        super(Now, self).__init__()
+
+    def __str__(self) -> str:
+        return "now()"
+
+
 class MakeStruct(Expr):
     def __init__(self, fields: Dict[str, Expr], type: Type):
         self.fields = fields
@@ -1183,3 +1208,7 @@ def datetime(
         ),
         DateTimeNoop(),
     )
+
+
+def now() -> Now:
+    return Now()

@@ -51,6 +51,7 @@ from fennel.expr.expr import (
     DictNoop,
     _DateTime,
     DateTimeNoop,
+    Now,
 )
 
 
@@ -115,6 +116,10 @@ class Visitor(object):
 
         elif isinstance(obj, DateTimeFromEpoch):
             ret = self.visitDateTimeFromEpoch(obj)
+
+        elif isinstance(obj, Now):
+            ret = self.visitNow(obj)
+
         else:
             raise InvalidExprException("invalid expression type: %s" % obj)
 
@@ -178,6 +183,9 @@ class Visitor(object):
         raise NotImplementedError
 
     def visitDateTimeLiteral(self, obj):
+        raise NotImplementedError
+
+    def visitNow(self, obj):
         raise NotImplementedError
 
 
@@ -344,6 +352,9 @@ class ExprPrinter(Visitor):
     def visitDateTimeLiteral(self, obj):
         return f"DATETIME({obj.year}, {obj.month}, {obj.day}, {obj.hour}, {obj.minute}, {obj.second}, {obj.microsecond}, timezone={obj.timezone})"
 
+    def visitNow(self, obj):
+        return "NOW()"
+
 
 class FetchReferences(Visitor):
 
@@ -443,4 +454,7 @@ class FetchReferences(Visitor):
         self.visit(obj.duration)
 
     def visitDateTimeLiteral(self, obj):
+        pass
+
+    def visitNow(self, obj):
         pass

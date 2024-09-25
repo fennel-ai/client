@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.33] - 2024-09-30
+- Add support for now in expressions.
+
 ## [1.5.32] - 2024-09-27
 - Add dropnull to FirstK
 
