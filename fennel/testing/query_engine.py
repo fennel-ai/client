@@ -8,6 +8,7 @@ from frozendict import frozendict
 
 import fennel.datasets.datasets
 import fennel.gen.schema_pb2 as schema_proto
+from fennel.expr.expr import EvalContext
 from fennel.featuresets import Extractor, Feature, Featureset, is_valid_feature
 from fennel.gen.featureset_pb2 import (
     ExtractorType as ProtoExtractorType,
@@ -21,6 +22,8 @@ from fennel.testing.test_utils import (
     cast_col_to_arrow_dtype,
     cast_df_to_arrow_dtype,
 )
+
+NOW_COL_NAME = "__ts_col_name__"
 
 
 class QueryEngine:
@@ -170,7 +173,7 @@ class QueryEngine:
 
             if extractor.extractor_type == ProtoExtractorType.EXPR:
                 output = self._compute_expr_extractor(
-                    extractor, intermediate_data
+                    extractor, timestamps.copy(), intermediate_data
                 )
                 self._check_schema_exceptions(output, dsschema, extractor.name)
                 continue
@@ -356,6 +359,7 @@ class QueryEngine:
     def _compute_expr_extractor(
         self,
         extractor: Extractor,
+        timestamps: pd.Series,
         intermediate_data: Dict[str, pd.Series],
     ) -> pd.Series:
         if len(extractor.outputs) != 1:
@@ -371,8 +375,13 @@ class QueryEngine:
         }
         expr = extractor.expr
         input_schema = {f.name: f.dtype for f in extractor.inputs}
+        input_schema[NOW_COL_NAME] = datetime
         df = pd.DataFrame(input_features)
-        res = expr.eval(df, input_schema)  # type: ignore
+        df[NOW_COL_NAME] = timestamps
+        res = expr.eval(df, input_schema, context=EvalContext(now_col_name=NOW_COL_NAME))  # type: ignore
+        output_dtype = expr.typeof(input_schema)  # type: ignore
+        # Cast to correct arrow dtype after evaluating the expression
+        res = cast_col_to_arrow_dtype(res, get_datatype(output_dtype))
         res.name = extractor.fqn_output_features()[0]
         intermediate_data[extractor.fqn_output_features()[0]] = res
         return res

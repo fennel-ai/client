@@ -96,6 +96,7 @@ sidebar:
       - "api-reference/expressions/fillnull"
       - "api-reference/expressions/lit"
       - "api-reference/expressions/not"
+      - "api-reference/expressions/now"
       - "api-reference/expressions/typeof"
       - "api-reference/expressions/when"
 

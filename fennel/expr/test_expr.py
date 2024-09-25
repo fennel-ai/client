@@ -3,13 +3,17 @@ import pytest
 import random
 import pandas as pd
 from dataclasses import dataclass, fields
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, List
 from fennel.datasets import dataset
 
 from fennel.dtypes.dtypes import struct
-from fennel.expr import col, when, lit
-from fennel.expr.expr import TimeUnit, from_epoch, make_struct
+from fennel.expr import col, when, lit, now
+from fennel.expr.expr import (
+    TimeUnit,
+    from_epoch,
+    make_struct,
+)
 from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
@@ -1339,6 +1343,33 @@ def test_isnull():
             refs={"a"},
             eval_result=[False, False, True],
             expected_dtype=bool,
+            proto_json=None,
+        ),
+    ]
+
+    for case in cases:
+        check_test_case(case)
+
+
+def test_now():
+    cases = [
+        ExprTestCase(
+            expr=now().dt.since(col("birthdate"), unit="day"),
+            df=pd.DataFrame(
+                {
+                    "birthdate": [
+                        datetime.now(timezone.utc),
+                        datetime.now(timezone.utc),
+                        None,
+                        datetime.now(timezone.utc),
+                    ],
+                }
+            ),
+            schema={"birthdate": Optional[datetime]},
+            display='SINCE(NOW(), col("birthdate"), unit=TimeUnit.DAY)',
+            refs={"birthdate"},
+            eval_result=[0, 0, pd.NA, 0],
+            expected_dtype=Optional[int],
             proto_json=None,
         ),
     ]

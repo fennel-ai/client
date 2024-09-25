@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 from typing import Optional
 import pandas as pd
@@ -155,4 +157,27 @@ def test_lit():
     expr = col("x") + lit(1)
     df = pd.DataFrame({"x": pd.Series([1, 2, None], dtype=pd.Int64Dtype())})
     assert expr.eval(df, schema={"x": Optional[int]}).tolist() == [2, 3, pd.NA]
+    # /docsnip
+
+
+def test_now():
+    # docsnip expr_now
+    from fennel.expr import now, col
+
+    # docsnip-highlight next-line
+    expr = now().dt.since(col("birthdate"), "year")
+
+    assert (
+        expr.typeof(schema={"birthdate": Optional[datetime]}) == Optional[int]
+    )
+
+    # can be evaluated with a dataframe
+    df = pd.DataFrame(
+        {"birthdate": [datetime(1997, 12, 24), datetime(2001, 1, 21), None]}
+    )
+    assert expr.eval(df, schema={"birthdate": Optional[datetime]}).tolist() == [
+        26,
+        23,
+        pd.NA,
+    ]
     # /docsnip

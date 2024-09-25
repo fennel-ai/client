@@ -6,6 +6,7 @@ from fennel.expr.expr import (
     var,
     datetime,
     from_epoch,
+    now,
     Expr,
     InvalidExprException,
 )

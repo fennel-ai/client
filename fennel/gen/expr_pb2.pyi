@@ -111,6 +111,23 @@ MILLISECOND: TimeUnit.ValueType  # 9
 global___TimeUnit = TimeUnit
 
 @typing_extensions.final
+class EvalContext(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    NOW_COL_NAME_FIELD_NUMBER: builtins.int
+    now_col_name: builtins.str
+    def __init__(
+        self,
+        *,
+        now_col_name: builtins.str | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_now_col_name", b"_now_col_name", "now_col_name", b"now_col_name"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_now_col_name", b"_now_col_name", "now_col_name", b"now_col_name"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_now_col_name", b"_now_col_name"]) -> typing_extensions.Literal["now_col_name"] | None: ...
+
+global___EvalContext = EvalContext
+
+@typing_extensions.final
 class Expr(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -131,6 +148,7 @@ class Expr(google.protobuf.message.Message):
     MAKE_STRUCT_FIELD_NUMBER: builtins.int
     FROM_EPOCH_FIELD_NUMBER: builtins.int
     VAR_FIELD_NUMBER: builtins.int
+    NOW_FIELD_NUMBER: builtins.int
     @property
     def ref(self) -> global___Ref: ...
     @property
@@ -166,6 +184,8 @@ class Expr(google.protobuf.message.Message):
     def from_epoch(self) -> global___FromEpoch: ...
     @property
     def var(self) -> global___Var: ...
+    @property
+    def now(self) -> global___Now: ...
     def __init__(
         self,
         *,
@@ -186,12 +206,23 @@ class Expr(google.protobuf.message.Message):
         make_struct: global___MakeStruct | None = ...,
         from_epoch: global___FromEpoch | None = ...,
         var: global___Var | None = ...,
+        now: global___Now | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch", "var"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "now", b"now", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "now", b"now", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch", "var", "now"] | None: ...
 
 global___Expr = Expr
+
+@typing_extensions.final
+class Now(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Now = Now
 
 @typing_extensions.final
 class Var(google.protobuf.message.Message):

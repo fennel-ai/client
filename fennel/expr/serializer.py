@@ -485,6 +485,11 @@ class ExprSerializer(Visitor):
         expr.datetime_literal.CopyFrom(datetime_literal)
         return expr
 
+    def visitNow(self, obj):
+        expr = proto.Expr()
+        expr.now.CopyFrom(proto.Now())
+        return expr
+
 
 def val_as_json(val: Any) -> str:
     if isinstance(val, str):

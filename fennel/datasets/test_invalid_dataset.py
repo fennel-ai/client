@@ -295,7 +295,7 @@ def test_incorrect_assign_expr_type():
 
     assert (
         str(e2.value)
-        == """invalid assign - '[Pipeline:transform]->assign node' error in expression for column `movie_suffixed`: Failed to compile expression: invalid expression: both sides of '+' must be numeric types but found String & String, left: col("movie"), right: lit(String("_suffix"))"""
+        == """invalid assign - '[Pipeline:transform]->assign node' error in expression for column `movie_suffixed`: failed to compile expression: invalid expression: both sides of '+' must be numeric types but found String & String, left: col("movie"), right: lit(String("_suffix"))"""
     )
 
 
