@@ -410,35 +410,6 @@ class Expr(object):
             ret_type = output_dtype
 
         serialized_ret_type = get_datatype(ret_type).SerializeToString()
-        print("I AM HERE")
-        print(proto_bytes)
-        print(df_pa)
-        print(proto_schema)
-        print(serialized_ret_type)
-        print("="*100)
-        
-        # Convert serialized_ret_type back to schema_proto.DataType
-        # Convert serialized_ret_type back to schema_proto.DataType
-        from fennel.gen import schema_pb2 as schema_proto
-        ret_type_proto = schema_proto.DataType()
-        ret_type_proto.ParseFromString(serialized_ret_type)
-        print("CONVERTTed back :", ret_type_proto)
-        python_type = from_proto(ret_type_proto)
-        print("PYTHON TYPE :", python_type)
-        import base64
-        # Base64 encode the proto_bytes
-        proto_bytes_base64 = base64.b64encode(proto_bytes).decode("utf-8")
-        base64_schema = {}
-        for key, value in proto_schema.items():
-            base64_schema[key] = base64.b64encode(value).decode("utf-8")
-        # Base64 encode proto_schema
-        # proto_schema_base64 = base64.b64encode(proto_schema).decode("utf-8")
-        # Base64 encode serialized_ret_type
-        serialized_ret_type_base64 = base64.b64encode(serialized_ret_type).decode("utf-8")
-        
-        print("Expr\n", proto_bytes_base64)
-        print("Schema\n", base64_schema)
-        print("Ret Type\n", serialized_ret_type_base64)
         arrow_col = assign(
             proto_bytes, df_pa, proto_schema, serialized_ret_type
         )

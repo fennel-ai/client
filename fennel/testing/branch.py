@@ -37,10 +37,6 @@ def get_extractor_func(extractor_proto: ProtoExtractor) -> Callable:
     code = (
         extractor_proto.pycode.imports + extractor_proto.pycode.generated_code
     )
-    print("-"*100)
-    print(code)
-    print("-"*100)
-    print("Entry point: ", extractor_proto.pycode.entry_point)
     try:
         sys.modules[fqn] = mod
         exec(code, mod.__dict__)

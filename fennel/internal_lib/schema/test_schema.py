@@ -48,7 +48,6 @@ from pyspark.sql.types import (
 )
 
 
-
 def test_get_data_type():
     assert get_datatype(int) == proto.DataType(int_type=proto.IntType())
     assert get_datatype(Optional[int]) == proto.DataType(
@@ -987,25 +986,35 @@ def test_to_spark_type():
     assert to_spark_type(str) == StringType()
     assert to_spark_type(datetime) == TimestampType()
     assert to_spark_type(date) == DateType()
+    # Types in pyspark are nullable by default
     assert to_spark_type(Optional[int]) == LongType()
 
     # Test complex types
     assert to_spark_type(List[int]) == ArrayType(LongType(), containsNull=True)
-    assert to_spark_type(Dict[str, float]) == MapType(StringType(), DoubleType(), valueContainsNull=True)
-    assert to_spark_type(Optional[List[str]]) == ArrayType(StringType(), containsNull=True)
-    
+    assert to_spark_type(Dict[str, float]) == MapType(
+        StringType(), DoubleType(), valueContainsNull=True
+    )
+    assert to_spark_type(Optional[List[str]]) == ArrayType(
+        StringType(), containsNull=True
+    )
+
     # Test nested complex types
     assert to_spark_type(List[Dict[str, List[float]]]) == ArrayType(
-        MapType(StringType(), ArrayType(DoubleType(), containsNull=True), valueContainsNull=True),
-        containsNull=True
+        MapType(
+            StringType(),
+            ArrayType(DoubleType(), containsNull=True),
+            valueContainsNull=True,
+        ),
+        containsNull=True,
     )
-    
+
     assert to_spark_type(Union[int, str, float]) == StringType()
-    
-    
+
     # Test Embedding type (should default to ArrayType of DoubleType)
-    assert to_spark_type(Embedding[10]) == ArrayType(DoubleType(), containsNull=False)
-    
+    assert to_spark_type(Embedding[10]) == ArrayType(
+        DoubleType(), containsNull=False
+    )
+
     # Test complex nested structure
     complex_type = Dict[str, List[Optional[Dict[int, Union[str, float]]]]]
     expected_complex_type = MapType(
@@ -1013,12 +1022,12 @@ def test_to_spark_type():
         ArrayType(
             MapType(
                 LongType(),
-                StringType(),  # Union defaults to StringType
-                valueContainsNull=True
+                StringType(),
+                valueContainsNull=True,
             ),
-            containsNull=True
+            containsNull=True,
         ),
-        valueContainsNull=True
+        valueContainsNull=True,
     )
     assert to_spark_type(complex_type) == expected_complex_type
 
@@ -1034,18 +1043,26 @@ def test_to_spark_type():
         age: int
         address: Address
         emails: List[str]
-        
+
     # Convert Person dataclass to StructType
     spark_type = to_spark_type(Person)
-    
-    expected_spark_type = StructType([
-        StructField("name", StringType(), False),
-        StructField("age", LongType(), False),
-        StructField("address", StructType([
-            StructField("street", StringType(), False),
-            StructField("city", StringType(), False),
-            StructField("zip_code", LongType(), True)
-        ]), False),
-        StructField("emails", ArrayType(StringType()), False)
-    ])
+
+    expected_spark_type = StructType(
+        [
+            StructField("name", StringType(), False),
+            StructField("age", LongType(), False),
+            StructField(
+                "address",
+                StructType(
+                    [
+                        StructField("street", StringType(), False),
+                        StructField("city", StringType(), False),
+                        StructField("zip_code", LongType(), True),
+                    ]
+                ),
+                False,
+            ),
+            StructField("emails", ArrayType(StringType()), False),
+        ]
+    )
     assert spark_type == expected_spark_type

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "1.5.30"
+version = "1.5.31"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [{ include = "fennel" }]
@@ -41,7 +41,6 @@ twine = "^4.0.0"
 pyspelling = "^2.8.2"
 # A pyyaml bug when using cython, https://github.com/yaml/pyyaml/issues/601
 pyyaml = "^6.0.1"
-pyspark = "^3.5.0"
 
 # For production, we use poetry to build the python package
 

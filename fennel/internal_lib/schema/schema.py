@@ -38,9 +38,6 @@ from fennel.internal_lib.utils.utils import (
     parse_datetime_in_value,
 )
 
-from typing import get_args, get_origin, Any, Union, List, Dict, Optional
-import dataclasses
-import datetime
 import decimal
 from pyspark.sql.types import (
     DataType,
@@ -1018,14 +1015,16 @@ def to_spark_type(py_type: Any, nullable: bool = True) -> DataType:
         args = get_args(py_type)
         if len(args) == 2 and type(None) in args:
             # It's Optional[T]
-            non_none_type = args[0] if args[1] is type(None) else args[1]
+            non_none_type = (
+                args[0] if args[1] is type(None) else args[1]  # noqa: E721
+            )  # noqa: E721
             return to_spark_type(non_none_type, nullable=True)
         else:
             # Unions of multiple types are not directly supported; default to StringType
             return StringType()
     elif isinstance(py_type, _Embedding):
-            return ArrayType(DoubleType(), containsNull=False)
-                             
+        return ArrayType(DoubleType(), containsNull=False)
+
     # Handle List[T]
     elif origin in (list, List):
         element_type = get_args(py_type)[0]
@@ -1035,7 +1034,9 @@ def to_spark_type(py_type: Any, nullable: bool = True) -> DataType:
     # Handle Dict[K, V]
     elif origin in (dict, Dict):
         key_type, value_type = get_args(py_type)
-        spark_key_type = to_spark_type(key_type, nullable=False)  # Keys cannot be null
+        spark_key_type = to_spark_type(
+            key_type, nullable=False
+        )  # Keys cannot be null
         spark_value_type = to_spark_type(value_type)
         return MapType(spark_key_type, spark_value_type, valueContainsNull=True)
 
@@ -1053,10 +1054,20 @@ def to_spark_type(py_type: Any, nullable: bool = True) -> DataType:
                 field_args = get_args(field_type)
                 if len(field_args) == 2 and type(None) in field_args:
                     field_nullable = True
-                    field_type = field_args[0] if field_args[1] is type(None) else field_args[1]
+                    field_type = (
+                        field_args[0]
+                        if field_args[1] is type(None)  # noqa: E721
+                        else field_args[1]
+                    )
 
-            spark_field_type = to_spark_type(field_type, nullable=field_nullable)
-            fields.append(StructField(field_name, spark_field_type, nullable=field_nullable))
+            spark_field_type = to_spark_type(
+                field_type, nullable=field_nullable
+            )
+            fields.append(
+                StructField(
+                    field_name, spark_field_type, nullable=field_nullable
+                )
+            )
         return StructType(fields)
 
     # Handle basic types
@@ -1068,9 +1079,9 @@ def to_spark_type(py_type: Any, nullable: bool = True) -> DataType:
         return StringType()
     elif py_type is bool:
         return BooleanType()
-    elif py_type is datetime.datetime:
+    elif py_type is datetime:
         return TimestampType()
-    elif py_type is datetime.date:
+    elif py_type is date:
         return DateType()
     elif py_type is bytes:
         return BinaryType()
@@ -1078,7 +1089,7 @@ def to_spark_type(py_type: Any, nullable: bool = True) -> DataType:
         # Default precision and scale; adjust as needed
         return DecimalType(precision=38, scale=18)
 
-    elif py_type is type(None):
+    elif py_type is type(None):  # noqa: E721
         return NullType()
 
     else:
