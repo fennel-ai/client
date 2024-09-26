@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.32] - 2024-09-27
+- Add dropnull to FirstK
+
 ## [1.5.31] - 2024-09-26
 - Fix bug in signature of assign operator.
 
