@@ -29,28 +29,29 @@ def test_preproc_filter(client):
             cdc="append",
             disorder="14d",
             env="prod",
-            where=lambda x: ((x["age"] > 0) & (x["age"] % 100 == 1)),
+            where=lambda x: ((x["age"] > 0) & (x["age"] == 1)),
         )
         @source(
             webhook.endpoint("A1"),
             cdc="append",
             disorder="14d",
             env="staging",
+            # repeat the conditions to test long lamda
             where=lambda x: (
                 (x["age"] > 0)
-                & (x["age"] % 100 == 1)
+                & (x["age"] == 1)
                 & (x["age"] > 0)
-                & (x["age"] % 100 == 1)
+                & (x["age"] == 1)
                 & True
                 & (x["age"] > 0)
-                & (x["age"] % 100 == 1)
+                & (x["age"] == 1)
                 & (x["age"] > 0)
-                & (x["age"] % 100 == 1)
+                & (x["age"] == 1)
                 & True
                 & (x["age"] > 0)
-                & (x["age"] % 100 == 1)
+                & (x["age"] == 1)
                 & (x["age"] > 0)
-                & (x["age"] % 100 == 1)
+                & (x["age"] == 1)
                 & True
             ),
         )

@@ -22,6 +22,7 @@ from fennel.datasets import (
     FirstK,
 )
 from fennel.dtypes import Embedding, Window, Continuous, Session
+from fennel.expr import lit
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs, desc
 from fennel.testing import *
@@ -3522,4 +3523,181 @@ def test_select_all_columns():
     expected_operator_request = ParseDict(drop, ds_proto.Operator())
     assert operators[4] == expected_operator_request, error_message(
         operators[4], expected_operator_request
+    )
+
+
+def test_complex_union():
+    @source(
+        webhook.endpoint("Views"),
+        cdc="append",
+        disorder="14d",
+    )
+    @dataset
+    class Views:
+        user_id: int
+        event_id: int
+        t: datetime
+
+    @source(
+        webhook.endpoint("Views"),
+        cdc="append",
+        disorder="14d",
+    )
+    @dataset
+    class Clicks:
+        user_id: int
+        event_id: int
+        t: datetime
+
+    @dataset
+    class Events:
+        user_id: int
+        event_id: int
+        event_type: str
+        t: datetime
+
+        @pipeline
+        @inputs(Views, Clicks)
+        def my_pipeline(cls, views: Dataset, clicks: Dataset):
+            a = views.assign(event_type=lit("view_1").astype(str))
+            b = views.assign(event_type=lit("view_2").astype(str))
+            c = clicks.assign(event_type=lit("clicks").astype(str))
+            return a + b + c
+
+    view = InternalTestClient()
+    view.add(Views)
+    view.add(Clicks)
+    view.add(Events)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 3
+    assert len(sync_request.pipelines) == 1
+    assert len(sync_request.operators) == 7
+
+    operators = sync_request.operators
+    ds_ref = {
+        "id": "Views",
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "datasetRef": {"referringDatasetName": "Views"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[0] == expected_operator_request, error_message(
+        operators[0], expected_operator_request
+    )
+    assign = {
+        "id": "2136094350b1271a0502789f7759d022",
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "assignExpr": {
+            "operandId": "Views",
+            "outputTypes": {
+                "event_type": {"stringType": {}},
+            },
+            "exprs": {
+                "event_type": {
+                    "jsonLiteral": {
+                        "dtype": {"stringType": {}},
+                        "literal": '"view_1"',
+                    }
+                }
+            },
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(assign, ds_proto.Operator())
+    assert operators[1] == expected_operator_request, error_message(
+        operators[1], expected_operator_request
+    )
+    assign = {
+        "id": "3ef5d23a31640e82164d5e51603d0885",
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "assignExpr": {
+            "operandId": "Views",
+            "outputTypes": {
+                "event_type": {"stringType": {}},
+            },
+            "exprs": {
+                "event_type": {
+                    "jsonLiteral": {
+                        "dtype": {"stringType": {}},
+                        "literal": '"view_2"',
+                    }
+                }
+            },
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(assign, ds_proto.Operator())
+    assert operators[2] == expected_operator_request, error_message(
+        operators[2], expected_operator_request
+    )
+    union = {
+        "id": "d245616918044075e99a6f19d40b0b42",
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "union": {
+            "operandIds": [
+                "2136094350b1271a0502789f7759d022",
+                "3ef5d23a31640e82164d5e51603d0885",
+            ],
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(union, ds_proto.Operator())
+    assert operators[3] == expected_operator_request, error_message(
+        operators[3], expected_operator_request
+    )
+    ds_ref = {
+        "id": "Clicks",
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "datasetRef": {"referringDatasetName": "Clicks"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[4] == expected_operator_request, error_message(
+        operators[4], expected_operator_request
+    )
+    assign = {
+        "id": "f2701fd78f5dc1494e519aba5d8fc934",
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "assignExpr": {
+            "operandId": "Clicks",
+            "outputTypes": {
+                "event_type": {"stringType": {}},
+            },
+            "exprs": {
+                "event_type": {
+                    "jsonLiteral": {
+                        "dtype": {"stringType": {}},
+                        "literal": '"clicks"',
+                    }
+                }
+            },
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(assign, ds_proto.Operator())
+    assert operators[5] == expected_operator_request, error_message(
+        operators[5], expected_operator_request
+    )
+    union = {
+        "id": "fa08df185243417fc9c8e7fb819a4753",
+        "isRoot": True,
+        "pipelineName": "my_pipeline",
+        "datasetName": "Events",
+        "union": {
+            "operandIds": [
+                "d245616918044075e99a6f19d40b0b42",
+                "f2701fd78f5dc1494e519aba5d8fc934",
+            ],
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(union, ds_proto.Operator())
+    assert operators[6] == expected_operator_request, error_message(
+        operators[6], expected_operator_request
     )
