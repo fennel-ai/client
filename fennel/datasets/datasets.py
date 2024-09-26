@@ -521,27 +521,21 @@ class Assign(_Node):
         return Assign(self, None, None, None, **kwargs)
 
     def signature(self):
-        if isinstance(self.node, Dataset):
-            return fhash(
-                self.node._name,
-                self.func,
-                self.column,
-                (
-                    self.output_type.__name__
-                    if self.output_type is not None
-                    else None
-                ),
-            )
+        item = (
+            self.node._name
+            if isinstance(self.node, Dataset)
+            else self.node.signature()
+        )
         if self.assign_type == UDFType.python:
             return fhash(
-                self.node.signature(),
+                item,
                 self.func,
                 self.column,
                 self.output_type.__name__,
             )
         else:
             return fhash(
-                self.node.signature(),
+                item,
                 self.output_expressions,
             )
 
