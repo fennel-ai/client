@@ -195,12 +195,14 @@ class FirstK(google.protobuf.message.Message):
     LIMIT_FIELD_NUMBER: builtins.int
     DEDUP_FIELD_NUMBER: builtins.int
     WINDOW_FIELD_NUMBER: builtins.int
+    DROPNULL_FIELD_NUMBER: builtins.int
     of: builtins.str
     name: builtins.str
     limit: builtins.int
     dedup: builtins.bool
     @property
     def window(self) -> window_pb2.Window: ...
+    dropnull: builtins.bool
     def __init__(
         self,
         *,
@@ -209,9 +211,10 @@ class FirstK(google.protobuf.message.Message):
         limit: builtins.int = ...,
         dedup: builtins.bool = ...,
         window: window_pb2.Window | None = ...,
+        dropnull: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["window", b"window"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dedup", b"dedup", "dropnull", b"dropnull", "limit", b"limit", "name", b"name", "of", b"of", "window", b"window"]) -> None: ...
 
 global___FirstK = FirstK
 
