@@ -691,7 +691,7 @@ class Aggregate(_Node):
                 if (agg.dropnull):
                     if (not fennel_is_optional(dtype)):
                         raise TypeError(
-                            f"dropnull is only allowed for optional types"
+                            "dropnull is only allowed for optional types"
                         )
                     dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
@@ -2749,7 +2749,7 @@ class SchemaValidator(Visitor):
                 if (agg.dropnull):
                     if (not fennel_is_optional(dtype)):
                         raise TypeError(
-                            f"dropnull is only allowed for optional types"
+                            "dropnull is only allowed for optional types"
                         )
                     dtype = fennel_get_optional_inner(dtype)
                 list_type = get_python_type_from_pd(dtype)
