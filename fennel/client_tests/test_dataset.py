@@ -4540,7 +4540,7 @@ def test_firstk_null(client):
                     window=Continuous("forever"),
                     dedup=False,
                     limit=2,
-                    dropnull=False
+                    dropnull=False,
                 )
             )
 
@@ -4592,7 +4592,7 @@ def test_firstk_dropnull(client):
                     window=Continuous("forever"),
                     dedup=False,
                     limit=2,
-                    dropnull=True
+                    dropnull=True,
                 )
             )
 

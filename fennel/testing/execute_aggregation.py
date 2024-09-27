@@ -196,7 +196,7 @@ class FirstKState(AggState):
         return (val is None) or pd.isnull(val)
 
     def add_val_to_state(self, val, _ts):
-        if (self.dropnull and self.is_null(val)):
+        if self.dropnull and self.is_null(val):
             return list(self.vals[: self.k])
 
         self.vals.append(val)
@@ -855,7 +855,9 @@ def get_aggregated_df(
                         aggregate.limit, aggregate.dedup, aggregate.dropnull
                     )
                 elif isinstance(aggregate, FirstK):
-                    state[key] = FirstKState(aggregate.limit, aggregate.dedup, aggregate.dropnull)
+                    state[key] = FirstKState(
+                        aggregate.limit, aggregate.dedup, aggregate.dropnull
+                    )
                 elif isinstance(aggregate, Min):
                     state[key] = MinState(aggregate.default)
                 elif isinstance(aggregate, Max):
