@@ -1232,6 +1232,7 @@ def test_auto_extractor_removal(client):
     assert response.status_code == requests.codes.OK, response.json()
 
 
+@pytest.mark.integration
 @mock
 def test_query_time_features(client):
     @meta(owner="decision-systems@theporter.in")

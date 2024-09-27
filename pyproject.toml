@@ -22,6 +22,7 @@ sortedcontainers = "^2.4.0"
 typing-extensions = "^4.12.0"
 fennel-data-lib = "0.1.21"
 pyarrow = "^14.0.2"
+pyspark = "^3.5.3"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"
