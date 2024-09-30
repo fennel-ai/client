@@ -6,7 +6,9 @@ import builtins
 import google.protobuf.descriptor
 import google.protobuf.message
 import google.protobuf.wrappers_pb2
+import secret_pb2
 import sys
+import typing
 
 if sys.version_info >= (3, 8):
     import typing as typing_extensions
@@ -42,18 +44,30 @@ class BasicAuthentication(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     USERNAME_FIELD_NUMBER: builtins.int
+    USERNAME_SECRET_FIELD_NUMBER: builtins.int
     PASSWORD_FIELD_NUMBER: builtins.int
+    PASSWORD_SECRET_FIELD_NUMBER: builtins.int
     username: builtins.str
     @property
+    def username_secret(self) -> secret_pb2.SecretRef: ...
+    @property
     def password(self) -> google.protobuf.wrappers_pb2.StringValue: ...
+    @property
+    def password_secret(self) -> secret_pb2.SecretRef: ...
     def __init__(
         self,
         *,
         username: builtins.str = ...,
+        username_secret: secret_pb2.SecretRef | None = ...,
         password: google.protobuf.wrappers_pb2.StringValue | None = ...,
+        password_secret: secret_pb2.SecretRef | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["password", b"password"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["password", b"password", "username", b"username"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "username", b"username", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "username", b"username", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["username", "username_secret"] | None: ...
 
 global___BasicAuthentication = BasicAuthentication
 
@@ -62,12 +76,18 @@ class TokenAuthentication(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     TOKEN_FIELD_NUMBER: builtins.int
+    TOKEN_SECRET_FIELD_NUMBER: builtins.int
     token: builtins.str
+    @property
+    def token_secret(self) -> secret_pb2.SecretRef: ...
     def __init__(
         self,
         *,
         token: builtins.str = ...,
+        token_secret: secret_pb2.SecretRef | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["token", b"token"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["token", b"token", "token_secret", b"token_secret", "token_variant", b"token_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["token", b"token", "token_secret", b"token_secret", "token_variant", b"token_variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["token_variant", b"token_variant"]) -> typing_extensions.Literal["token", "token_secret"] | None: ...
 
 global___TokenAuthentication = TokenAuthentication

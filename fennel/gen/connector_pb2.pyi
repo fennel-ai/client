@@ -24,6 +24,7 @@ import kinesis_pb2
 import pycode_pb2
 import schema_pb2
 import schema_registry_pb2
+import secret_pb2
 import sys
 import typing
 
@@ -286,29 +287,42 @@ global___Webhook = Webhook
 class MySQL(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    USER_FIELD_NUMBER: builtins.int
+    USERNAME_SECRET_FIELD_NUMBER: builtins.int
+    PASSWORD_FIELD_NUMBER: builtins.int
+    PASSWORD_SECRET_FIELD_NUMBER: builtins.int
     HOST_FIELD_NUMBER: builtins.int
     DATABASE_FIELD_NUMBER: builtins.int
-    USER_FIELD_NUMBER: builtins.int
-    PASSWORD_FIELD_NUMBER: builtins.int
     PORT_FIELD_NUMBER: builtins.int
     JDBC_PARAMS_FIELD_NUMBER: builtins.int
+    user: builtins.str
+    @property
+    def username_secret(self) -> secret_pb2.SecretRef: ...
+    password: builtins.str
+    @property
+    def password_secret(self) -> secret_pb2.SecretRef: ...
     host: builtins.str
     database: builtins.str
-    user: builtins.str
-    password: builtins.str
     port: builtins.int
     jdbc_params: builtins.str
     def __init__(
         self,
         *,
+        user: builtins.str = ...,
+        username_secret: secret_pb2.SecretRef | None = ...,
+        password: builtins.str = ...,
+        password_secret: secret_pb2.SecretRef | None = ...,
         host: builtins.str = ...,
         database: builtins.str = ...,
-        user: builtins.str = ...,
-        password: builtins.str = ...,
         port: builtins.int = ...,
         jdbc_params: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "jdbc_params", b"jdbc_params", "password", b"password", "port", b"port", "user", b"user"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "jdbc_params", b"jdbc_params", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "port", b"port", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___MySQL = MySQL
 
@@ -316,29 +330,42 @@ global___MySQL = MySQL
 class Postgres(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    USER_FIELD_NUMBER: builtins.int
+    USERNAME_SECRET_FIELD_NUMBER: builtins.int
+    PASSWORD_FIELD_NUMBER: builtins.int
+    PASSWORD_SECRET_FIELD_NUMBER: builtins.int
     HOST_FIELD_NUMBER: builtins.int
     DATABASE_FIELD_NUMBER: builtins.int
-    USER_FIELD_NUMBER: builtins.int
-    PASSWORD_FIELD_NUMBER: builtins.int
     PORT_FIELD_NUMBER: builtins.int
     JDBC_PARAMS_FIELD_NUMBER: builtins.int
+    user: builtins.str
+    @property
+    def username_secret(self) -> secret_pb2.SecretRef: ...
+    password: builtins.str
+    @property
+    def password_secret(self) -> secret_pb2.SecretRef: ...
     host: builtins.str
     database: builtins.str
-    user: builtins.str
-    password: builtins.str
     port: builtins.int
     jdbc_params: builtins.str
     def __init__(
         self,
         *,
+        user: builtins.str = ...,
+        username_secret: secret_pb2.SecretRef | None = ...,
+        password: builtins.str = ...,
+        password_secret: secret_pb2.SecretRef | None = ...,
         host: builtins.str = ...,
         database: builtins.str = ...,
-        user: builtins.str = ...,
-        password: builtins.str = ...,
         port: builtins.int = ...,
         jdbc_params: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "jdbc_params", b"jdbc_params", "password", b"password", "port", b"port", "user", b"user"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "jdbc_params", b"jdbc_params", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "port", b"port", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___Postgres = Postgres
 
@@ -347,21 +374,34 @@ class S3(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     AWS_SECRET_ACCESS_KEY_FIELD_NUMBER: builtins.int
+    AWS_SECRET_ACCESS_KEY_SECRET_FIELD_NUMBER: builtins.int
     AWS_ACCESS_KEY_ID_FIELD_NUMBER: builtins.int
+    AWS_ACCESS_KEY_ID_SECRET_FIELD_NUMBER: builtins.int
     ROLE_ARN_FIELD_NUMBER: builtins.int
     aws_secret_access_key: builtins.str
+    @property
+    def aws_secret_access_key_secret(self) -> secret_pb2.SecretRef: ...
     aws_access_key_id: builtins.str
+    @property
+    def aws_access_key_id_secret(self) -> secret_pb2.SecretRef: ...
     role_arn: builtins.str
     def __init__(
         self,
         *,
         aws_secret_access_key: builtins.str = ...,
+        aws_secret_access_key_secret: secret_pb2.SecretRef | None = ...,
         aws_access_key_id: builtins.str = ...,
+        aws_access_key_id_secret: secret_pb2.SecretRef | None = ...,
         role_arn: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "role_arn", b"role_arn"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "aws_access_key_id", b"aws_access_key_id", "aws_secret_access_key", b"aws_secret_access_key", "role_arn", b"role_arn"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "aws_access_key_id", b"aws_access_key_id", "aws_access_key_id_secret", b"aws_access_key_id_secret", "aws_access_key_id_variant", b"aws_access_key_id_variant", "aws_secret_access_key", b"aws_secret_access_key", "aws_secret_access_key_secret", b"aws_secret_access_key_secret", "aws_secret_access_key_variant", b"aws_secret_access_key_variant", "role_arn", b"role_arn"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_role_arn", b"_role_arn", "aws_access_key_id", b"aws_access_key_id", "aws_access_key_id_secret", b"aws_access_key_id_secret", "aws_access_key_id_variant", b"aws_access_key_id_variant", "aws_secret_access_key", b"aws_secret_access_key", "aws_secret_access_key_secret", b"aws_secret_access_key_secret", "aws_secret_access_key_variant", b"aws_secret_access_key_variant", "role_arn", b"role_arn"]) -> None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_role_arn", b"_role_arn"]) -> typing_extensions.Literal["role_arn"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["aws_access_key_id_variant", b"aws_access_key_id_variant"]) -> typing_extensions.Literal["aws_access_key_id", "aws_access_key_id_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["aws_secret_access_key_variant", b"aws_secret_access_key_variant"]) -> typing_extensions.Literal["aws_secret_access_key", "aws_secret_access_key_secret"] | None: ...
 
 global___S3 = S3
 
@@ -369,20 +409,26 @@ global___S3 = S3
 class Bigquery(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    DATASET_ID_FIELD_NUMBER: builtins.int
     SERVICE_ACCOUNT_KEY_FIELD_NUMBER: builtins.int
+    SERVICE_ACCOUNT_KEY_SECRET_FIELD_NUMBER: builtins.int
+    DATASET_ID_FIELD_NUMBER: builtins.int
     PROJECT_ID_FIELD_NUMBER: builtins.int
-    dataset_id: builtins.str
     service_account_key: builtins.str
+    @property
+    def service_account_key_secret(self) -> secret_pb2.SecretRef: ...
+    dataset_id: builtins.str
     project_id: builtins.str
     def __init__(
         self,
         *,
-        dataset_id: builtins.str = ...,
         service_account_key: builtins.str = ...,
+        service_account_key_secret: secret_pb2.SecretRef | None = ...,
+        dataset_id: builtins.str = ...,
         project_id: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dataset_id", b"dataset_id", "project_id", b"project_id", "service_account_key", b"service_account_key"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["dataset_id", b"dataset_id", "project_id", b"project_id", "service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["service_account_key_variant", b"service_account_key_variant"]) -> typing_extensions.Literal["service_account_key", "service_account_key_secret"] | None: ...
 
 global___Bigquery = Bigquery
 
@@ -390,16 +436,22 @@ global___Bigquery = Bigquery
 class Snowflake(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    ACCOUNT_FIELD_NUMBER: builtins.int
     USER_FIELD_NUMBER: builtins.int
+    USERNAME_SECRET_FIELD_NUMBER: builtins.int
     PASSWORD_FIELD_NUMBER: builtins.int
+    PASSWORD_SECRET_FIELD_NUMBER: builtins.int
+    ACCOUNT_FIELD_NUMBER: builtins.int
     SCHEMA_FIELD_NUMBER: builtins.int
     WAREHOUSE_FIELD_NUMBER: builtins.int
     ROLE_FIELD_NUMBER: builtins.int
     DATABASE_FIELD_NUMBER: builtins.int
-    account: builtins.str
     user: builtins.str
+    @property
+    def username_secret(self) -> secret_pb2.SecretRef: ...
     password: builtins.str
+    @property
+    def password_secret(self) -> secret_pb2.SecretRef: ...
+    account: builtins.str
     schema: builtins.str
     warehouse: builtins.str
     role: builtins.str
@@ -407,15 +459,22 @@ class Snowflake(google.protobuf.message.Message):
     def __init__(
         self,
         *,
-        account: builtins.str = ...,
         user: builtins.str = ...,
+        username_secret: secret_pb2.SecretRef | None = ...,
         password: builtins.str = ...,
+        password_secret: secret_pb2.SecretRef | None = ...,
+        account: builtins.str = ...,
         schema: builtins.str = ...,
         warehouse: builtins.str = ...,
         role: builtins.str = ...,
         database: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "password", b"password", "role", b"role", "schema", b"schema", "user", b"user", "warehouse", b"warehouse"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["account", b"account", "database", b"database", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "role", b"role", "schema", b"schema", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant", "warehouse", b"warehouse"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___Snowflake = Snowflake
 
@@ -423,37 +482,45 @@ global___Snowflake = Snowflake
 class Kafka(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    SASL_PLAIN_USERNAME_FIELD_NUMBER: builtins.int
+    SASL_USERNAME_SECRET_FIELD_NUMBER: builtins.int
+    SASL_PLAIN_PASSWORD_FIELD_NUMBER: builtins.int
+    SASL_PASSWORD_SECRET_FIELD_NUMBER: builtins.int
     BOOTSTRAP_SERVERS_FIELD_NUMBER: builtins.int
     SECURITY_PROTOCOL_FIELD_NUMBER: builtins.int
     SASL_MECHANISM_FIELD_NUMBER: builtins.int
     SASL_JAAS_CONFIG_FIELD_NUMBER: builtins.int
-    SASL_PLAIN_USERNAME_FIELD_NUMBER: builtins.int
-    SASL_PLAIN_PASSWORD_FIELD_NUMBER: builtins.int
     GROUP_ID_FIELD_NUMBER: builtins.int
+    sasl_plain_username: builtins.str
+    @property
+    def sasl_username_secret(self) -> secret_pb2.SecretRef: ...
+    sasl_plain_password: builtins.str
+    @property
+    def sasl_password_secret(self) -> secret_pb2.SecretRef: ...
     bootstrap_servers: builtins.str
     security_protocol: builtins.str
     sasl_mechanism: builtins.str
     sasl_jaas_config: builtins.str
-    sasl_plain_username: builtins.str
-    sasl_plain_password: builtins.str
     group_id: builtins.str
     def __init__(
         self,
         *,
+        sasl_plain_username: builtins.str = ...,
+        sasl_username_secret: secret_pb2.SecretRef | None = ...,
+        sasl_plain_password: builtins.str = ...,
+        sasl_password_secret: secret_pb2.SecretRef | None = ...,
         bootstrap_servers: builtins.str = ...,
         security_protocol: builtins.str = ...,
         sasl_mechanism: builtins.str = ...,
         sasl_jaas_config: builtins.str = ...,
-        sasl_plain_username: builtins.str | None = ...,
-        sasl_plain_password: builtins.str | None = ...,
         group_id: builtins.str = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_sasl_plain_password", b"_sasl_plain_password", "_sasl_plain_username", b"_sasl_plain_username", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_sasl_plain_password", b"_sasl_plain_password", "_sasl_plain_username", b"_sasl_plain_username", "bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "security_protocol", b"security_protocol"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["sasl_password_secret", b"sasl_password_secret", "sasl_password_variant", b"sasl_password_variant", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "sasl_username_secret", b"sasl_username_secret", "sasl_username_variant", b"sasl_username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["bootstrap_servers", b"bootstrap_servers", "group_id", b"group_id", "sasl_jaas_config", b"sasl_jaas_config", "sasl_mechanism", b"sasl_mechanism", "sasl_password_secret", b"sasl_password_secret", "sasl_password_variant", b"sasl_password_variant", "sasl_plain_password", b"sasl_plain_password", "sasl_plain_username", b"sasl_plain_username", "sasl_username_secret", b"sasl_username_secret", "sasl_username_variant", b"sasl_username_variant", "security_protocol", b"security_protocol"]) -> None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sasl_plain_password", b"_sasl_plain_password"]) -> typing_extensions.Literal["sasl_plain_password"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["sasl_password_variant", b"sasl_password_variant"]) -> typing_extensions.Literal["sasl_plain_password", "sasl_password_secret"] | None: ...
     @typing.overload
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["_sasl_plain_username", b"_sasl_plain_username"]) -> typing_extensions.Literal["sasl_plain_username"] | None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["sasl_username_variant", b"sasl_username_variant"]) -> typing_extensions.Literal["sasl_plain_username", "sasl_username_secret"] | None: ...
 
 global___Kafka = Kafka
 
@@ -479,16 +546,29 @@ class Credentials(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     USERNAME_FIELD_NUMBER: builtins.int
+    USERNAME_SECRET_FIELD_NUMBER: builtins.int
     PASSWORD_FIELD_NUMBER: builtins.int
+    PASSWORD_SECRET_FIELD_NUMBER: builtins.int
     username: builtins.str
+    @property
+    def username_secret(self) -> secret_pb2.SecretRef: ...
     password: builtins.str
+    @property
+    def password_secret(self) -> secret_pb2.SecretRef: ...
     def __init__(
         self,
         *,
         username: builtins.str = ...,
+        username_secret: secret_pb2.SecretRef | None = ...,
         password: builtins.str = ...,
+        password_secret: secret_pb2.SecretRef | None = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["password", b"password", "username", b"username"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "username", b"username", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "username", b"username", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["username", "username_secret"] | None: ...
 
 global___Credentials = Credentials
 
@@ -546,23 +626,36 @@ global___Redshift = Redshift
 class Mongo(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
+    USER_FIELD_NUMBER: builtins.int
+    USERNAME_SECRET_FIELD_NUMBER: builtins.int
+    PASSWORD_FIELD_NUMBER: builtins.int
+    PASSWORD_SECRET_FIELD_NUMBER: builtins.int
     HOST_FIELD_NUMBER: builtins.int
     DATABASE_FIELD_NUMBER: builtins.int
-    USER_FIELD_NUMBER: builtins.int
-    PASSWORD_FIELD_NUMBER: builtins.int
+    user: builtins.str
+    @property
+    def username_secret(self) -> secret_pb2.SecretRef: ...
+    password: builtins.str
+    @property
+    def password_secret(self) -> secret_pb2.SecretRef: ...
     host: builtins.str
     database: builtins.str
-    user: builtins.str
-    password: builtins.str
     def __init__(
         self,
         *,
+        user: builtins.str = ...,
+        username_secret: secret_pb2.SecretRef | None = ...,
+        password: builtins.str = ...,
+        password_secret: secret_pb2.SecretRef | None = ...,
         host: builtins.str = ...,
         database: builtins.str = ...,
-        user: builtins.str = ...,
-        password: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "password", b"password", "user", b"user"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["database", b"database", "host", b"host", "password", b"password", "password_secret", b"password_secret", "password_variant", b"password_variant", "user", b"user", "username_secret", b"username_secret", "username_variant", b"username_variant"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["password_variant", b"password_variant"]) -> typing_extensions.Literal["password", "password_secret"] | None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["username_variant", b"username_variant"]) -> typing_extensions.Literal["user", "username_secret"] | None: ...
 
 global___Mongo = Mongo
 
@@ -570,17 +663,23 @@ global___Mongo = Mongo
 class PubSub(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    PROJECT_ID_FIELD_NUMBER: builtins.int
     SERVICE_ACCOUNT_KEY_FIELD_NUMBER: builtins.int
-    project_id: builtins.str
+    SERVICE_ACCOUNT_KEY_SECRET_FIELD_NUMBER: builtins.int
+    PROJECT_ID_FIELD_NUMBER: builtins.int
     service_account_key: builtins.str
+    @property
+    def service_account_key_secret(self) -> secret_pb2.SecretRef: ...
+    project_id: builtins.str
     def __init__(
         self,
         *,
-        project_id: builtins.str = ...,
         service_account_key: builtins.str = ...,
+        service_account_key_secret: secret_pb2.SecretRef | None = ...,
+        project_id: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["project_id", b"project_id", "service_account_key", b"service_account_key"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["project_id", b"project_id", "service_account_key", b"service_account_key", "service_account_key_secret", b"service_account_key_secret", "service_account_key_variant", b"service_account_key_variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["service_account_key_variant", b"service_account_key_variant"]) -> typing_extensions.Literal["service_account_key", "service_account_key_secret"] | None: ...
 
 global___PubSub = PubSub
 

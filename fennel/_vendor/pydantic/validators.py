@@ -42,6 +42,7 @@ from .typing import (
     is_typeddict,
 )
 from .utils import almost_equal_floats, lenient_issubclass, sequence_like
+from ...integrations.aws import Secret
 
 if TYPE_CHECKING:
     from fennel._vendor.typing_extensions import Literal, TypedDict
@@ -252,6 +253,10 @@ def dict_validator(v: Any) -> Dict[Any, Any]:
     if isinstance(v, dict):
         return v
 
+    # without this check, we get a recursive loop which tries to convert secret to dict by calling __getitem__
+    if isinstance(v, Secret):
+        raise errors.DictError()
+
     try:
         return dict(v)
     except (TypeError, ValueError):
@@ -412,6 +417,14 @@ def ip_v6_network_validator(v: Any) -> IPv6Network:
         return IPv6Network(v)
     except ValueError:
         raise errors.IPv6NetworkError()
+
+def aws_secret_validator(v: Any) -> Secret:
+    if isinstance(v, Secret):
+        return v
+    try:
+        return Secret(v)
+    except ValueError:
+        raise errors.AWSSecretError()
 
 
 def ip_v4_interface_validator(v: Any) -> IPv4Interface:
@@ -692,6 +705,7 @@ _VALIDATORS: List[Tuple[Type[Any], List[Any]]] = [
     (IPv6Address, [ip_v6_address_validator]),
     (IPv4Network, [ip_v4_network_validator]),
     (IPv6Network, [ip_v6_network_validator]),
+    (Secret, [aws_secret_validator]),
 ]
 
 

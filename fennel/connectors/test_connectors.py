@@ -25,9 +25,10 @@ from fennel.connectors import (
     PubSub,
     eval,
 )
-from fennel.connectors.connectors import CSV
+from fennel.connectors.connectors import CSV, Postgres
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.expr import col, lit
+from fennel.integrations.aws import Secret
 from fennel.lib import meta
 from fennel.lib.params import inputs
 
@@ -357,13 +358,48 @@ def test_simple_source_with_pre_proc():
     )
 
 
+aws_secret = Secret(
+    arn="arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+    role_arn="arn:aws:iam::123456789012:role/fennel-test-role",
+)
+
 s3 = S3(
     name="ratings_source",
     aws_access_key_id="ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
     aws_secret_access_key="8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
 )
 
+s3_with_secret = S3(
+    name="ratings_source",
+    aws_access_key_id=aws_secret["s3_aws_access_key_id"],
+    aws_secret_access_key=aws_secret["s3_aws_secret_access_key"],
+)
+
 simple_s3 = S3(name="my_s3_src")
+
+mysql_with_secret = MySQL(
+    name="mysql",
+    host="localhost",
+    db_name="test",
+    username=aws_secret["mysql_username"],
+    password=aws_secret["mysql_password"],
+)
+
+postgres = Postgres(
+    name="postgres",
+    host="localhost",
+    db_name="test",
+    username="root",
+    password="root",
+)
+
+postgres_with_secret = Postgres(
+    name="postgres",
+    host="localhost",
+    db_name="test",
+    username=aws_secret["postgres_username"],
+    password=aws_secret["postgres_password"],
+)
 
 bigquery = BigQuery(
     name="bq_movie_tags",
@@ -380,6 +416,13 @@ bigquery = BigQuery(
     },
 )
 
+bigquery_with_secret = BigQuery(
+    name="bq_movie_tags",
+    project_id="gold-cocoa-356105",
+    dataset_id="movie_tags",
+    service_account_key=aws_secret["bigquery_service_account_key"],
+)
+
 snowflake = Snowflake(
     name="snowflake_src",
     account="nhb38793.us-west-2.snowflakecomputing.com",
@@ -391,6 +434,17 @@ snowflake = Snowflake(
     password="<password>",
 )
 
+snowflake_with_secret = Snowflake(
+    name="snowflake_src",
+    account="nhb38793.us-west-2.snowflakecomputing.com",
+    warehouse="TEST",
+    db_name="MOVIELENS",
+    schema="PUBLIC",
+    role="ACCOUNTADMIN",
+    username=aws_secret["us-west-2"]["username"],
+    password=aws_secret["us-west-2"]["password"],
+)
+
 kafka = Kafka(
     name="kafka_src",
     bootstrap_servers="localhost:9092",
@@ -398,6 +452,15 @@ kafka = Kafka(
     sasl_mechanism="PLAIN",
     sasl_plain_username="test",
     sasl_plain_password="test",
+)
+
+kafka_with_secret = Kafka(
+    name="kafka_src",
+    bootstrap_servers="localhost:9092",
+    security_protocol="PLAINTEXT",
+    sasl_mechanism="PLAIN",
+    sasl_plain_username=aws_secret["sasl_plain_username"],
+    sasl_plain_password=aws_secret["sasl_plain_password"],
 )
 
 s3_console = S3.get(
@@ -426,12 +489,37 @@ redshift2 = Redshift(
     password="password",
 )
 
+redshift_with_secret = Redshift(
+    name="redshift_src_2",
+    db_name="test",
+    host="test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+    schema="public",
+    username=aws_secret["redshift_username"],
+    password=aws_secret["redshift_password"],
+)
+
 mongo = Mongo(
     name="mongo_src",
     host="atlascluster.ushabcd.mongodb.net",
     db_name="mongo",
     username="username",
     password="password",
+)
+
+mongo_with_secret = Mongo(
+    name="mongo_src",
+    host="atlascluster.ushabcd.mongodb.net",
+    db_name="mongo",
+    username=aws_secret["mongo_username"],
+    password=aws_secret["mongo_password"],
+)
+
+mongo_with_only_password_secret = Mongo(
+    name="mongo_src",
+    host="atlascluster.ushabcd.mongodb.net",
+    db_name="mongo",
+    username="username",
+    password=aws_secret["mongo_password"],
 )
 
 pubsub = PubSub(
@@ -446,6 +534,12 @@ pubsub = PubSub(
         "token_uri": "https://oauth2.googleapis.com/token",
         "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
     },
+)
+
+pubsub_with_secret = PubSub(
+    name="pubsub_src",
+    project_id="test_project",
+    service_account_key=aws_secret["pubsub_service_account_key"],
 )
 
 
@@ -861,23 +955,17 @@ def test_multiple_sinks():
     )
 
 
-def test_multiple_sources():
+def test_multiple_sources_mysql():
     @meta(owner="test@test.com")
     @source(
-        s3.bucket(
-            bucket_name="all_ratings",
-            prefix="prod/apac/",
-            presorted=True,
-            format="delta",
-        ),
+        mysql.table("users_mysql", cursor="added_on"),
         every="1h",
-        disorder="2d",
-        cdc="native",
+        disorder="14d",
+        cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
-        until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
-    class UserInfoDatasetS3:
+    class UserInfoDatasetMySql:
         user_id: int = field(key=True)
         name: str
         gender: str
@@ -888,40 +976,35 @@ def test_multiple_sources():
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
+    # mysql source
     view = InternalTestClient()
-    view.add(UserInfoDatasetS3)
+    view.add(UserInfoDatasetMySql)
     sync_request = view._get_sync_request_proto()
-    assert len(sync_request.datasets) == 1
-    assert len(sync_request.sources) == 1
-    assert len(sync_request.extdbs) == 1
-
-    # s3 source
     source_request = sync_request.sources[0]
     s = {
         "table": {
-            "s3Table": {
-                "bucket": "all_ratings",
-                "pathPrefix": "prod/apac/",
-                "pathSuffix": "",
-                "format": "delta",
-                "preSorted": True,
+            "mysql_table": {
                 "db": {
-                    "name": "ratings_source",
-                    "s3": {
-                        "awsSecretAccessKey": "8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
-                        "awsAccessKeyId": "ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
                     },
                 },
-            }
+                "table_name": "users_mysql",
+            },
         },
-        "dataset": "UserInfoDatasetS3",
+        "dataset": "UserInfoDatasetMySql",
         "dsVersion": 1,
         "every": "3600s",
-        "cdc": "Native",
-        "disorder": "172800s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
         "startingFrom": "2021-08-10T00:00:00Z",
-        "until": "2022-02-28T00:00:00Z",
-        "timestamp_field": "timestamp",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -929,10 +1012,806 @@ def test_multiple_sources():
     )
     extdb_request = sync_request.extdbs[0]
     e = {
-        "name": "ratings_source",
-        "s3": {
-            "awsSecretAccessKey": "8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
-            "awsAccessKeyId": "ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
+        "name": "mysql",
+        "mysql": {
+            "host": "localhost",
+            "database": "test",
+            "user": "root",
+            "password": "root",
+            "port": 3306,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mysql_with_secret.table("users_mysql", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetMySqlWithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source with secret
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySqlWithSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysql_table": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "usernameSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["mysql_username"],
+                        },
+                        "passwordSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["mysql_password"],
+                        },
+                        "port": 3306,
+                    },
+                },
+                "table_name": "users_mysql",
+            },
+        },
+        "dataset": "UserInfoDatasetMySqlWithSecret",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mysql",
+        "mysql": {
+            "host": "localhost",
+            "database": "test",
+            "usernameSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["mysql_username"],
+            },
+            "passwordSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["mysql_password"],
+            },
+            "port": 3306,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+
+def test_multiple_sources_postgres():
+    @meta(owner="test@test.com")
+    @source(
+        postgres.table("users_postgres", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetPostgres:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # postgres source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetPostgres)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "pg_table": {
+                "db": {
+                    "name": "postgres",
+                    "postgres": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 5432,
+                    },
+                },
+                "table_name": "users_postgres",
+            },
+        },
+        "dataset": "UserInfoDatasetPostgres",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "postgres",
+        "postgres": {
+            "host": "localhost",
+            "database": "test",
+            "user": "root",
+            "password": "root",
+            "port": 5432,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        postgres_with_secret.table("users_postgres", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetPostgresWithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # postgres source with secret
+    view = InternalTestClient()
+    view.add(UserInfoDatasetPostgresWithSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "pg_table": {
+                "db": {
+                    "name": "postgres",
+                    "postgres": {
+                        "host": "localhost",
+                        "database": "test",
+                        "usernameSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["postgres_username"],
+                        },
+                        "passwordSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["postgres_password"],
+                        },
+                        "port": 5432,
+                    },
+                },
+                "table_name": "users_postgres",
+            },
+        },
+        "dataset": "UserInfoDatasetPostgresWithSecret",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "postgres",
+        "postgres": {
+            "host": "localhost",
+            "database": "test",
+            "usernameSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["postgres_username"],
+            },
+            "passwordSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["postgres_password"],
+            },
+            "port": 5432,
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+
+def test_multiple_sources_mongo():
+    @meta(owner="test@test.com")
+    @source(
+        mongo.collection("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetMongo:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mongo source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMongo)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "mongoCollection": {
+                "db": {
+                    "mongo": {
+                        "host": "atlascluster.ushabcd.mongodb.net",
+                        "database": "mongo",
+                        "user": "username",
+                        "password": "password",
+                    },
+                    "name": "mongo_src",
+                },
+                "collectionName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetMongo",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mongo_src",
+        "mongo": {
+            "host": "atlascluster.ushabcd.mongodb.net",
+            "database": "mongo",
+            "user": "username",
+            "password": "password",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mongo_with_secret.collection("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetMongoWithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mongo source with secret
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMongoWithSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "mongoCollection": {
+                "db": {
+                    "mongo": {
+                        "host": "atlascluster.ushabcd.mongodb.net",
+                        "database": "mongo",
+                        "usernameSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["mongo_username"],
+                        },
+                        "passwordSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["mongo_password"],
+                        },
+                    },
+                    "name": "mongo_src",
+                },
+                "collectionName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetMongoWithSecret",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mongo_src",
+        "mongo": {
+            "host": "atlascluster.ushabcd.mongodb.net",
+            "database": "mongo",
+            "usernameSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["mongo_username"],
+            },
+            "passwordSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["mongo_password"],
+            },
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mongo_with_only_password_secret.collection(
+            "test_table", cursor="added_on"
+        ),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetMongoWithPasswordSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mongo source with only password secret
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMongoWithPasswordSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "mongoCollection": {
+                "db": {
+                    "mongo": {
+                        "host": "atlascluster.ushabcd.mongodb.net",
+                        "database": "mongo",
+                        "user": "username",
+                        "passwordSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["mongo_password"],
+                        },
+                    },
+                    "name": "mongo_src",
+                },
+                "collectionName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetMongoWithPasswordSecret",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "mongo_src",
+        "mongo": {
+            "host": "atlascluster.ushabcd.mongodb.net",
+            "database": "mongo",
+            "user": "username",
+            "passwordSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["mongo_password"],
+            },
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+
+def test_multiple_sources_redshift():
+    @meta(owner="test@test.com")
+    @source(
+        redshift.table("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetRedshift:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # redshift source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetRedshift)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "redshiftTable": {
+                "db": {
+                    "redshift": {
+                        "redshiftAuthentication": {
+                            "s3_access_role_arn": "arn:aws:iam::123:role/Redshift"
+                        },
+                        "database": "test",
+                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+                        "port": 5439,
+                        "schema": "public",
+                    },
+                    "name": "redshift_src",
+                },
+                "tableName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetRedshift",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "redshift_src",
+        "redshift": {
+            "redshiftAuthentication": {
+                "s3_access_role_arn": "arn:aws:iam::123:role/Redshift"
+            },
+            "database": "test",
+            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+            "port": 5439,
+            "schema": "public",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        redshift2.table("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetRedshiftUsingCreds:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # redshift source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetRedshiftUsingCreds)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "redshiftTable": {
+                "db": {
+                    "redshift": {
+                        "database": "test",
+                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+                        "port": 5439,
+                        "schema": "public",
+                        "redshiftAuthentication": {
+                            "credentials": {
+                                "username": "username",
+                                "password": "password",
+                            }
+                        },
+                    },
+                    "name": "redshift_src_2",
+                },
+                "tableName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetRedshiftUsingCreds",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "redshift_src_2",
+        "redshift": {
+            "database": "test",
+            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+            "port": 5439,
+            "schema": "public",
+            "redshiftAuthentication": {
+                "credentials": {"username": "username", "password": "password"}
+            },
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        redshift_with_secret.table("test_table", cursor="added_on"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetRedshiftUsingCredsWithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # redshift source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetRedshiftUsingCredsWithSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "redshiftTable": {
+                "db": {
+                    "redshift": {
+                        "database": "test",
+                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+                        "port": 5439,
+                        "schema": "public",
+                        "redshiftAuthentication": {
+                            "credentials": {
+                                "usernameSecret": {
+                                    "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                    "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                    "path": ["redshift_username"],
+                                },
+                                "passwordSecret": {
+                                    "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                    "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                    "path": ["redshift_password"],
+                                },
+                            }
+                        },
+                    },
+                    "name": "redshift_src_2",
+                },
+                "tableName": "test_table",
+            }
+        },
+        "dataset": "UserInfoDatasetRedshiftUsingCredsWithSecret",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "redshift_src_2",
+        "redshift": {
+            "database": "test",
+            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
+            "port": 5439,
+            "schema": "public",
+            "redshiftAuthentication": {
+                "credentials": {
+                    "usernameSecret": {
+                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                        "path": ["redshift_username"],
+                    },
+                    "passwordSecret": {
+                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                        "path": ["redshift_password"],
+                    },
+                }
+            },
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+
+def test_multiple_sources_snowflake():
+
+    @meta(owner="test@test.com")
+    @source(
+        snowflake.table("users_Sf", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        until=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetSnowFlakeStartingFrom:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # snowflake source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetSnowFlakeStartingFrom)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "snowflakeTable": {
+                "db": {
+                    "snowflake": {
+                        "account": "nhb38793.us-west-2.snowflakecomputing.com",
+                        "user": "<username>",
+                        "password": "<password>",
+                        "schema": "PUBLIC",
+                        "warehouse": "TEST",
+                        "role": "ACCOUNTADMIN",
+                        "database": "MOVIELENS",
+                    },
+                    "name": "snowflake_src",
+                },
+                "tableName": "users_Sf",
+            }
+        },
+        "dataset": "UserInfoDatasetSnowFlakeStartingFrom",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "until": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "snowflake_src",
+        "snowflake": {
+            "account": "nhb38793.us-west-2.snowflakecomputing.com",
+            "user": "<username>",
+            "password": "<password>",
+            "schema": "PUBLIC",
+            "warehouse": "TEST",
+            "role": "ACCOUNTADMIN",
+            "database": "MOVIELENS",
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
@@ -1014,14 +1893,13 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        snowflake.table("users_Sf", cursor="added_on"),
-        every="1h",
+        snowflake_with_secret.table("users_Sf", cursor="added_on"),
         disorder="14d",
         cdc="upsert",
-        until=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+        every="1h",
     )
     @dataset
-    class UserInfoDatasetSnowFlakeStartingFrom:
+    class UserInfoDatasetSnowFlakeWithSecret:
         user_id: int = field(key=True)
         name: str
         gender: str
@@ -1032,9 +1910,9 @@ def test_multiple_sources():
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    # snowflake source
+    # snowflake source with secret
     view = InternalTestClient()
-    view.add(UserInfoDatasetSnowFlakeStartingFrom)
+    view.add(UserInfoDatasetSnowFlakeWithSecret)
     sync_request = view._get_sync_request_proto()
     source_request = sync_request.sources[0]
     s = {
@@ -1043,8 +1921,16 @@ def test_multiple_sources():
                 "db": {
                     "snowflake": {
                         "account": "nhb38793.us-west-2.snowflakecomputing.com",
-                        "user": "<username>",
-                        "password": "<password>",
+                        "usernameSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["us-west-2", "username"],
+                        },
+                        "passwordSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["us-west-2", "password"],
+                        },
                         "schema": "PUBLIC",
                         "warehouse": "TEST",
                         "role": "ACCOUNTADMIN",
@@ -1055,14 +1941,13 @@ def test_multiple_sources():
                 "tableName": "users_Sf",
             }
         },
-        "dataset": "UserInfoDatasetSnowFlakeStartingFrom",
+        "dataset": "UserInfoDatasetSnowFlakeWithSecret",
         "dsVersion": 1,
         "every": "3600s",
         "cdc": "Upsert",
         "disorder": "1209600s",
         "cursor": "added_on",
         "timestampField": "timestamp",
-        "until": "2021-08-10T00:00:00Z",
     }
     expected_source_request = ParseDict(s, connector_proto.Source())
     assert source_request == expected_source_request, error_message(
@@ -1073,8 +1958,16 @@ def test_multiple_sources():
         "name": "snowflake_src",
         "snowflake": {
             "account": "nhb38793.us-west-2.snowflakecomputing.com",
-            "user": "<username>",
-            "password": "<password>",
+            "usernameSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["us-west-2", "username"],
+            },
+            "passwordSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["us-west-2", "password"],
+            },
             "schema": "PUBLIC",
             "warehouse": "TEST",
             "role": "ACCOUNTADMIN",
@@ -1086,6 +1979,8 @@ def test_multiple_sources():
         extdb_request, expected_extdb_request
     )
 
+
+def test_multiple_sources_bigquery():
     @meta(owner="test@test.com")
     @source(
         bigquery.table("users_bq", cursor="added_on"),
@@ -1164,14 +2059,14 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
-        mysql.table("users_mysql", cursor="added_on"),
+        bigquery_with_secret.table("users_bq", cursor="added_on"),
         every="1h",
-        disorder="14d",
+        disorder="2h",
         cdc="upsert",
         since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
     )
     @dataset
-    class UserInfoDatasetMySql:
+    class UserInfoDatasetBigQueryWithSecret:
         user_id: int = field(key=True)
         name: str
         gender: str
@@ -1182,32 +2077,34 @@ def test_multiple_sources():
         country: Optional[str]
         timestamp: datetime = field(timestamp=True)
 
-    # mysql source
+    # bigquery source
     view = InternalTestClient()
-    view.add(UserInfoDatasetMySql)
+    view.add(UserInfoDatasetBigQueryWithSecret)
     sync_request = view._get_sync_request_proto()
     source_request = sync_request.sources[0]
     s = {
         "table": {
-            "mysql_table": {
+            "bigqueryTable": {
                 "db": {
-                    "name": "mysql",
-                    "mysql": {
-                        "host": "localhost",
-                        "database": "test",
-                        "user": "root",
-                        "password": "root",
-                        "port": 3306,
+                    "name": "bq_movie_tags",
+                    "bigquery": {
+                        "datasetId": "movie_tags",
+                        "serviceAccountKeySecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["bigquery_service_account_key"],
+                        },
+                        "projectId": "gold-cocoa-356105",
                     },
                 },
-                "table_name": "users_mysql",
-            },
+                "tableName": "users_bq",
+            }
         },
-        "dataset": "UserInfoDatasetMySql",
+        "dataset": "UserInfoDatasetBigQueryWithSecret",
         "dsVersion": 1,
         "every": "3600s",
         "cdc": "Upsert",
-        "disorder": "1209600s",
+        "disorder": "7200s",
         "cursor": "added_on",
         "timestampField": "timestamp",
         "startingFrom": "2021-08-10T00:00:00Z",
@@ -1218,13 +2115,15 @@ def test_multiple_sources():
     )
     extdb_request = sync_request.extdbs[0]
     e = {
-        "name": "mysql",
-        "mysql": {
-            "host": "localhost",
-            "database": "test",
-            "user": "root",
-            "password": "root",
-            "port": 3306,
+        "name": "bq_movie_tags",
+        "bigquery": {
+            "datasetId": "movie_tags",
+            "serviceAccountKeySecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["bigquery_service_account_key"],
+            },
+            "projectId": "gold-cocoa-356105",
         },
     }
     expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
@@ -1232,6 +2131,8 @@ def test_multiple_sources():
         extdb_request, expected_extdb_request
     )
 
+
+def test_multiple_sources_kafka():
     @meta(owner="test@test.com")
     @source(
         kafka.topic("test_topic"),
@@ -1427,6 +2328,713 @@ def test_multiple_sources():
 
     @meta(owner="test@test.com")
     @source(
+        kafka_with_secret.topic(
+            "test_topic",
+            format=protobuf,
+        ),
+        cdc="debezium",
+        disorder="14d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetKafkaWithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafkaWithSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslUsernameSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["sasl_plain_username"],
+                        },
+                        "saslPasswordSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["sasl_plain_password"],
+                        },
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "protobuf": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "basic": {"username": "user", "password": "pwd"}
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafkaWithSecret",
+        "dsVersion": 1,
+        "disorder": "1209600s",
+        "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    avro = Avro(
+        registry="confluent",
+        url="http://localhost:8000",
+        username=aws_secret["avro_username"],
+        password=aws_secret["avro_password"],
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic(
+            "test_topic",
+            format=avro,
+        ),
+        cdc="debezium",
+        disorder="14d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "avro": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "basic": {
+                                    "usernameSecret": {
+                                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                        "path": ["avro_username"],
+                                    },
+                                    "passwordSecret": {
+                                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                        "path": ["avro_password"],
+                                    },
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
+        "disorder": "1209600s",
+        "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url="http://localhost:8000",
+        username=aws_secret["protobuf_username"],
+        password=aws_secret["protobuf_password"],
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic(
+            "test_topic",
+            format=protobuf,
+        ),
+        cdc="debezium",
+        disorder="14d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "protobuf": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "basic": {
+                                    "usernameSecret": {
+                                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                        "path": ["protobuf_username"],
+                                    },
+                                    "passwordSecret": {
+                                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                        "path": ["protobuf_password"],
+                                    },
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
+        "disorder": "1209600s",
+        "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    avro = Avro(
+        registry="confluent",
+        url="http://localhost:8000",
+        token=aws_secret["avro_token"],
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic(
+            "test_topic",
+            format=avro,
+        ),
+        cdc="debezium",
+        disorder="14d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "avro": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "token": {
+                                    "tokenSecret": {
+                                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                        "path": ["avro_token"],
+                                    }
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
+        "disorder": "1209600s",
+        "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    protobuf = Protobuf(
+        registry="confluent",
+        url="http://localhost:8000",
+        token=aws_secret["protobuf_token"],
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        kafka.topic(
+            "test_topic",
+            format=protobuf,
+        ),
+        cdc="debezium",
+        disorder="14d",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetKafka:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetKafka)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "kafkaTopic": {
+                "db": {
+                    "name": "kafka_src",
+                    "kafka": {
+                        "bootstrapServers": "localhost:9092",
+                        "securityProtocol": "PLAINTEXT",
+                        "saslMechanism": "PLAIN",
+                        "saslPlainUsername": "test",
+                        "saslPlainPassword": "test",
+                    },
+                },
+                "topic": "test_topic",
+                "format": {
+                    "protobuf": {
+                        "schemaRegistry": {
+                            "url": "http://localhost:8000",
+                            "auth": {
+                                "token": {
+                                    "tokenSecret": {
+                                        "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                        "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                        "path": ["protobuf_token"],
+                                    }
+                                }
+                            },
+                        }
+                    }
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetKafka",
+        "dsVersion": 1,
+        "disorder": "1209600s",
+        "cdc": "Debezium",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+
+def test_multiple_sources_s3():
+    @meta(owner="test@test.com")
+    @source(
+        s3.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+            presorted=True,
+            format="delta",
+        ),
+        every="1h",
+        disorder="2d",
+        cdc="native",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+        until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetS3:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetS3)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+
+    # s3 source
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "all_ratings",
+                "pathPrefix": "prod/apac/",
+                "pathSuffix": "",
+                "format": "delta",
+                "preSorted": True,
+                "db": {
+                    "name": "ratings_source",
+                    "s3": {
+                        "awsSecretAccessKey": "8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
+                        "awsAccessKeyId": "ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
+                    },
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetS3",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Native",
+        "disorder": "172800s",
+        "startingFrom": "2021-08-10T00:00:00Z",
+        "until": "2022-02-28T00:00:00Z",
+        "timestamp_field": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "ratings_source",
+        "s3": {
+            "awsSecretAccessKey": "8YCvIs8f0+FAKESECRETKEY+7uYSDmq164v9hNjOIIi3q1uV8rv",
+            "awsAccessKeyId": "ALIAQOTFAKEACCCESSKEYIDGTAXJY6MZWLP",
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        s3_with_secret.bucket(
+            bucket_name="all_ratings",
+            prefix="prod/apac/",
+            presorted=True,
+            format="delta",
+        ),
+        every="1h",
+        disorder="2d",
+        cdc="native",
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+        until=datetime.strptime("2022-02-28T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetS3WithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    view = InternalTestClient()
+    view.add(UserInfoDatasetS3WithSecret)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 1
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.extdbs) == 1
+
+    # s3 source with secret
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "s3Table": {
+                "bucket": "all_ratings",
+                "pathPrefix": "prod/apac/",
+                "pathSuffix": "",
+                "format": "delta",
+                "preSorted": True,
+                "db": {
+                    "name": "ratings_source",
+                    "s3": {
+                        "awsSecretAccessKeySecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["s3_aws_secret_access_key"],
+                        },
+                        "awsAccessKeyIdSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["s3_aws_access_key_id"],
+                        },
+                    },
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetS3WithSecret",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Native",
+        "disorder": "172800s",
+        "startingFrom": "2021-08-10T00:00:00Z",
+        "until": "2022-02-28T00:00:00Z",
+        "timestamp_field": "timestamp",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "ratings_source",
+        "s3": {
+            "awsSecretAccessKeySecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["s3_aws_secret_access_key"],
+            },
+            "awsAccessKeyIdSecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["s3_aws_access_key_id"],
+            },
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+
+def test_multiple_sources_pubsub():
+    @meta(owner="test@test.com")
+    @source(
+        pubsub.topic("test_topic", format="json"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetPubSub:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # pubsub source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetPubSub)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "pubsubTopic": {
+                "db": {
+                    "pubsub": {
+                        "projectId": "test_project",
+                        "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
+                        '"client_email": '
+                        '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+                        '"103688493243243272951", "auth_uri": '
+                        '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+                        '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+                        '"https://www.googleapis.com/oauth2/v1/certs"}',
+                    },
+                    "name": "pubsub_src",
+                },
+                "topicId": "test_topic",
+                "format": {
+                    "json": {},
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetPubSub",
+        "dsVersion": 1,
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "pubsub_src",
+        "pubsub": {
+            "projectId": "test_project",
+            "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
+            '"client_email": '
+            '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
+            '"103688493243243272951", "auth_uri": '
+            '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
+            '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
+            '"https://www.googleapis.com/oauth2/v1/certs"}',
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        pubsub_with_secret.topic("test_topic", format="json"),
+        disorder="14d",
+        cdc="upsert",
+        every="1h",
+    )
+    @dataset
+    class UserInfoDatasetPubSubWithSecret:
+        user_id: int = field(key=True)
+        name: str
+        gender: str
+        # Users date of birth
+        dob: str
+        age: int
+        account_creation_date: datetime
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # pubsub source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetPubSubWithSecret)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+
+    s = {
+        "table": {
+            "pubsubTopic": {
+                "db": {
+                    "pubsub": {
+                        "projectId": "test_project",
+                        "serviceAccountKeySecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["pubsub_service_account_key"],
+                        },
+                    },
+                    "name": "pubsub_src",
+                },
+                "topicId": "test_topic",
+                "format": {
+                    "json": {},
+                },
+            }
+        },
+        "dataset": "UserInfoDatasetPubSubWithSecret",
+        "dsVersion": 1,
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+    extdb_request = sync_request.extdbs[0]
+    e = {
+        "name": "pubsub_src",
+        "pubsub": {
+            "projectId": "test_project",
+            "serviceAccountKeySecret": {
+                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                "path": ["pubsub_service_account_key"],
+            },
+        },
+    }
+    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
+    assert extdb_request == expected_extdb_request, error_message(
+        extdb_request, expected_extdb_request
+    )
+
+
+def test_multiple_sources_kinesis():
+    @meta(owner="test@test.com")
+    @source(
         kinesis.stream("test_stream", init_position="latest", format="json"),
         disorder="14d",
         cdc="upsert",
@@ -1575,295 +3183,6 @@ def test_multiple_sources():
     expected_source = ParseDict(e, connector_proto.Source())
     assert source_req == expected_source, error_message(
         source_req, expected_source
-    )
-
-    @meta(owner="test@test.com")
-    @source(
-        redshift.table("test_table", cursor="added_on"),
-        disorder="14d",
-        cdc="upsert",
-        every="1h",
-    )
-    @dataset
-    class UserInfoDatasetRedshift:
-        user_id: int = field(key=True)
-        name: str
-        gender: str
-        # Users date of birth
-        dob: str
-        age: int
-        account_creation_date: datetime
-        country: Optional[str]
-        timestamp: datetime = field(timestamp=True)
-
-    # redshift source
-    view = InternalTestClient()
-    view.add(UserInfoDatasetRedshift)
-    sync_request = view._get_sync_request_proto()
-    source_request = sync_request.sources[0]
-    s = {
-        "table": {
-            "redshiftTable": {
-                "db": {
-                    "redshift": {
-                        "redshiftAuthentication": {
-                            "s3_access_role_arn": "arn:aws:iam::123:role/Redshift"
-                        },
-                        "database": "test",
-                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
-                        "port": 5439,
-                        "schema": "public",
-                    },
-                    "name": "redshift_src",
-                },
-                "tableName": "test_table",
-            }
-        },
-        "dataset": "UserInfoDatasetRedshift",
-        "dsVersion": 1,
-        "every": "3600s",
-        "cdc": "Upsert",
-        "disorder": "1209600s",
-        "cursor": "added_on",
-        "timestampField": "timestamp",
-    }
-    expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
-    extdb_request = sync_request.extdbs[0]
-    e = {
-        "name": "redshift_src",
-        "redshift": {
-            "redshiftAuthentication": {
-                "s3_access_role_arn": "arn:aws:iam::123:role/Redshift"
-            },
-            "database": "test",
-            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
-            "port": 5439,
-            "schema": "public",
-        },
-    }
-    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
-
-    @meta(owner="test@test.com")
-    @source(
-        redshift2.table("test_table", cursor="added_on"),
-        disorder="14d",
-        cdc="upsert",
-        every="1h",
-    )
-    @dataset
-    class UserInfoDatasetRedshiftUsingCreds:
-        user_id: int = field(key=True)
-        name: str
-        gender: str
-        # Users date of birth
-        dob: str
-        age: int
-        account_creation_date: datetime
-        country: Optional[str]
-        timestamp: datetime = field(timestamp=True)
-
-    # redshift source
-    view = InternalTestClient()
-    view.add(UserInfoDatasetRedshiftUsingCreds)
-    sync_request = view._get_sync_request_proto()
-    source_request = sync_request.sources[0]
-    s = {
-        "table": {
-            "redshiftTable": {
-                "db": {
-                    "redshift": {
-                        "database": "test",
-                        "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
-                        "port": 5439,
-                        "schema": "public",
-                        "redshiftAuthentication": {
-                            "credentials": {
-                                "username": "username",
-                                "password": "password",
-                            }
-                        },
-                    },
-                    "name": "redshift_src_2",
-                },
-                "tableName": "test_table",
-            }
-        },
-        "dataset": "UserInfoDatasetRedshiftUsingCreds",
-        "dsVersion": 1,
-        "every": "3600s",
-        "cdc": "Upsert",
-        "disorder": "1209600s",
-        "cursor": "added_on",
-        "timestampField": "timestamp",
-    }
-    expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
-    extdb_request = sync_request.extdbs[0]
-    e = {
-        "name": "redshift_src_2",
-        "redshift": {
-            "database": "test",
-            "host": "test-workgroup.1234.us-west-2.redshift-serverless.amazonaws.com",
-            "port": 5439,
-            "schema": "public",
-            "redshiftAuthentication": {
-                "credentials": {"username": "username", "password": "password"}
-            },
-        },
-    }
-    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
-
-    @meta(owner="test@test.com")
-    @source(
-        mongo.collection("test_table", cursor="added_on"),
-        disorder="14d",
-        cdc="upsert",
-        every="1h",
-    )
-    @dataset
-    class UserInfoDatasetMongo:
-        user_id: int = field(key=True)
-        name: str
-        gender: str
-        # Users date of birth
-        dob: str
-        age: int
-        account_creation_date: datetime
-        country: Optional[str]
-        timestamp: datetime = field(timestamp=True)
-
-    # mongo source
-    view = InternalTestClient()
-    view.add(UserInfoDatasetMongo)
-    sync_request = view._get_sync_request_proto()
-    source_request = sync_request.sources[0]
-
-    s = {
-        "table": {
-            "mongoCollection": {
-                "db": {
-                    "mongo": {
-                        "host": "atlascluster.ushabcd.mongodb.net",
-                        "database": "mongo",
-                        "user": "username",
-                        "password": "password",
-                    },
-                    "name": "mongo_src",
-                },
-                "collectionName": "test_table",
-            }
-        },
-        "dataset": "UserInfoDatasetMongo",
-        "dsVersion": 1,
-        "every": "3600s",
-        "cdc": "Upsert",
-        "disorder": "1209600s",
-        "cursor": "added_on",
-        "timestampField": "timestamp",
-    }
-    expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
-    extdb_request = sync_request.extdbs[0]
-    e = {
-        "name": "mongo_src",
-        "mongo": {
-            "host": "atlascluster.ushabcd.mongodb.net",
-            "database": "mongo",
-            "user": "username",
-            "password": "password",
-        },
-    }
-    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
-    )
-
-    @meta(owner="test@test.com")
-    @source(
-        pubsub.topic("test_topic", format="json"),
-        disorder="14d",
-        cdc="upsert",
-        every="1h",
-    )
-    @dataset
-    class UserInfoDatasetPubSub:
-        user_id: int = field(key=True)
-        name: str
-        gender: str
-        # Users date of birth
-        dob: str
-        age: int
-        account_creation_date: datetime
-        country: Optional[str]
-        timestamp: datetime = field(timestamp=True)
-
-    # mongo source
-    view = InternalTestClient()
-    view.add(UserInfoDatasetPubSub)
-    sync_request = view._get_sync_request_proto()
-    source_request = sync_request.sources[0]
-
-    s = {
-        "table": {
-            "pubsubTopic": {
-                "db": {
-                    "pubsub": {
-                        "projectId": "test_project",
-                        "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
-                        '"client_email": '
-                        '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
-                        '"103688493243243272951", "auth_uri": '
-                        '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
-                        '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
-                        '"https://www.googleapis.com/oauth2/v1/certs"}',
-                    },
-                    "name": "pubsub_src",
-                },
-                "topicId": "test_topic",
-                "format": {
-                    "json": {},
-                },
-            }
-        },
-        "dataset": "UserInfoDatasetPubSub",
-        "dsVersion": 1,
-        "cdc": "Upsert",
-        "disorder": "1209600s",
-    }
-    expected_source_request = ParseDict(s, connector_proto.Source())
-    assert source_request == expected_source_request, error_message(
-        source_request, expected_source_request
-    )
-    extdb_request = sync_request.extdbs[0]
-    e = {
-        "name": "pubsub_src",
-        "pubsub": {
-            "projectId": "test_project",
-            "serviceAccountKey": '{"type": "service_account", "project_id": "fake-project-356105", '
-            '"client_email": '
-            '"randomstring@fake-project-356105.iam.gserviceaccount.com", "client_id": '
-            '"103688493243243272951", "auth_uri": '
-            '"https://accounts.google.com/o/oauth2/auth", "token_uri": '
-            '"https://oauth2.googleapis.com/token", "auth_provider_x509_cert_url": '
-            '"https://www.googleapis.com/oauth2/v1/certs"}',
-        },
-    }
-    expected_extdb_request = ParseDict(e, connector_proto.ExtDatabase())
-    assert extdb_request == expected_extdb_request, error_message(
-        extdb_request, expected_extdb_request
     )
 
 
