@@ -832,10 +832,17 @@ class Changelog(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     OPERAND_ID_FIELD_NUMBER: builtins.int
-    DELETE_COLUMN_FIELD_NUMBER: builtins.int
+    KIND_COLUMN_FIELD_NUMBER: builtins.int
+    DELETES_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
-    delete_column: builtins.str
+    kind_column: builtins.str
+    """Name of column which will store kind value as a boolean"""
+    deletes: builtins.bool
+    """If deletes is true then the kind column will store true
+    for deletes and false for inserts. If deletes is false then the
+    kind column will store true for inserts and false for deletes.
+    """
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -844,10 +851,11 @@ class Changelog(google.protobuf.message.Message):
         self,
         *,
         operand_id: builtins.str = ...,
-        delete_column: builtins.str = ...,
+        kind_column: builtins.str = ...,
+        deletes: builtins.bool = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["delete_column", b"delete_column", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["deletes", b"deletes", "kind_column", b"kind_column", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
 
 global___Changelog = Changelog
 

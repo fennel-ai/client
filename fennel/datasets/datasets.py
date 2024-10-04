@@ -579,22 +579,22 @@ class Filter(_Node):
 
 
 class Changelog(_Node):
-    def __init__(self, node: _Node, delete_column: str):
+    def __init__(self, node: _Node, kind_col: str):
         super().__init__()
         self.node = node
-        self.delete_column = delete_column
+        self.kind_col = kind_col
         self.node.out_edges.append(self)
 
     def signature(self):
-        return fhash(self.node.signature(), self.delete_column)
+        return fhash(self.node.signature(), self.kind_col)
 
     def dsschema(self):
         input_schema = self.node.dsschema()
-        # Remove all keys from the schema and make then values
+        # Remove all keys from the schema and make them values
         val_fields = copy.deepcopy(input_schema.keys)
         values = input_schema.values
         val_fields.update(values)
-        val_fields.update({self.delete_column: pd.BooleanDtype})
+        val_fields.update({self.kind_col: pd.StringDtype})
         return DSSchema(
             keys={},
             values=val_fields,
@@ -3346,7 +3346,7 @@ class SchemaValidator(Visitor):
         # Unkey operation is allowed on keyed datasets only.
         if len(input_schema.keys) == 0:
             raise TypeError(
-                f"UnKey operation is allowed only on keyed datasets. Found dataset without keys in pipeline `{self.pipeline_name}`"
+                f"Changelog operation is allowed only on keyed datasets. Found dataset without keys in pipeline `{self.pipeline_name}`"
             )
         output_schema = copy.deepcopy(obj.dsschema())
         output_schema.name = (

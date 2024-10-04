@@ -954,8 +954,8 @@ class Executor(Visitor):
         delete_df[input_ret.timestamp_field] = delete_df[
             FENNEL_DELETE_TIMESTAMP
         ]
-        df[obj.delete_column] = False
-        delete_df[obj.delete_column] = True
+        df[obj.kind_col] = "insert"
+        delete_df[obj.kind_col] = "delete"
         df = pd.concat([df, delete_df])
         df = df.drop(columns=[FENNEL_DELETE_TIMESTAMP])
         # Sort the dataframe by timestamp

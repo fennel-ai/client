@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.40] - 2024-10-05
+- Add changelog operator
+
 ## [1.5.39] - 2024-10-14
 - Add support for Snowflake sink
 
