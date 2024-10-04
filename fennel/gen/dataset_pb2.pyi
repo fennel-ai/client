@@ -832,10 +832,10 @@ class Changelog(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     OPERAND_ID_FIELD_NUMBER: builtins.int
-    DELETE_COLUMN_FIELD_NUMBER: builtins.int
+    KIND_COL_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
-    delete_column: builtins.str
+    kind_col: builtins.str
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -844,10 +844,10 @@ class Changelog(google.protobuf.message.Message):
         self,
         *,
         operand_id: builtins.str = ...,
-        delete_column: builtins.str = ...,
+        kind_col: builtins.str = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["delete_column", b"delete_column", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["kind_col", b"kind_col", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
 
 global___Changelog = Changelog
 
