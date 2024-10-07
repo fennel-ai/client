@@ -376,9 +376,7 @@ def add_deletes(
                 last_index_for_key[key] = i
                 continue
             # Add the timestamp of the current row as the delete timestamp for the last row
-            # Subtract 1 microsecond to ensure that the delete timestamp is strictly less than the
-            # timestamp of the next row
-            del_ts = row[ts_col] - pd.Timedelta("1us")
+            del_ts = row[ts_col]
             delete_timestamps[last_index] = del_ts
             last_index_for_key[key] = i
 

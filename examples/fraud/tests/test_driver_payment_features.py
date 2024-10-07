@@ -153,7 +153,7 @@ def test_min_max_radar_score(client):
     assert log_response.status_code == 200, log_response.json()
 
     df = client.get_dataset_df("TransactionsDS")
-    assert df.shape[0] == 327
+    assert df.shape[0] == 165
 
 
 @mock
