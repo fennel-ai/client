@@ -60,13 +60,13 @@ def test_add_delete_timestamps(client):
     assert deleted_rows.shape[0] == 3
     assert internal_df.loc[0, FENNEL_DELETE_TIMESTAMP] == pd.Timestamp(
         "2021-01-04 00:00:00+0000", tz="UTC"
-    ) - pd.Timedelta("1us")
+    )
     assert internal_df.loc[1, FENNEL_DELETE_TIMESTAMP] == pd.Timestamp(
         "2021-01-06 00:00:00+0000", tz="UTC"
-    ) - pd.Timedelta("1us")
+    )
     assert internal_df.loc[3, FENNEL_DELETE_TIMESTAMP] == pd.Timestamp(
         "2021-01-05 00:00:00+0000", tz="UTC"
-    ) - pd.Timedelta("1us")
+    )
 
     client.commit(datasets=[UnkeyedTestDataset], message="Add data")
     log(UnkeyedTestDataset, df)
