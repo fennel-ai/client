@@ -297,3 +297,45 @@ def test_discrete_aggregation_with_lookback(client):
     )
     assert df["count"].tolist() == [1, 1, 1]
     assert df["sum"].tolist() == [200, 500, 800]
+
+
+@mock
+def test_forever_discrete_window(client):
+
+    data = pd.read_csv("fennel/client_tests/data/app_events.csv").assign(
+        timestamp=lambda x: pd.to_datetime(x["timestamp"], utc=True)
+    )
+
+    @source(webhook.endpoint("AppEvents"), cdc="append", disorder="14d")
+    @dataset
+    class AppEvents:
+        user_id: int
+        page_id: int
+        timestamp: datetime
+
+    @dataset(index=True)
+    class EventCount:
+        user_id: int = field(key=True)
+        count: int
+        max_page_id: int
+        timestamp: datetime
+
+        @pipeline
+        @inputs(AppEvents)
+        def pipeline(cls, event: Dataset):
+            return event.groupby("user_id").aggregate(
+                count=Count(window=Hopping("forever", "1h")),
+                max_page_id=Max(
+                    of="page_id", default=0, window=Hopping("forever", "1h")
+                ),
+            )
+
+    client.commit(datasets=[AppEvents, EventCount], message="first_commit")
+    client.log("fennel_webhook", "AppEvents", data)
+
+    # Test online lookups
+    df, _ = client.lookup(EventCount, keys=pd.DataFrame({"user_id": [1, 2, 3]}))
+    assert df["count"].tolist() == [9, 9, 8]
+
+    expected = [2199213, 2536701, 2788739]
+    assert df["max_page_id"].tolist() == expected
