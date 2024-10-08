@@ -2661,6 +2661,23 @@ class SchemaValidator(Visitor):
                     )
                 lookback = curr_lookback
 
+            # if input schema has keys and along isn't set, hopping/tumbling
+            # windows aren't allowed (unless forever hopping is used)
+            if obj.along is None and len(input_schema.keys) > 0:
+                if isinstance(agg.window, Tumbling):
+                    raise ValueError(
+                        "invalid aggregate: tumbling windows can not be used to aggregate keyed datasets; "
+                        "maybe try using a 'forever hopping' window or 'along' parameter?"
+                    )
+                if (
+                    isinstance(agg.window, Hopping)
+                    and agg.window.duration != "forever"
+                ):
+                    raise ValueError(
+                        "invalid aggregate: sliding hopping windows can not be used to aggregate keyed datasets; "
+                        "maybe try using a 'forever hopping' window or 'along' parameter?"
+                    )
+
             exceptions = agg.validate()
             if exceptions is not None:
                 raise ValueError(f"Invalid aggregate `{agg}`: {exceptions}")
@@ -2833,21 +2850,21 @@ class SchemaValidator(Visitor):
                 values[agg.into_field] = pd.Float64Dtype  # type: ignore
             else:
                 raise TypeError(f"Unknown aggregate type {type(agg)}")
-        if obj.along and (
-            found_discrete or obj.emit_strategy == EmitStrategy.Final
-        ):
+        if obj.along and obj.emit_strategy == EmitStrategy.Final:
             raise ValueError(
-                "'along' param can only be used with non-discrete windows (Continuous/Forever) and eager emit strategy."
+                "'along' param can not be used with emit=\"final\" strategy"
             )
+
+        is_terminal = (
+            found_non_discrete and obj.emit_strategy == EmitStrategy.Eager
+        )
 
         return DSSchema(
             keys=keys,
             values=values,  # type: ignore
             timestamp=input_schema.timestamp,
             name=f"'[Pipeline:{self.pipeline_name}]->aggregate node'",
-            is_terminal=(
-                True if obj.emit_strategy == EmitStrategy.Eager else False
-            ),
+            is_terminal=is_terminal,
         )
 
     def visitJoin(self, obj) -> Tuple[DSSchema, bool]:
