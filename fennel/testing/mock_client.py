@@ -293,16 +293,11 @@ class MockClient(Client):
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
-        format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
         input_s3: Optional[S3Connector] = None,
         output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
-        if format != "pandas":
-            raise NotImplementedError(
-                "Only pandas format is supported in MockClient"
-            )
         if input_dataframe is None:
             raise ValueError(
                 "input must contain a key 'input_dataframe' with the input dataframe"

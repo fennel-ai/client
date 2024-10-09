@@ -173,7 +173,6 @@ feature_df = client.query_offline(
         UserSellerFeatures.seller_id,
     ],
     timestamp_column="timestamps",
-    format="pandas",
     input_dataframe=pd.DataFrame(
         [[1, 1, now], [1, 2, now], [1, 1, now - day], [1, 2, now - day]],
         columns=[

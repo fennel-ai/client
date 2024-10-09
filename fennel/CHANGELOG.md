@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.5.36] - 2024-10-09
+- Remove format parameter from query_offline.
+
 ## [1.5.35] - 2024-10-08
 - Enable discrete window aggregation.
 

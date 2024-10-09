@@ -457,7 +457,6 @@ class Client:
         inputs: List[Union[Feature, str]],
         outputs: List[Union[Feature, Featureset, str]],
         timestamp_column: str,
-        format: str = "pandas",
         input_dataframe: Optional[pd.DataFrame] = None,
         input_s3: Optional[S3Connector] = None,
         output_s3: Optional[S3Connector] = None,
@@ -481,18 +480,14 @@ class Client:
 
         timestamp_column (str): The name of the column containing timestamps.
 
-        format (str): The format of the input data. Can be either "pandas",
-            "csv", "json" or "parquet". Default is "pandas".
-
         input_dataframe (Optional[pd.DataFrame]): Dataframe containing the input
-            features. Only relevant when format is "pandas".
+            features.
 
         output_s3 (Optional[S3Connector]): Contains the S3 info -- bucket,
             prefix, and optional access key id and secret key -- used for
             storing the output of the extract historical request
 
-        The following parameters are only relevant when format is "csv", "json"
-            or "parquet".
+        The following parameters are only relevant when the input data is provided via S3
 
         input_s3 (Optional[connectors.S3Connector]): The info for the input S3
             data, containing bucket, prefix, and optional access key id and
@@ -509,13 +504,6 @@ class Client:
         indicates that all processing has been completed. A failure rate of 0.0
         indicates that all processing has been completed successfully.
         """
-        if format not in ["pandas", "csv", "json", "parquet"]:
-            raise Exception(
-                "Invalid input format. "
-                "Please provide one of the following formats: "
-                "'pandas', 'csv', 'json' or 'parquet'."
-            )
-
         input_feature_names = []
         for input_feature in inputs:
             if isinstance(input_feature, Feature):
@@ -535,12 +523,7 @@ class Client:
 
         input_info: Dict[str, Any] = {}
         extract_historical_input = {}
-        if format == "pandas":
-            if input_dataframe is None:
-                raise Exception(
-                    "Input dataframe not found in input dictionary. "
-                    "Please provide a dataframe as value for the key 'input_dataframe'."
-                )
+        if input_dataframe is not None:
             if not isinstance(input_dataframe, pd.DataFrame):
                 raise Exception(
                     "Input dataframe is not of type pandas.DataFrame, "
