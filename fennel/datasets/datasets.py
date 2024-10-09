@@ -2774,7 +2774,10 @@ class SchemaValidator(Visitor):
             elif isinstance(agg, Min):
                 dtype = input_schema.get_type(agg.of)
                 primtive_dtype = get_primitive_dtype_with_optional(dtype)
-                allowed_types = primitive_numeric_types + [datetime.date, datetime.datetime]
+                allowed_types = primitive_numeric_types + [
+                    datetime.date,
+                    datetime.datetime,
+                ]
                 if primtive_dtype not in allowed_types:
                     raise TypeError(
                         f"invalid min: type of field `{agg.of}` is not int, float, date or datetime"
@@ -2789,7 +2792,10 @@ class SchemaValidator(Visitor):
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
                 primtive_dtype = get_primitive_dtype_with_optional(dtype)
-                allowed_types = primitive_numeric_types + [datetime.date, datetime.datetime]
+                allowed_types = primitive_numeric_types + [
+                    datetime.date,
+                    datetime.datetime,
+                ]
                 if primtive_dtype not in allowed_types:
                     raise TypeError(
                         f"invalid max: type of field `{agg.of}` is not int, float, date or datetime"

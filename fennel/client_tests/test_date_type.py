@@ -138,13 +138,17 @@ class DebitFeatures:
     min: Decimal[2] = F(DebitDataset.min, default=0.0)
     max: Decimal[2] = F(DebitDataset.max, default=0.0)
     earliest_transaction_ts: datetime = F(
-        DebitDataset.earliest_transaction_ts, default=default_ts)
+        DebitDataset.earliest_transaction_ts, default=default_ts
+    )
     latest_transaction_ts: datetime = F(
-        DebitDataset.latest_transaction_ts, default=default_ts)
+        DebitDataset.latest_transaction_ts, default=default_ts
+    )
     earliest_transaction_date: date = F(
-        DebitDataset.earliest_transaction_date, default=default_date)
+        DebitDataset.earliest_transaction_date, default=default_date
+    )
     latest_transaction_date: date = F(
-        DebitDataset.latest_transaction_date, default=default_date)
+        DebitDataset.latest_transaction_date, default=default_date
+    )
     stddev: float = F(DebitDataset.stddev, default=0.0)
     median: float = F(DebitDataset.median, default=0.0)
 
@@ -178,7 +182,13 @@ def test_date_type(client):
             ],
             "is_debit": [True, False, True, True, False],
             "transaction_ts": [now, now_l1d, now_l1d, now, now],
-            "transaction_date": [now_date, now_l1d_date, now_l1d_date, now_date, now_date],
+            "transaction_date": [
+                now_date,
+                now_l1d_date,
+                now_l1d_date,
+                now_date,
+                now_date,
+            ],
             "timestamp": [now, now_l1d, now_l1d, now_l1d, now],
         }
     )
