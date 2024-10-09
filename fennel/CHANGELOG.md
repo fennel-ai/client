@@ -1,4 +1,6 @@
 # Changelog
+## [1.5.35] - 2024-10-08
+- Enable discrete window aggregation.
 
 ## [1.5.34] - 2024-09-30
 - Add support for secrets manager in connectors.
