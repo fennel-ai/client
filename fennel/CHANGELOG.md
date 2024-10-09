@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.37] - 2024-10-10
+- Support date and datetime types in Min and Max aggregations
+
 ## [1.5.36] - 2024-10-09
 - Remove format parameter from query_offline.
 
