@@ -21,16 +21,12 @@ either as Feature objects, or Featureset objects (in which case all features und
 that featureset are queried) or strings representing fully qualified feature names.
 </Expandable>
 
-<Expandable title="format" type='"pandas" | "csv" | "json" | "parquet"' defaultVal="pandas">
-The format of the input data
-</Expandable>
-
-<Expandable title="input_dataframe" type="pd.Dataframe">
+<Expandable title="input_dataframe" type="Optional[pd.Dataframe]">
 A pandas dataframe object that contains the values of all features in the inputs
 list. Each row of the dataframe can be thought of as one entity for which 
 features need to be queried.
 
-Only relevant when `format` is "pandas".
+This parameter is mutually exclusive with `input_s3`.
 </Expandable>
 
 <Expandable title="input_s3" type="Optional[connectors.S3]">
@@ -38,8 +34,6 @@ Sending large volumes of the input data over the wire is often infeasible.
 In such cases, input data can be written to S3 and the location of the file is
 sent as `input_s3` via `S3.bucket()` function of [S3](/api-reference/connectors/s3) 
 connector. 
-
-This parameter makes sense only when `format` isn't "pandas".
 
 When using this option, please ensure that Fennel's data connector 
 IAM role has the ability to execute read & list operations on this bucket - 
@@ -115,7 +109,7 @@ in order to resolve the path from the input features to the output features.
 
 ===
 <pre name="Request" snippet="api-reference/client/query#extract_historical_api"
-  status="success" message="Example with `format='pandas'` & default s3 output"
+  status="success" message="Example with pandas input & default s3 output"
 ></pre>
 <pre name="Response" snippet="api-reference/client/query#extract_historical_response"
   status="success" message="Response of extract historical"

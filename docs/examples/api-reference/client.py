@@ -11,6 +11,7 @@ from fennel.featuresets import feature as F, featureset, extractor
 from fennel.lib import includes, meta, inputs, outputs
 from fennel.testing import mock
 from fennel.expr.expr import col, lit, when
+from fennel.client import Client
 
 webhook = Webhook(name="fennel_webhook")
 
@@ -120,7 +121,6 @@ class TestExtractorDAGResolution(unittest.TestCase):
         response = client.query_offline(
             outputs=[UserFeatures],
             inputs=[UserFeatures.userid],
-            format="pandas",
             input_dataframe=pd.DataFrame(
                 {"UserFeatures.userid": [18232, 18234], "timestamp": [now, now]}
             ),
@@ -136,7 +136,7 @@ class TestExtractorDAGResolution(unittest.TestCase):
         )
         # /docsnip
 
-        with self.assertRaises(NotImplementedError) as e:
+        with self.assertRaises(ValueError) as e:
             # docsnip query_offline_s3
             from fennel.connectors import S3
 
@@ -153,12 +153,12 @@ class TestExtractorDAGResolution(unittest.TestCase):
             response = client.query_offline(
                 outputs=[UserFeatures],
                 inputs=[UserFeatures.userid],
-                format="csv",
                 timestamp_column="timestamp",
                 input_s3=s3_input_connection,
                 output_s3=s3_output_connection,
             )
             # /docsnip
-        assert "Only pandas format is supported in MockClient" in str(
-            e.exception
+        assert (
+            "input must contain a key 'input_dataframe' with the input dataframe"
+            in str(e.exception)
         )
