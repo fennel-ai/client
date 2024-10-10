@@ -229,24 +229,67 @@ class FirstKState(AggState):
         return list(self.vals[: self.k])
 
 
+class MinHeapObj(object):
+    def __init__(self, val):
+        self.val = val
+
+    def __lt__(self, other):
+        return self.val < other.val
+
+    def __eq__(self, other):
+        return self.val == other.val
+
+    def __str__(self):
+        return str(self.val)
+
+    def __hash__(self):
+        return hash(self.val)
+
+
+class MaxHeapObj(object):
+    def __init__(self, val):
+        self.val = val
+
+    def __lt__(self, other):
+        return self.val > other.val
+
+    def __eq__(self, other):
+        return self.val == other.val
+
+    def __str__(self):
+        return str(self.val)
+
+    def __hash__(self):
+        return hash(self.val)
+
+
 class Heap:
     def __init__(self, heap_type="min"):
         self.elements = []
-        self.heap_type = 1 if heap_type == "min" else -1
+        self.heap_type = heap_type
         self.del_elements = set()
 
     def __len__(self):
         return len(self.elements)
 
+    def _get_heap_obj(self, element):
+        if self.heap_type == "min":
+            return MinHeapObj(element)
+        else:
+            return MaxHeapObj(element)
+
+    def _get_orig_obj(self, heap_obj):
+        return heap_obj.val
+
     def push(self, element):
-        element = self.heap_type * element
+        element = self._get_heap_obj(element)
         if element in self.del_elements:
             self.del_elements.remove(element)
         else:
             heapq.heappush(self.elements, element)
 
     def remove(self, element):
-        element = self.heap_type * element
+        element = self._get_heap_obj(element)
         if element in self.del_elements:
             return
         self.del_elements.add(element)
@@ -257,7 +300,7 @@ class Heap:
             heapq.heappop(self.elements)
         if len(self.elements) == 0:
             return None
-        return self.elements[0] * self.heap_type
+        return self._get_orig_obj(self.elements[0])
 
 
 class MinState(AggState):

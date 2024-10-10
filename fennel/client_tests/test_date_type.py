@@ -27,6 +27,9 @@ from fennel.testing import mock
 webhook = Webhook(name="fennel_webhook")
 __owner__ = "eng@fennel.ai"
 
+default_ts = datetime.fromtimestamp(0, timezone.utc)
+default_date = default_ts.date()
+
 
 @source(webhook.endpoint("Transactions"), disorder="14d", cdc="append")
 @dataset
@@ -34,6 +37,8 @@ class Transactions:
     user_id: int
     amount: Decimal[2]
     is_debit: bool
+    transaction_ts: datetime
+    transaction_date: date
     timestamp: datetime = field(timestamp=True)
 
 
@@ -45,6 +50,10 @@ class DebitDataset:
     sum: Decimal[2]
     min: Decimal[2]
     max: Decimal[2]
+    earliest_transaction_ts: datetime
+    latest_transaction_ts: datetime
+    earliest_transaction_date: date
+    latest_transaction_date: date
     stddev: float
     median: float
     count: int
@@ -77,6 +86,30 @@ class DebitDataset:
                     window=Continuous("forever"),
                     default=0.0,
                 ),
+                Min(
+                    of="transaction_ts",
+                    into_field="earliest_transaction_ts",
+                    window=Continuous("forever"),
+                    default=0.0,
+                ),
+                Max(
+                    of="transaction_ts",
+                    into_field="latest_transaction_ts",
+                    window=Continuous("forever"),
+                    default=0.0,
+                ),
+                Min(
+                    of="transaction_date",
+                    into_field="earliest_transaction_date",
+                    window=Continuous("forever"),
+                    default=0.0,
+                ),
+                Max(
+                    of="transaction_date",
+                    into_field="latest_transaction_date",
+                    window=Continuous("forever"),
+                    default=0.0,
+                ),
                 Stddev(
                     of="amount",
                     into_field="stddev",
@@ -104,6 +137,18 @@ class DebitFeatures:
     sum: Decimal[2] = F(DebitDataset.sum, default=0.0)
     min: Decimal[2] = F(DebitDataset.min, default=0.0)
     max: Decimal[2] = F(DebitDataset.max, default=0.0)
+    earliest_transaction_ts: datetime = F(
+        DebitDataset.earliest_transaction_ts, default=default_ts
+    )
+    latest_transaction_ts: datetime = F(
+        DebitDataset.latest_transaction_ts, default=default_ts
+    )
+    earliest_transaction_date: date = F(
+        DebitDataset.earliest_transaction_date, default=default_date
+    )
+    latest_transaction_date: date = F(
+        DebitDataset.latest_transaction_date, default=default_date
+    )
     stddev: float = F(DebitDataset.stddev, default=0.0)
     median: float = F(DebitDataset.median, default=0.0)
 
@@ -119,8 +164,12 @@ def test_date_type(client):
     )
     assert response.status_code == requests.codes.OK, response.json()
 
-    now = datetime.now(timezone.utc)
+    # microseconds are dropped when df is converted to json before
+    # passing to backend
+    now = datetime.now(timezone.utc).replace(microsecond=0)
     now_l1d = now - timedelta(days=1)
+    now_date = now.date()
+    now_l1d_date = now_l1d.date()
     df = pd.DataFrame(
         {
             "user_id": [1, 1, 2, 2, 1],
@@ -132,6 +181,14 @@ def test_date_type(client):
                 1100.10,
             ],
             "is_debit": [True, False, True, True, False],
+            "transaction_ts": [now, now_l1d, now_l1d, now, now],
+            "transaction_date": [
+                now_date,
+                now_l1d_date,
+                now_l1d_date,
+                now_date,
+                now_date,
+            ],
             "timestamp": [now, now_l1d, now_l1d, now_l1d, now],
         }
     )
@@ -147,6 +204,10 @@ def test_date_type(client):
             DebitFeatures.count,
             DebitFeatures.max,
             DebitFeatures.min,
+            DebitFeatures.earliest_transaction_ts,
+            DebitFeatures.latest_transaction_ts,
+            DebitFeatures.earliest_transaction_date,
+            DebitFeatures.latest_transaction_date,
             DebitFeatures.stddev,
             DebitFeatures.median,
             DebitFeatures.sum,
@@ -156,16 +217,16 @@ def test_date_type(client):
             {
                 "DebitFeatures.user_id": [1, 1, 2, 2, 3],
                 "DebitFeatures.txn_date": [
-                    str(now.date()),
-                    str(now_l1d.date()),
-                    str(now.date()),
-                    str(now_l1d.date()),
-                    str(now.date()),
+                    str(now_date),
+                    str(now_l1d_date),
+                    str(now_date),
+                    str(now_l1d_date),
+                    str(now_date),
                 ],
             },
         ),
     )
-    assert df.shape == (5, 7)
+    assert df.shape == (5, 11)
     assert df["DebitFeatures.count"].tolist() == [1, 0, 0, 2, 0]
     assert df["DebitFeatures.avg"].tolist() == [
         pytest.approx(1200.1),
@@ -187,6 +248,34 @@ def test_date_type(client):
         PythonDecimal("0.00"),
         PythonDecimal("1400.10"),
         PythonDecimal("0.00"),
+    ]
+    assert df["DebitFeatures.earliest_transaction_ts"].tolist() == [
+        now,
+        default_ts,
+        default_ts,
+        now_l1d,
+        default_ts,
+    ]
+    assert df["DebitFeatures.latest_transaction_ts"].tolist() == [
+        now,
+        default_ts,
+        default_ts,
+        now,
+        default_ts,
+    ]
+    assert df["DebitFeatures.earliest_transaction_date"].tolist() == [
+        now_date,
+        default_date,
+        default_date,
+        now_l1d_date,
+        default_date,
+    ]
+    assert df["DebitFeatures.latest_transaction_date"].tolist() == [
+        now_date,
+        default_date,
+        default_date,
+        now_date,
+        default_date,
     ]
     assert df["DebitFeatures.sum"].tolist() == [
         PythonDecimal("1200.10"),
