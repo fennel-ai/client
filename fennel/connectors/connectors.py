@@ -549,7 +549,9 @@ class Snowflake(DataSource):
     src_schema: str = Field(alias="schema")
     role: str
 
-    def table(self, table_name: str, cursor: Optional[str]) -> TableConnector:
+    def table(
+        self, table_name: str, cursor: Optional[str] = None
+    ) -> TableConnector:
         return TableConnector(self, table_name, cursor)
 
     def required_fields(self) -> List[str]:
@@ -736,7 +738,7 @@ class TableConnector(DataConnector):
     Includes BigQuery, MySQL, Postgres, Snowflake and Redshift."""
 
     table_name: str
-    cursor: Optional[str]
+    cursor: Optional[str] = None
 
     def __init__(self, source, table_name, cursor):
         if isinstance(source, Redshift):
