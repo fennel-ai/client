@@ -386,6 +386,7 @@ class Serializer(Visitor):
             ds_version=self.dataset_version,
             changelog=proto.Changelog(
                 operand_id=self.visit(obj.node),
-                kind_col=obj.kind_col,
+                kind_column=obj.kind_column,
+                deletes=obj.deletes
             ),
         )

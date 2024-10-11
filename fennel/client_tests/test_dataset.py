@@ -4633,7 +4633,7 @@ def test_changelog_operator(client):
     class JobRank:
         creater_id: int = field(key=True)
         job_id: int = field(key=True)
-        kind: str = field(key=True)
+        is_delete: bool = field(key=True)
         creation_ts: datetime
 
         @pipeline
@@ -4642,8 +4642,8 @@ def test_changelog_operator(client):
             return (
                 job_opening.groupby("creater_id")
                 .latest()
-                .changelog("kind")
-                .groupby("creater_id", "job_id", "kind")
+                .changelog(delete="is_delete")
+                .groupby("creater_id", "job_id", "is_delete")
                 .latest()
             )
 
@@ -4671,7 +4671,7 @@ def test_changelog_operator(client):
     if client.is_integration_client():
         client.sleep(60)
 
-    kinds = ["delete", "insert", "delete", "delete", "delete", "insert"]
+    is_deletes = [True, False, True, True, True, False]
 
     results, found = client.lookup(
         JobRank,
@@ -4679,7 +4679,7 @@ def test_changelog_operator(client):
             {
                 "creater_id": [1, 2, 1, 1, 1, 1],
                 "job_id": [1, 2, 3, 4, 5, 6],
-                "kind": kinds,
+                "is_delete": is_deletes,
             }
         ),
     )
@@ -4692,15 +4692,86 @@ def test_changelog_operator(client):
         pd.Timestamp("2022-01-01 12:00:00", tz="UTC"),
         pd.Timestamp("2022-01-01 12:00:00", tz="UTC"),
     ]
+    # TODO(sat): Remove this after rebasing on main
     for i in range(len(creation_ts_expected)):
-        kind = kinds[i]
+        is_delete = is_deletes[i]
         ts = creation_ts_expected[i]
-        if not client.is_integration_client() and kind == "delete":
+        if not client.is_integration_client() and is_delete:
             ts = ts - pd.Timedelta("1us")
         creation_ts_expected[i] = ts
 
     assert found.tolist() == [True, True, True, True, True, True]
     assert results.shape == (6, 4)
+    assert results["creation_ts"].tolist() == creation_ts_expected
+
+
+@pytest.mark.integration
+@mock
+def test_changelog_operator_insert_identity(client):
+    @dataset
+    @source(webhook.endpoint("JobOpening"), disorder="14d", cdc="append")
+    class JobOpening:
+        creater_id: int
+        job_id: int
+        creation_ts: datetime
+
+    @dataset(index=True)
+    class JobRank:
+        creater_id: int = field(key=True)
+        job_id: int = field(key=True)
+        creation_ts: datetime
+
+        @pipeline
+        @inputs(JobOpening)
+        def rank_job(cls, job_opening: Dataset):
+            return (
+                job_opening.groupby("creater_id")
+                .latest()
+                .changelog(insert="is_insert")
+                .filter(lambda df: df["is_insert"])
+                .drop("is_insert")
+                .groupby("creater_id", "job_id")
+                .latest()
+            )
+
+    client.commit(datasets=[JobOpening, JobRank], message="test")
+
+    # Creation ts is 1 every 2 hours
+    creation_ts = [
+        datetime(2022, 1, 1, 2, 0, 0),
+        datetime(2022, 1, 1, 4, 0, 0),
+        datetime(2022, 1, 1, 6, 0, 0),
+        datetime(2022, 1, 1, 8, 0, 0),
+        datetime(2022, 1, 1, 10, 0, 0),
+        datetime(2022, 1, 1, 12, 0, 0),
+    ]
+
+    openings = pd.DataFrame(
+        {
+            "creater_id": [1, 2, 1, 1, 1, 1],
+            "job_id": [1, 2, 3, 4, 5, 6],
+            "creation_ts": creation_ts,
+        }
+    )
+    client.log("fennel_webhook", "JobOpening", openings)
+
+    if client.is_integration_client():
+        client.sleep(60)
+
+    results, found = client.lookup(
+        JobRank,
+        keys=pd.DataFrame(
+            {
+                "creater_id": [1, 2, 1, 1, 1, 1],
+                "job_id": [1, 2, 3, 4, 5, 6],
+            }
+        ),
+    )
+
+    creation_ts_expected = [pd.Timestamp(d, tz="UTC") for d in creation_ts]
+
+    assert found.tolist() == [True, True, True, True, True, True]
+    assert results.shape == (6, 3)
     assert results["creation_ts"].tolist() == creation_ts_expected
 
 

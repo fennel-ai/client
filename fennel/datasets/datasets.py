@@ -371,8 +371,8 @@ class _Node(Generic[T]):
         columns = _Node.__get_list_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 
-    def changelog(self, delete_column: str) -> _Node:
-        return Changelog(self, delete_column)
+    def changelog(self, **kwargs) -> _Node:
+        return Changelog(self, **kwargs)
 
     def isignature(self):
         raise NotImplementedError
@@ -579,14 +579,28 @@ class Filter(_Node):
 
 
 class Changelog(_Node):
-    def __init__(self, node: _Node, kind_col: str):
+    def __init__(self, node: _Node, **kwargs):
         super().__init__()
         self.node = node
-        self.kind_col = kind_col
+
+        delete_column = kwargs.get("delete")
+        insert_column = kwargs.get("insert")
+        if delete_column is None and insert_column is None:
+            raise ValueError("Either delete or insert column must be specified")
+        elif delete_column is not None and insert_column is not None:
+            raise ValueError("Only one of delete or insert column can be specified")
+        elif delete_column is not None:
+            self.kind_column = delete_column
+            self.deletes = True
+        else:
+            assert(insert_column is not None)
+            self.kind_column = insert_column
+            self.deletes = False
+
         self.node.out_edges.append(self)
 
     def signature(self):
-        return fhash(self.node.signature(), self.kind_col)
+        return fhash(self.node.signature(), self.kind_column, self.deletes)
 
     def dsschema(self):
         input_schema = self.node.dsschema()
@@ -594,7 +608,7 @@ class Changelog(_Node):
         val_fields = copy.deepcopy(input_schema.keys)
         values = input_schema.values
         val_fields.update(values)
-        val_fields.update({self.kind_col: pd.StringDtype})
+        val_fields.update({self.kind_column: pd.BooleanDtype})
         return DSSchema(
             keys={},
             values=val_fields,
