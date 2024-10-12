@@ -598,6 +598,12 @@ def test_env_selector_on_connector():
         cdc="upsert",
         env=["prod_new"],
     )
+    @source(
+        kafka.topic("test_topic"),
+        disorder="14d",
+        cdc="upsert",
+        env=["prod_new2"],
+    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -627,6 +633,13 @@ def test_env_selector_on_connector():
         how="incremental",
         renames={"uid": "new_uid"},
         env=["prod_new"],
+    )
+    @sink(
+        snowflake.table("random_table"),
+        every="1d",
+        how="incremental",
+        renames={"uid": "new_uid"},
+        env=["prod_new2"],
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -791,6 +804,42 @@ def test_env_selector_on_connector():
                     "s3": {},
                 },
             }
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "every": "86400s",
+        "how": {"incremental": {}},
+        "create": True,
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
+
+    sync_request = view._get_sync_request_proto(env="prod_new2")
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "snowflake_table": {
+                "db": {
+                    "name": "snowflake_src",
+                    "snowflake": {
+                        "user": "<username>",
+                        "password": "<password>",
+                        "account": "nhb38793.us-west-2.snowflakecomputing.com",
+                        "schema": "PUBLIC",
+                        "warehouse": "TEST",
+                        "role": "ACCOUNTADMIN",
+                        "database": "MOVIELENS",
+                    },
+                },
+                "table_name": "random_table",
+            },
         },
         "dataset": "UserInfoDatasetDerived",
         "dsVersion": 1,

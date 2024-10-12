@@ -24,8 +24,6 @@ the CDC data needs to be written out in the debezium format.
 That's it - once this is written, `UserLocationFiltered` dataset will start 
 publishing changes to your Kafka.
 
-As of right now, Fennel only supports Kafka sinks and writes data in the debezium
-format. Given the ubiquity of debezium connectors, you should be able to further 
-pipe this debezium data from Kafka to your data store of choice.
-
-More data stores and cdc strategies will be supported in the future updates.
+Fennel ships with data sinks to a couple of [common datastores](/api-reference/sink_connectors) 
+so that you can 'sink' from your Fennel datasets to your external datasets.
+We're continuously expanding support to include additional datastores.

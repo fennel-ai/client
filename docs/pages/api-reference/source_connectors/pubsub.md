@@ -8,7 +8,7 @@ Data connector to Google Pub/Sub messaging service.
 
 #### Project Parameters
 <Expandable title="name" type="str">
-A name to identify the source. The name should be unique across all Fennel sources.
+A name to identify the source. The name should be unique across all Fennel connectors.
 </Expandable>
 
 <Expandable title="project_id" type="str">

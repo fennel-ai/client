@@ -226,13 +226,16 @@ def sink(
         not isinstance(conn, KafkaConnector)
         and not isinstance(conn, S3Connector)
         and (
-            isinstance(conn, TableConnector)
-            and not isinstance(conn.data_source, Snowflake)
+            not isinstance(conn, TableConnector)
+            or (
+                isinstance(conn, TableConnector)
+                and not isinstance(conn.data_source, Snowflake)
+            )
         )
     ):
         raise ValueError(
             "Sink is only supported for Kafka, S3 and Snowflake, found %s"
-            % conn,
+            % type(conn),
         )
 
     if isinstance(conn, KafkaConnector):

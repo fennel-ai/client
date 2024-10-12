@@ -4,12 +4,12 @@ order: 0
 status: published
 ---
 ### Kafka
-Data connector to any data store that speaks the Kafka protocol (e.g. Native 
+Data sink to any data store that speaks the Kafka protocol (e.g. Native 
 Kafka, MSK, Redpanda etc.)
 
 #### Cluster Parameters
 <Expandable title="name" type="str">
-A name to identify the source. This name should be unique across ALL sources.
+A name to identify the sink. This name should be unique across ALL connectors.
 </Expandable>
 
 <Expandable title="bootstrap_servers" type="str">
@@ -41,26 +41,12 @@ SASL password.
 #### Topic Parameters
 
 <Expandable title="topic" type="str">
-The name of the kafka topic that needs to be sourced into the dataset.
+The name of the kafka topic that needs to be sinked.
 </Expandable>
-
-<Expandable title="format" type='"json" | Avro | Protobuf' defaultVal="json">
-The format of the data in Kafka topic. `"json"`, 
-[Avro](/api-reference/connectors/avro) and [Protobuf](/api-reference/connectors/protobuf) supported.
-</Expandable>
-
-<pre snippet="api-reference/sources/kafka#basic"
-    status="success" message="Sourcing json data from kafka to a dataset"
-></pre>
 
 <pre snippet="api-reference/sinks/kafka_sink#basic"
     status="success" message="Capturing change from a dataset to a Kafka sink"
 ></pre>
-
-:::info
-Fennel supports only Append and Upsert mode CDC with data in Protobuf format. If you require support
-for CDC data format, please reach out to Fennel support.
-:::
 
 #### Errors
 <Expandable title="Connectivity problems">
@@ -68,12 +54,13 @@ Fennel server tries to connect with the Kafka broker during the `commit` operati
 itself to validate connectivity - as a result, incorrect URL/Username/Password
 etc will be caught at commit time itself as an error.
 
-Note: Mock client can not talk to any external data source and hence is unable to
+Note: Mock client can not talk to any external data sink and hence is unable to
 do this validation at commit time.
 </Expandable>
 
-<Expandable title="Schema mismatch errors">
-Schema validity of data in Kafka can only be checked at runtime. Any rows that 
-can not be parsed are rejected. Please keep an eye on the 'Errors' tab of 
-Fennel console after initiating any data sync.
-</Expandable>
+:::info
+- Fennel supports kafka sink with only the JSON debezium format. Given the ubiquity 
+of debezium connectors, you should be able to further pipe this debezium data
+from Kafka to your data store of choice. In case you require support for
+other formats, please reach out to Fennel support.
+:::
