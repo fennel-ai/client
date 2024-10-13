@@ -11,7 +11,7 @@ from fennel.expr.expr import InvalidExprException
 from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
 from google.protobuf.json_format import ParseDict  # type: ignore
-from fennel.gen.expr_pb2 import Expr
+from fennel.gen.expression_pb2 import Expr
 from fennel.testing.test_utils import error_message
 
 

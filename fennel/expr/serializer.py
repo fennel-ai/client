@@ -4,7 +4,7 @@ import json
 from fennel.dtypes.dtypes import FENNEL_STRUCT
 
 from .visitor import Visitor
-import fennel.gen.expr_pb2 as proto
+import fennel.gen.expression_pb2 as proto
 from fennel.internal_lib.schema import get_datatype
 
 from fennel.expr.expr import (

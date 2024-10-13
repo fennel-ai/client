@@ -18,7 +18,7 @@ import pyarrow as pa
 from fennel_data_lib import assign, type_of, matches
 
 import fennel.gen.schema_pb2 as schema_proto
-import fennel.gen.expr_pb2 as expr_proto
+import fennel.gen.expression_pb2 as expr_proto
 from fennel.internal_lib.schema import (
     get_datatype,
     cast_col_to_arrow_dtype,

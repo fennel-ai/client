@@ -4,7 +4,7 @@ isort:skip_file
 """
 import builtins
 import collections.abc
-import expr_pb2
+import expression_pb2
 import google.protobuf.descriptor
 import google.protobuf.internal.containers
 import google.protobuf.internal.enum_type_wrapper
@@ -161,7 +161,7 @@ class Extractor(google.protobuf.message.Message):
         required iff extractor_type == LOOKUP
         """
     @property
-    def expr(self) -> expr_pb2.Expr:
+    def expr(self) -> expression_pb2.Expr:
         """required iff extractor_type == EXPR"""
     @property
     def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
@@ -178,7 +178,7 @@ class Extractor(google.protobuf.message.Message):
         feature_set_name: builtins.str = ...,
         extractor_type: global___ExtractorType.ValueType = ...,
         field_info: global___FieldLookupInfo | None = ...,
-        expr: expr_pb2.Expr | None = ...,
+        expr: expression_pb2.Expr | None = ...,
         tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info", "expr", b"expr", "field_info", b"field_info", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
