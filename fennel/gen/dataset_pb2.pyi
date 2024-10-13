@@ -4,7 +4,7 @@ isort:skip_file
 """
 import builtins
 import collections.abc
-import expr_pb2
+import expression_pb2
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
 import google.protobuf.internal.containers
@@ -472,7 +472,7 @@ class FilterExpr(google.protobuf.message.Message):
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
-    def expr(self) -> expr_pb2.Expr: ...
+    def expr(self) -> expression_pb2.Expr: ...
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -481,7 +481,7 @@ class FilterExpr(google.protobuf.message.Message):
         self,
         *,
         operand_id: builtins.str = ...,
-        expr: expr_pb2.Expr | None = ...,
+        expr: expression_pb2.Expr | None = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["expr", b"expr"]) -> builtins.bool: ...
@@ -560,12 +560,12 @@ class AssignExpr(google.protobuf.message.Message):
         VALUE_FIELD_NUMBER: builtins.int
         key: builtins.str
         @property
-        def value(self) -> expr_pb2.Expr: ...
+        def value(self) -> expression_pb2.Expr: ...
         def __init__(
             self,
             *,
             key: builtins.str = ...,
-            value: expr_pb2.Expr | None = ...,
+            value: expression_pb2.Expr | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
         def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
@@ -594,7 +594,7 @@ class AssignExpr(google.protobuf.message.Message):
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
-    def exprs(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, expr_pb2.Expr]: ...
+    def exprs(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, expression_pb2.Expr]: ...
     @property
     def output_types(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, schema_pb2.DataType]: ...
     operand_name: builtins.str
@@ -605,7 +605,7 @@ class AssignExpr(google.protobuf.message.Message):
         self,
         *,
         operand_id: builtins.str = ...,
-        exprs: collections.abc.Mapping[builtins.str, expr_pb2.Expr] | None = ...,
+        exprs: collections.abc.Mapping[builtins.str, expression_pb2.Expr] | None = ...,
         output_types: collections.abc.Mapping[builtins.str, schema_pb2.DataType] | None = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...

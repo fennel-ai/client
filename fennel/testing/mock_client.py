@@ -297,6 +297,7 @@ class MockClient(Client):
         input_s3: Optional[S3Connector] = None,
         output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
+        use_v2: bool = False,
     ) -> Union[pd.DataFrame, pd.Series]:
         if input_dataframe is None:
             raise ValueError(

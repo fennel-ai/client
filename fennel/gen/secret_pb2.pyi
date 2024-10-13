@@ -26,7 +26,8 @@ class SecretRef(google.protobuf.message.Message):
     secret_arn: builtins.str
     role_arn: builtins.str
     @property
-    def path(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    def path(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
+        """Next id: 4"""
     def __init__(
         self,
         *,

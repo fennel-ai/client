@@ -13,7 +13,7 @@ database
 """
 import builtins
 import collections.abc
-import expr_pb2
+import expression_pb2
 import google.protobuf.descriptor
 import google.protobuf.duration_pb2
 import google.protobuf.internal.containers
@@ -305,6 +305,7 @@ class MySQL(google.protobuf.message.Message):
     database: builtins.str
     port: builtins.int
     jdbc_params: builtins.str
+    """Next id: 9"""
     def __init__(
         self,
         *,
@@ -348,6 +349,7 @@ class Postgres(google.protobuf.message.Message):
     database: builtins.str
     port: builtins.int
     jdbc_params: builtins.str
+    """Next id: 9"""
     def __init__(
         self,
         *,
@@ -385,6 +387,7 @@ class S3(google.protobuf.message.Message):
     @property
     def aws_access_key_id_secret(self) -> secret_pb2.SecretRef: ...
     role_arn: builtins.str
+    """Next id: 6"""
     def __init__(
         self,
         *,
@@ -418,6 +421,7 @@ class Bigquery(google.protobuf.message.Message):
     def service_account_key_secret(self) -> secret_pb2.SecretRef: ...
     dataset_id: builtins.str
     project_id: builtins.str
+    """Next id: 5"""
     def __init__(
         self,
         *,
@@ -456,6 +460,7 @@ class Snowflake(google.protobuf.message.Message):
     warehouse: builtins.str
     role: builtins.str
     database: builtins.str
+    """Next id: 10"""
     def __init__(
         self,
         *,
@@ -502,6 +507,7 @@ class Kafka(google.protobuf.message.Message):
     sasl_mechanism: builtins.str
     sasl_jaas_config: builtins.str
     group_id: builtins.str
+    """Next id: 10"""
     def __init__(
         self,
         *,
@@ -640,6 +646,7 @@ class Mongo(google.protobuf.message.Message):
     def password_secret(self) -> secret_pb2.SecretRef: ...
     host: builtins.str
     database: builtins.str
+    """Next id: 7"""
     def __init__(
         self,
         *,
@@ -670,6 +677,7 @@ class PubSub(google.protobuf.message.Message):
     @property
     def service_account_key_secret(self) -> secret_pb2.SecretRef: ...
     project_id: builtins.str
+    """Next id: 4"""
     def __init__(
         self,
         *,
@@ -1010,14 +1018,14 @@ class PreProcValue(google.protobuf.message.Message):
         @property
         def schema(self) -> schema_pb2.Schema: ...
         @property
-        def expr(self) -> expr_pb2.Expr: ...
+        def expr(self) -> expression_pb2.Expr: ...
         @property
         def pycode(self) -> pycode_pb2.PyCode: ...
         def __init__(
             self,
             *,
             schema: schema_pb2.Schema | None = ...,
-            expr: expr_pb2.Expr | None = ...,
+            expr: expression_pb2.Expr | None = ...,
             pycode: pycode_pb2.PyCode | None = ...,
         ) -> None: ...
         def HasField(self, field_name: typing_extensions.Literal["eval_type", b"eval_type", "expr", b"expr", "pycode", b"pycode", "schema", b"schema"]) -> builtins.bool: ...

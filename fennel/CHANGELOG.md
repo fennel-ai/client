@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.38] - 2024-10-13
+- Add support for use_v2 in query_offline.
+
 ## [1.5.37] - 2024-10-10
 - Support date and datetime types in Min and Max aggregations
 
