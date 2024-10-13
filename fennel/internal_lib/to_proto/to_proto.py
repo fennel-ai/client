@@ -68,7 +68,6 @@ from fennel.internal_lib.utils import dtype_to_string
 from fennel.lib.includes import FENNEL_INCLUDED_MOD
 from fennel.lib.metadata import get_metadata_proto, get_meta_attr, OWNER
 from fennel.utils import fennel_get_source
-from pyarrow.dataset import dataset
 
 
 def _cleanup_dict(d) -> Dict[str, Any]:
