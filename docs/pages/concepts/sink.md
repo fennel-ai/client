@@ -26,4 +26,4 @@ publishing changes to your Kafka.
 
 Fennel ships with data sinks to a couple of [common datastores](/api-reference/sink_connectors) 
 so that you can 'sink' from your Fennel datasets to your external datasets.
-We're continuously expanding support to include additional datastores.
+Sinks to many other common data stores will be added soon.
