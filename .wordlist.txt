@@ -122,6 +122,7 @@ SSDs
 SSL
 SSO
 SearchRequest
+Secret
 ShardIteratorType
 Signifier
 SnapshotData
@@ -343,6 +344,7 @@ schedulable
 schemaless
 schemas
 sdk
+secret
 signup
 signups
 sinked
