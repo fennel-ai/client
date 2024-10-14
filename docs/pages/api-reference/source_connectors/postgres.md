@@ -23,12 +23,12 @@ The port to connect to.
 The name of the Postgres database to establish a connection with.
 </Expandable>
 
-<Expandable title="username" type="str">
+<Expandable title="username" type="str | Secret">
 The username which should be used to access the database. This username should 
 have access to the database `db_name`.
 </Expandable>
 
-<Expandable title="password" type="str">
+<Expandable title="password" type="str | Secret">
 The password associated with the username.
 </Expandable>
 
