@@ -48,7 +48,7 @@ client - you can commit datasets/featuresets, log data, extract features etc.
 
 You can bring data to a dataset in the mock server, by using the log
 function from our testing library or by explicitly logging data to a
-[webhook](/api-reference/connectors/webhook).
+[webhook](/api-reference/source_connectors/webhook).
 
 
 

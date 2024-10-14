@@ -41,7 +41,7 @@ them for now - though if you are interested, you can read about them and sources
 in general [here](/concepts/source). 
 
 Besides Postgres and Kafka, Fennel supports connectors with many other sources. 
-See the [full list](/api-reference/connectors).
+See the [full list](/api-reference/source_connectors).
 
 
 ### Pipeline

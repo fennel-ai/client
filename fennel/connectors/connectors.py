@@ -222,11 +222,20 @@ def sink(
             f"{', '.join(conn.required_fields())}."
         )
 
-    if not isinstance(conn, KafkaConnector) and not isinstance(
-        conn, S3Connector
+    if (
+        not isinstance(conn, KafkaConnector)
+        and not isinstance(conn, S3Connector)
+        and (
+            not isinstance(conn, TableConnector)
+            or (
+                isinstance(conn, TableConnector)
+                and not isinstance(conn.data_source, Snowflake)
+            )
+        )
     ):
         raise ValueError(
-            "Sink is only supported for Kafka and S3, found %s" % type(conn)
+            "Sink is only supported for Kafka, S3 and Snowflake, found %s"
+            % type(conn),
         )
 
     if isinstance(conn, KafkaConnector):
@@ -254,6 +263,17 @@ def sink(
             raise ValueError(
                 "S3 sink only supports data access through Fennel DataAccess IAM Role"
             )
+
+    if isinstance(conn, TableConnector):
+        if isinstance(conn.data_source, Snowflake):
+            if cdc:
+                raise ValueError("CDC shouldn't be set for Snowflake sink")
+            if conn.cursor:
+                raise ValueError("Cursor shouldn't be set for Snowflake sink")
+            if how != "incremental":
+                raise ValueError(
+                    "Only Incremental style supported for Snowflake sink"
+                )
 
     def decorator(dataset_cls: T):
         conn.cdc = cdc
@@ -532,11 +552,13 @@ class Snowflake(DataSource):
     src_schema: str = Field(alias="schema")
     role: str
 
-    def table(self, table_name: str, cursor: str) -> TableConnector:
+    def table(
+        self, table_name: str, cursor: Optional[str] = None
+    ) -> TableConnector:
         return TableConnector(self, table_name, cursor)
 
     def required_fields(self) -> List[str]:
-        return ["table", "cursor"]
+        return ["table"]
 
     @staticmethod
     def get(name: str) -> Snowflake:
@@ -715,11 +737,11 @@ class WebhookConnector(DataConnector):
 
 
 class TableConnector(DataConnector):
-    """DataConnectors which only need a table name and a cursor to be
-    specified. Includes BigQuery, MySQL, Postgres, Snowflake and Redshift."""
+    """DataConnectors which only need a table name. Cursor field should be specified for source
+    Includes BigQuery, MySQL, Postgres, Snowflake and Redshift."""
 
     table_name: str
-    cursor: str
+    cursor: Optional[str] = None
 
     def __init__(self, source, table_name, cursor):
         if isinstance(source, Redshift):

@@ -9,7 +9,7 @@ status: 'published'
 Data gets into Fennel datasets via Sources - in fact, sources are the only 
 mechanism for data to reach a Fennel dataset.
 
-Fennel ships with data connectors to all [common datastores](/api-reference/connectors) 
+Fennel ships with data connectors to all [common datastores](/api-reference/source_connectors) 
 so that you can 'source' your Fennel datasets from your external datasets. In 
 addition to the pull based sources that read from external data sources, Fennel
 also ships with a push based source called `Webhook` for you to manually push

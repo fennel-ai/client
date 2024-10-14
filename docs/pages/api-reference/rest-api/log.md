@@ -6,7 +6,7 @@ status: published
 
 `POST /api/v1/log`
 ### Log
-Method to push data into Fennel datasets via [webhook endpoints](/api-reference/connectors/webhook)
+Method to push data into Fennel datasets via [webhook endpoints](/api-reference/source_connectors/webhook)
 via REST API.
 
 

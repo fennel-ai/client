@@ -340,6 +340,7 @@ schemas
 sdk
 signup
 signups
+sinked
 snapshotted
 snowflakecomputing
 src

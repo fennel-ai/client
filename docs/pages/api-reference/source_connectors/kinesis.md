@@ -9,7 +9,7 @@ Data connector to ingest data from AWS Kinesis.
 #### Parameters for Defining Source
 
 <Expandable title="name" type="str">
-A name to identify the source. The name should be unique across all Fennel sources.
+A name to identify the source. The name should be unique across all Fennel connectors.
 </Expandable>
 
 <Expandable title="role_arn" type="str">
@@ -47,7 +47,7 @@ the time of production, not any timestamp field inside the message.
 
 <Expandable title="format" type='"json" | Avro'>
 The format of the data in the Kinesis stream. Most common value is `"json"` 
-though Fennel also supports [Avro](/api-reference/connectors/avro).
+though Fennel also supports [Avro](/api-reference/source_connectors/avro).
 </Expandable>
 
 #### Errors

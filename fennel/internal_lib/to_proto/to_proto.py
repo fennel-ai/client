@@ -900,6 +900,8 @@ def _conn_to_sink_proto(
         return _kafka_conn_to_sink_proto(connector, dataset_name, ds_version)
     if isinstance(connector, connectors.S3Connector):
         return _s3_conn_to_sink_proto(connector, dataset_name, ds_version)
+    if isinstance(connector, connectors.TableConnector):
+        return _table_conn_to_sink_proto(connector, dataset_name, ds_version)
     else:
         raise ValueError(
             f"Unsupported connector type: {type(connector)} for sink"
@@ -1225,6 +1227,20 @@ def _s3_to_ext_table_proto(
     )
 
 
+def _table_conn_to_sink_proto(
+    connector: connectors.TableConnector,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Sink]:
+    data_source = connector.data_source
+    if isinstance(data_source, connectors.Snowflake):
+        return _snowflake_conn_to_sink_proto(
+            connector, data_source, dataset_name, ds_version
+        )
+    else:
+        raise ValueError(f"Unknown data sink type: {type(data_source)}")
+
+
 def _table_conn_to_source_proto(
     connector: connectors.TableConnector,
     dataset: Dataset,
@@ -1253,6 +1269,8 @@ def _bigquery_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for BigQuery source")
+    if connector.cursor is None:
+        raise ValueError("Cursor should always be set for BigQuery source")
     service_account_key = connector.data_source.service_account_key
     if type(service_account_key) is dict:
         # Convert service_account_key to str defined in proto
@@ -1327,6 +1345,8 @@ def _redshift_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for Redshift source")
+    if connector.cursor is None:
+        raise ValueError("Cursor should always be set for Redshift source")
     ext_db = _redshift_to_ext_db_proto(
         name=data_source.name,
         s3_access_role_arn=data_source.s3_access_role_arn,
@@ -1429,6 +1449,8 @@ def _mongo_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for Mongo source")
+    if connector.cursor is None:
+        raise ValueError("Cursor should always be set for Mongo source")
     ext_db = _mongo_to_ext_db_proto(
         name=data_source.name,
         host=data_source.host,
@@ -1542,6 +1564,46 @@ def _pubsub_conn_to_source_proto(
     )
 
 
+def _snowflake_conn_to_sink_proto(
+    connector: connectors.TableConnector,
+    data_source: connectors.Snowflake,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
+    if connector.cdc:
+        raise ValueError("CDC shouldn't be set for Snowflake sink")
+    if connector.cursor:
+        raise ValueError("Cursor shouldn't be set for Snowflake sink")
+    ext_db = _snowflake_to_ext_db_proto(
+        name=data_source.name,
+        account=data_source.account,
+        user=data_source.username,
+        password=data_source.password,
+        schema=data_source.src_schema,
+        warehouse=data_source.warehouse,
+        role=data_source.role,
+        database=data_source.db_name,
+    )
+    ext_table = _snowflake_to_ext_table_proto(
+        db=ext_db,
+        table_name=connector.table_name,
+    )
+    cdc = to_cdc_proto(connector.cdc) if connector.cdc else None
+    sink = connector_proto.Sink(
+        table=ext_table,
+        dataset=dataset_name,
+        ds_version=ds_version,
+        cdc=cdc,
+        every=to_duration_proto(connector.every),
+        how=_how_to_proto(connector.how),
+        create=connector.create,
+        renames=_renames_to_proto(connector.renames),
+        since=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
+    )
+    return ext_db, sink
+
+
 def _snowflake_conn_to_source_proto(
     connector: connectors.TableConnector,
     data_source: connectors.Snowflake,
@@ -1549,6 +1611,8 @@ def _snowflake_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for Snowflake source")
+    if connector.cursor is None:
+        raise ValueError("Cursor should always be set for Snowflake source")
     ext_db = _snowflake_to_ext_db_proto(
         name=data_source.name,
         account=data_source.account,
@@ -1653,6 +1717,8 @@ def _mysql_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for Mysql source")
+    if connector.cursor is None:
+        raise ValueError("Cursor should always be set for Mysql source")
     if data_source._get:
         ext_db = _mysql_ref_to_ext_db_proto(name=data_source.name)
     else:
@@ -1746,6 +1812,8 @@ def _pg_conn_to_source_proto(
 ) -> Tuple[connector_proto.ExtDatabase, connector_proto.Source]:
     if not connector.cdc:
         raise ValueError("CDC should always be set for Postgres source")
+    if connector.cursor is None:
+        raise ValueError("Cursor should always be set for Postgres source")
     if data_source._get:
         ext_db = _pg_ref_to_ext_db_proto(name=data_source.name)
     else:

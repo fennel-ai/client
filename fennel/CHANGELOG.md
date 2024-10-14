@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.39] - 2024-10-14
+- Add support for Snowflake sink
+
 ## [1.5.38] - 2024-10-13
 - Add support for use_v2 in query_offline.
 

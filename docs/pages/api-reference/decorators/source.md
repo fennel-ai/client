@@ -67,14 +67,14 @@ over `"upsert"`.
 
 `"native"` means that the underlying system exposes CDC natively and that Fennel
 should tap into that. As of right now, native CDC is only available for 
-[Deltalake](/api-reference/connectors/deltalake) & [Hudi](/api-reference/connectors/hudi)
+[Deltalake](/api-reference/source_connectors/deltalake) & [Hudi](/api-reference/source_connectors/hudi)
 and will soon be available for more sources including MySQL and Postgres.
 
 `"debezium"` means that the raw data itself is laid out in debezium layout out
 of which valid CDC data can be constructed. This is only possible for sources
-that expose raw schemaless data, namely, [s3](/api-reference/connectors/s3), 
-[kinesis](/api-reference/connectors/kinesis), [kafka](/api-reference/connectors/kafka), 
-and [webhook](/api-reference/connectors/webhook).
+that expose raw schemaless data, namely, [s3](/api-reference/source_connectors/s3), 
+[kinesis](/api-reference/source_connectors/kinesis), [kafka](/api-reference/source_connectors/kafka), 
+and [webhook](/api-reference/source_connectors/webhook).
 </Expandable>
 
 <Expandable title="env" type="None | str | List[str]" defaultVal="None">

@@ -8,7 +8,7 @@ Data connector to MongoDB databases.
 
 #### Database Parameters
 <Expandable title="name" type="str">
-A name to identify the source. The name should be unique across all Fennel sources.
+A name to identify the source. The name should be unique across all Fennel connectors.
 </Expandable>
 
 <Expandable title="host" type="str">

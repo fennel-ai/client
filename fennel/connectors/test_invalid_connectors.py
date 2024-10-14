@@ -326,7 +326,6 @@ def test_invalid_sink(client):
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")
-        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
         @sink(kafka.topic("test_topic_2", format="csv"), cdc="debezium")
         @dataset
         class UserInfoDataset:
@@ -350,7 +349,6 @@ def test_invalid_sink(client):
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")
-        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
         @sink(kafka.topic("test_topic_2", format="json"), cdc="native")
         @dataset
         class UserInfoDataset:
@@ -371,7 +369,6 @@ def test_invalid_sink(client):
     with pytest.raises(Exception) as e:
 
         @meta(owner="test@test.com")
-        @source(kafka.topic("test_topic"), disorder="14d", cdc="append")
         @sink(
             kinesis.stream(
                 "test_stream", format="json", init_position=datetime(2023, 1, 5)
@@ -394,7 +391,7 @@ def test_invalid_sink(client):
 
     assert (
         str(e.value)
-        == "Sink is only supported for Kafka and S3, found <class 'fennel.connectors.connectors.KinesisConnector'>"
+        == "Sink is only supported for Kafka, S3 and Snowflake, found <class 'fennel.connectors.connectors.KinesisConnector'>"
     )
 
 
@@ -777,6 +774,41 @@ def test_invalid_protobuf_args():
             token=None,
         )
     assert "Either username/password or token should be set" == str(e.value)
+
+
+def test_invalid_snowflake_batch_sink():
+    # CDC passed
+    with pytest.raises(ValueError) as e:
+        sink(
+            snowflake.table("test_table"),
+            every="1h",
+            cdc="append",
+        )
+
+    assert "CDC shouldn't be set for Snowflake sink" == str(e.value)
+
+    # Recreate style passed for how
+    with pytest.raises(ValueError) as e:
+        sink(
+            snowflake.table("test_table"),
+            every="1h",
+            how="recreate",
+        )
+
+    assert "Only Incremental style supported for Snowflake sink" == str(e.value)
+
+    # Cursor value passed for Snowflake
+    with pytest.raises(ValueError) as e:
+        sink(
+            snowflake.table(
+                "test_table",
+                cursor="cursor",
+            ),
+            every="1h",
+            how="incremental",
+        )
+
+    assert "Cursor shouldn't be set for Snowflake sink" == str(e.value)
 
 
 def test_invalid_s3_batch_sink():
