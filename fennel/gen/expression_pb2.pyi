@@ -933,6 +933,9 @@ class StringOp(google.protobuf.message.Message):
     CONCAT_FIELD_NUMBER: builtins.int
     STRPTIME_FIELD_NUMBER: builtins.int
     JSON_DECODE_FIELD_NUMBER: builtins.int
+    SPLIT_FIELD_NUMBER: builtins.int
+    JSON_EXTRACT_FIELD_NUMBER: builtins.int
+    TO_INT_FIELD_NUMBER: builtins.int
     @property
     def len(self) -> global___Len: ...
     @property
@@ -951,6 +954,12 @@ class StringOp(google.protobuf.message.Message):
     def strptime(self) -> global___Strptime: ...
     @property
     def json_decode(self) -> global___JsonDecode: ...
+    @property
+    def split(self) -> global___Split: ...
+    @property
+    def json_extract(self) -> global___JsonExtract: ...
+    @property
+    def to_int(self) -> global___ToInt: ...
     def __init__(
         self,
         *,
@@ -963,10 +972,13 @@ class StringOp(google.protobuf.message.Message):
         concat: global___Concat | None = ...,
         strptime: global___Strptime | None = ...,
         json_decode: global___JsonDecode | None = ...,
+        split: global___Split | None = ...,
+        json_extract: global___JsonExtract | None = ...,
+        to_int: global___ToInt | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "json_decode", b"json_decode", "len", b"len", "startswith", b"startswith", "strptime", b"strptime", "tolower", b"tolower", "toupper", b"toupper"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "json_decode", b"json_decode", "len", b"len", "startswith", b"startswith", "strptime", b"strptime", "tolower", b"tolower", "toupper", b"toupper"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "tolower", "toupper", "contains", "startswith", "endswith", "concat", "strptime", "json_decode"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "json_decode", b"json_decode", "json_extract", b"json_extract", "len", b"len", "split", b"split", "startswith", b"startswith", "strptime", b"strptime", "to_int", b"to_int", "tolower", b"tolower", "toupper", b"toupper"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["concat", b"concat", "contains", b"contains", "endswith", b"endswith", "fn_type", b"fn_type", "json_decode", b"json_decode", "json_extract", b"json_extract", "len", b"len", "split", b"split", "startswith", b"startswith", "strptime", b"strptime", "to_int", b"to_int", "tolower", b"tolower", "toupper", b"toupper"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["len", "tolower", "toupper", "contains", "startswith", "endswith", "concat", "strptime", "json_decode", "split", "json_extract", "to_int"] | None: ...
 
 global___StringOp = StringOp
 
@@ -1239,3 +1251,43 @@ class Part(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["timezone", b"timezone", "unit", b"unit"]) -> None: ...
 
 global___Part = Part
+
+@typing_extensions.final
+class Split(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    SEP_FIELD_NUMBER: builtins.int
+    sep: builtins.str
+    def __init__(
+        self,
+        *,
+        sep: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["sep", b"sep"]) -> None: ...
+
+global___Split = Split
+
+@typing_extensions.final
+class JsonExtract(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    PATH_FIELD_NUMBER: builtins.int
+    path: builtins.str
+    def __init__(
+        self,
+        *,
+        path: builtins.str = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["path", b"path"]) -> None: ...
+
+global___JsonExtract = JsonExtract
+
+@typing_extensions.final
+class ToInt(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ToInt = ToInt

@@ -4619,9 +4619,11 @@ def test_firstk_dropnull(client):
     assert results["value"].tolist() == [[1], [2], [3]]
 
 
+@pytest.mark.integration
 @mock
-def test_unkey_operator(client):
+def test_changelog_operator(client):
     @dataset
+    @source(webhook.endpoint("JobOpening"), disorder="14d", cdc="append")
     class JobOpening:
         creater_id: int
         job_id: int
@@ -4630,7 +4632,8 @@ def test_unkey_operator(client):
     @dataset(index=True)
     class JobRank:
         creater_id: int = field(key=True)
-        rank: int = field(key=True)
+        job_id: int = field(key=True)
+        is_delete: bool = field(key=True)
         creation_ts: datetime
 
         @pipeline
@@ -4638,17 +4641,14 @@ def test_unkey_operator(client):
         def rank_job(cls, job_opening: Dataset):
             return (
                 job_opening.groupby("creater_id")
-                .aggregate(
-                    rank=Count(window=Continuous("forever")), emit="final"
-                )
-                .changelog("del")
-                .filter(lambda df: ~df["del"] & (df["rank"] < 4))
-                .drop("del")
-                .groupby("creater_id", "rank")
+                .latest()
+                .changelog(delete="is_delete")
+                .groupby("creater_id", "job_id", "is_delete")
                 .latest()
             )
 
     client.commit(datasets=[JobOpening, JobRank], message="test")
+
     # Creation ts is 1 every 2 hours
     creation_ts = [
         datetime(2022, 1, 1, 2, 0, 0),
@@ -4658,6 +4658,7 @@ def test_unkey_operator(client):
         datetime(2022, 1, 1, 10, 0, 0),
         datetime(2022, 1, 1, 12, 0, 0),
     ]
+
     openings = pd.DataFrame(
         {
             "creater_id": [1, 2, 1, 1, 1, 1],
@@ -4665,23 +4666,105 @@ def test_unkey_operator(client):
             "creation_ts": creation_ts,
         }
     )
-    log(JobOpening, openings)
+    client.log("fennel_webhook", "JobOpening", openings)
+
+    if client.is_integration_client():
+        client.sleep(60)
+
+    is_deletes = [True, False, True, True, True, False]
+
     results, found = client.lookup(
-        "JobRank",
+        JobRank,
         keys=pd.DataFrame(
-            {"creater_id": [1, 1, 1, 1, 2], "rank": [4, 3, 2, 1, 1]}
+            {
+                "creater_id": [1, 2, 1, 1, 1, 1],
+                "job_id": [1, 2, 3, 4, 5, 6],
+                "is_delete": is_deletes,
+            }
         ),
     )
-    assert found.tolist() == [False, True, True, True, True]
-    assert results.shape == (5, 3)
-    assert results["rank"].tolist() == [4, 3, 2, 1, 1]
-    assert results["creation_ts"].tolist() == [
-        pd.NaT,
-        pd.Timestamp("2022-01-01 08:00:00", tz="UTC"),
+
+    creation_ts_expected = [
         pd.Timestamp("2022-01-01 06:00:00", tz="UTC"),
-        pd.Timestamp("2022-01-01 02:00:00", tz="UTC"),
         pd.Timestamp("2022-01-01 04:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 08:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 10:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 12:00:00", tz="UTC"),
+        pd.Timestamp("2022-01-01 12:00:00", tz="UTC"),
     ]
+    assert found.tolist() == [True, True, True, True, True, True]
+    assert results.shape == (6, 4)
+    assert results["creation_ts"].tolist() == creation_ts_expected
+
+
+@pytest.mark.integration
+@mock
+def test_changelog_operator_insert_identity(client):
+    @dataset
+    @source(webhook.endpoint("JobOpening"), disorder="14d", cdc="append")
+    class JobOpening:
+        creater_id: int
+        job_id: int
+        creation_ts: datetime
+
+    @dataset(index=True)
+    class JobRank:
+        creater_id: int = field(key=True)
+        job_id: int = field(key=True)
+        creation_ts: datetime
+
+        @pipeline
+        @inputs(JobOpening)
+        def rank_job(cls, job_opening: Dataset):
+            return (
+                job_opening.groupby("creater_id")
+                .latest()
+                .changelog(insert="is_insert")
+                .filter(lambda df: df["is_insert"])
+                .drop("is_insert")
+                .groupby("creater_id", "job_id")
+                .latest()
+            )
+
+    client.commit(datasets=[JobOpening, JobRank], message="test")
+
+    # Creation ts is 1 every 2 hours
+    creation_ts = [
+        datetime(2022, 1, 1, 2, 0, 0),
+        datetime(2022, 1, 1, 4, 0, 0),
+        datetime(2022, 1, 1, 6, 0, 0),
+        datetime(2022, 1, 1, 8, 0, 0),
+        datetime(2022, 1, 1, 10, 0, 0),
+        datetime(2022, 1, 1, 12, 0, 0),
+    ]
+
+    openings = pd.DataFrame(
+        {
+            "creater_id": [1, 2, 1, 1, 1, 1],
+            "job_id": [1, 2, 3, 4, 5, 6],
+            "creation_ts": creation_ts,
+        }
+    )
+    client.log("fennel_webhook", "JobOpening", openings)
+
+    if client.is_integration_client():
+        client.sleep(60)
+
+    results, found = client.lookup(
+        JobRank,
+        keys=pd.DataFrame(
+            {
+                "creater_id": [1, 2, 1, 1, 1, 1],
+                "job_id": [1, 2, 3, 4, 5, 6],
+            }
+        ),
+    )
+
+    creation_ts_expected = [pd.Timestamp(d, tz="UTC") for d in creation_ts]
+
+    assert found.tolist() == [True, True, True, True, True, True]
+    assert results.shape == (6, 3)
+    assert results["creation_ts"].tolist() == creation_ts_expected
 
 
 webhook = Webhook(name="fennel_webhook")

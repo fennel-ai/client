@@ -371,8 +371,8 @@ class _Node(Generic[T]):
         columns = _Node.__get_list_args(*args, columns=columns, name="explode")
         return Explode(self, columns)
 
-    def changelog(self, delete_column: str) -> _Node:
-        return Changelog(self, delete_column)
+    def changelog(self, **kwargs) -> _Node:
+        return Changelog(self, **kwargs)
 
     def isignature(self):
         raise NotImplementedError
@@ -579,22 +579,38 @@ class Filter(_Node):
 
 
 class Changelog(_Node):
-    def __init__(self, node: _Node, delete_column: str):
+    def __init__(self, node: _Node, **kwargs):
         super().__init__()
         self.node = node
-        self.delete_column = delete_column
+
+        delete_column = kwargs.get("delete")
+        insert_column = kwargs.get("insert")
+        if delete_column is None and insert_column is None:
+            raise ValueError("Either delete or insert column must be specified")
+        elif delete_column is not None and insert_column is not None:
+            raise ValueError(
+                "Only one of delete or insert column can be specified"
+            )
+        elif delete_column is not None:
+            self.kind_column = delete_column
+            self.deletes = True
+        else:
+            assert insert_column is not None
+            self.kind_column = insert_column
+            self.deletes = False
+
         self.node.out_edges.append(self)
 
     def signature(self):
-        return fhash(self.node.signature(), self.delete_column)
+        return fhash(self.node.signature(), self.kind_column, self.deletes)
 
     def dsschema(self):
         input_schema = self.node.dsschema()
-        # Remove all keys from the schema and make then values
+        # Remove all keys from the schema and make them values
         val_fields = copy.deepcopy(input_schema.keys)
         values = input_schema.values
         val_fields.update(values)
-        val_fields.update({self.delete_column: pd.BooleanDtype})
+        val_fields.update({self.kind_column: pd.BooleanDtype})
         return DSSchema(
             keys={},
             values=val_fields,
@@ -3346,7 +3362,7 @@ class SchemaValidator(Visitor):
         # Unkey operation is allowed on keyed datasets only.
         if len(input_schema.keys) == 0:
             raise TypeError(
-                f"UnKey operation is allowed only on keyed datasets. Found dataset without keys in pipeline `{self.pipeline_name}`"
+                f"Changelog operation is allowed only on keyed datasets. Found dataset without keys in pipeline `{self.pipeline_name}`"
             )
         output_schema = copy.deepcopy(obj.dsschema())
         output_schema.name = (
