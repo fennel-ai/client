@@ -593,7 +593,7 @@ class Changelog(_Node):
             self.kind_column = delete_column
             self.deletes = True
         else:
-            assert(insert_column is not None)
+            assert (insert_column is not None)
             self.kind_column = insert_column
             self.deletes = False
 

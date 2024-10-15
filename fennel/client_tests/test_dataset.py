@@ -4683,7 +4683,7 @@ def test_changelog_operator(client):
             }
         ),
     )
-    
+
     creation_ts_expected = [
         pd.Timestamp("2022-01-01 06:00:00", tz="UTC"),
         pd.Timestamp("2022-01-01 04:00:00", tz="UTC"),
