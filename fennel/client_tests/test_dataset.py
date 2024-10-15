@@ -4692,14 +4692,6 @@ def test_changelog_operator(client):
         pd.Timestamp("2022-01-01 12:00:00", tz="UTC"),
         pd.Timestamp("2022-01-01 12:00:00", tz="UTC"),
     ]
-    # TODO(sat): Remove this after rebasing on main
-    for i in range(len(creation_ts_expected)):
-        is_delete = is_deletes[i]
-        ts = creation_ts_expected[i]
-        if not client.is_integration_client() and is_delete:
-            ts = ts - pd.Timedelta("1us")
-        creation_ts_expected[i] = ts
-
     assert found.tolist() == [True, True, True, True, True, True]
     assert results.shape == (6, 4)
     assert results["creation_ts"].tolist() == creation_ts_expected
