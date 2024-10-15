@@ -588,12 +588,14 @@ class Changelog(_Node):
         if delete_column is None and insert_column is None:
             raise ValueError("Either delete or insert column must be specified")
         elif delete_column is not None and insert_column is not None:
-            raise ValueError("Only one of delete or insert column can be specified")
+            raise ValueError(
+                "Only one of delete or insert column can be specified"
+            )
         elif delete_column is not None:
             self.kind_column = delete_column
             self.deletes = True
         else:
-            assert (insert_column is not None)
+            assert insert_column is not None
             self.kind_column = insert_column
             self.deletes = False
 

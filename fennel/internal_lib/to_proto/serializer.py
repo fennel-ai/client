@@ -387,6 +387,6 @@ class Serializer(Visitor):
             changelog=proto.Changelog(
                 operand_id=self.visit(obj.node),
                 kind_column=obj.kind_column,
-                deletes=obj.deletes
+                deletes=obj.deletes,
             ),
         )
