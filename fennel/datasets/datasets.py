@@ -348,7 +348,7 @@ class _Node(Generic[T]):
         )
         return Select(self, cols, drop_cols)
 
-    def dedup(self, *args, by: Optional[List[str]] = None) -> _Node:
+    def dedup(self, *args, by: Optional[List[str]] = None, window: Optional[Union[Session, Tumbling]] = None) -> _Node:
         # If 'by' is not provided, dedup by all value fields.
         # Note: we don't use key fields because dedup cannot be applied on keyed datasets.
         collist: List[str] = []
@@ -365,7 +365,7 @@ class _Node(Generic[T]):
                 "Invalid arguments to dedup. Must specify either 'by' or positional arguments."
             )
 
-        return Dedup(self, collist)
+        return Dedup(self, collist, window)
 
     def explode(self, *args, columns: List[str] = None) -> _Node:
         columns = _Node.__get_list_args(*args, columns=columns, name="explode")
@@ -853,16 +853,27 @@ class GroupBy:
 
 
 class Dedup(_Node):
-    def __init__(self, node: _Node, by: List[str]):
+    def __init__(self, node: _Node, by: List[str], window: Optional[Union[Session, Tumbling]] = None):
         super().__init__()
         self.node = node
         self.by = by
         self.node.out_edges.append(self)
-
+        self.window = window
+        
+        if window is not None:
+            if not isinstance(window, (Session, Tumbling)):
+                raise TypeError(
+                    "Type of 'window' param can only be either Session or Tumbling."
+                )
+            if isinstance(window, Tumbling) and window.lookback != "0s":
+                raise ValueError(
+                    "Specifying lookback in dedup 'window' param is not allowed."
+                )
+    
     def signature(self):
         if isinstance(self.node, Dataset):
-            return fhash(self.node._name, self.by)
-        return fhash(self.node.signature(), self.by)
+            return fhash(self.node._name, self.by, self.window)
+        return fhash(self.node.signature(), self.by, self.window)
 
     def dsschema(self):
         return self.node.dsschema()

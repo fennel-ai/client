@@ -733,10 +733,13 @@ class Dedup(google.protobuf.message.Message):
 
     OPERAND_ID_FIELD_NUMBER: builtins.int
     COLUMNS_FIELD_NUMBER: builtins.int
+    WINDOW_TYPE_FIELD_NUMBER: builtins.int
     OPERAND_NAME_FIELD_NUMBER: builtins.int
     operand_id: builtins.str
     @property
     def columns(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]: ...
+    @property
+    def window_type(self) -> window_pb2.Window: ...
     operand_name: builtins.str
     """NOTE: FOLLOWING PROPERTIES ARE SET BY THE SERVER AND WILL BE IGNORED BY
     THE CLIENT
@@ -746,9 +749,12 @@ class Dedup(google.protobuf.message.Message):
         *,
         operand_id: builtins.str = ...,
         columns: collections.abc.Iterable[builtins.str] | None = ...,
+        window_type: window_pb2.Window | None = ...,
         operand_name: builtins.str = ...,
     ) -> None: ...
-    def ClearField(self, field_name: typing_extensions.Literal["columns", b"columns", "operand_id", b"operand_id", "operand_name", b"operand_name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_window_type", b"_window_type", "window_type", b"window_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_window_type", b"_window_type", "columns", b"columns", "operand_id", b"operand_id", "operand_name", b"operand_name", "window_type", b"window_type"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_window_type", b"_window_type"]) -> typing_extensions.Literal["window_type"] | None: ...
 
 global___Dedup = Dedup
 
