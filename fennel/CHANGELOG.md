@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.43] - 2024-10-23
+- Add support for keyless S3 and Snowflake sinks
+
 ## [1.5.42] - 2024-10-23
 - Increase client timeouts
 

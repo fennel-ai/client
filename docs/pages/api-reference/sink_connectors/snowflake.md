@@ -71,8 +71,6 @@ do this validation at commit time.
 when the sink dataset version is updated or when multiple branches have the same 
 sink defined. This suffix can be viewed in the 'Sink' tab of the console after 
 initiating a data sink.
-- Currently, Fennel only supports keyed dataset sinks to Snowflake. Support 
-for keyless datasets will be added soon.
 :::
 
 
