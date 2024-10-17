@@ -4,7 +4,7 @@ order: 0
 status: published
 ---
 ### LastK
-Aggregation to computes a rolling list of the latest values for each group 
+Aggregation to compute a rolling list of the latest values for each group 
 within a window. 
 
 #### Parameters
