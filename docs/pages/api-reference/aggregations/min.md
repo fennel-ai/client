@@ -9,7 +9,7 @@ Aggregation to computes a rolling min for each group within a window.
 #### Parameters
 <Expandable title="of" type="str">
 Name of the field in the input dataset over which the min should be computed. 
-This field must either be of type `int` or `float`.
+This field must either be of type `int`, `float`, `date` or `datetime`.
 </Expandable>
 
 <Expandable title="window" type="Window">
@@ -19,8 +19,9 @@ values are `"forever"` or any [time duration](/api-reference/data-types/duration
 
 <Expandable title="into_field" type="str">
 The name of the field in the output dataset that should store the result of this
-aggregation. This field is expected to be of type `int` or `float` - same as the
-type of the field in the input dataset corresponding to `of`.
+aggregation. This field is expected to be of type `int`, `float`, `date` or
+`datetime` - same as the type of the field in the input dataset corresponding to
+`of`.
 </Expandable>
 
 <Expandable title="default" type="Union[int, float]">
@@ -34,15 +35,16 @@ dataset.
 </pre>
 
 #### Returns
-<Expandable type="Union[int, float]">
+<Expandable type="Union[int, float, date, datetime]">
 Stores the result of the aggregation in the appropriate field of the output 
 dataset. If there are no rows in the aggregation window, `default` is used.
 </Expandable>
 
 
 #### Errors
-<Expandable title="Min on non int/float types">
-The input column denoted by `of` must either be of `int` or `float` types. 
+<Expandable title="Min on other types">
+The input column denoted by `of` must be of `int`, `float`, `date` or `datetime`
+types. 
 
 Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
 aren't allowed.
@@ -55,7 +57,7 @@ input dataset.
 </Expandable>
 
 <pre snippet="api-reference/aggregations/min#incorrect_type" status="error" 
-    message="Can not take min over string, only int or float">
+    message="Can not take min over string; only int, float, date or datetime">
 </pre>
 <pre snippet="api-reference/aggregations/min#non_matching_types" status="error" 
     message="amt is float but min_1d is int">
