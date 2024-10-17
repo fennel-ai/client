@@ -1351,7 +1351,9 @@ def test_dataset_with_complex_pipe():
                     "user_id": int,
                 },
             )
-            ds_deduped = ds_transform.dedup(by=["user_id", "merchant_id"], window=Session("1d"))
+            ds_deduped = ds_transform.dedup(
+                by=["user_id", "merchant_id"], window=Session("1d")
+            )
             return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(

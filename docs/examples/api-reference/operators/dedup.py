@@ -1,6 +1,5 @@
 import unittest
 from datetime import datetime, timezone
-from fennel.dtypes import Session, Tumbling
 
 import pandas as pd
 from fennel.testing import mock
@@ -148,13 +147,14 @@ class TestDedupSnips(unittest.TestCase):
             datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc),
             datetime(2021, 1, 2, 0, 0, 0, tzinfo=timezone.utc),
         ]
-        
+
     @mock
     def test_dedup_with_session_window(self, client):
         # docsnip dedup_with_session_window
         from fennel.datasets import dataset, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
+        from fennel.dtypes import Session
 
         webhook = Webhook(name="webhook")
 
@@ -237,13 +237,14 @@ class TestDedupSnips(unittest.TestCase):
             datetime(2021, 1, 1, 0, 0, 21, tzinfo=timezone.utc),
             datetime(2021, 1, 1, 0, 0, 21, tzinfo=timezone.utc),
         ]
-        
+
     @mock
     def test_dedup_with_tumbling_window(self, client):
         # docsnip dedup_with_tumbling_window
         from fennel.datasets import dataset, pipeline, Dataset
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
+        from fennel.dtypes import Tumbling
 
         webhook = Webhook(name="webhook")
 

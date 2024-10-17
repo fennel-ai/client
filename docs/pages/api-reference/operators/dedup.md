@@ -12,8 +12,9 @@ Operator to dedup keyless datasets (e.g. event streams).
 The list of columns to use for identifying duplicates. If not specified, all 
 the columns are used for identifying duplicates.
 
-Two rows of the input dataset are considered duplicates if and only if they are in the same window
-and have the same values for the `by` columns.
+If window is specified, two rows of the input dataset are considered duplicates when they are in the same window and have the same value for the by columns. 
+
+If window is not specified, two rows are considered duplicates when they have the exact same values for the timestamp column and all the by columns.
 </Expandable>
 
 <Expandable title="window" type="Optional[Tumbling | Session]" defaultVal="None">
