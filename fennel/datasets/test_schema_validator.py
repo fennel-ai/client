@@ -839,6 +839,56 @@ def test_dedup_ds_with_key_fails():
     )
 
 
+# dedup is not supported with hopping window
+def test_dedup_with_hopping_window_fails():
+    with pytest.raises(TypeError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class MovieStats:
+            movie: str = field(key=True)
+            rating: float
+            revenue: int
+            t: datetime
+
+            @pipeline
+            @inputs(MovieRating)
+            def pipeline_dedup(cls, rating: Dataset):
+                return rating.dedup(
+                    by=[MovieRating.movie], window=Hopping("1d", "1h")  # type: ignore
+                )
+
+    assert (
+        str(e.value)
+        == """invalid dedup operator: 'window' can either be Session or Tumbling but found Hopping"""
+    )
+
+
+# dedup is not supported with tumbling window with lookback
+def test_dedup_with_tumbling_window_with_lookback_fails():
+    with pytest.raises(ValueError) as e:
+
+        @meta(owner="abhay@fennel.ai")
+        @dataset
+        class MovieStats:
+            movie: str = field(key=True)
+            rating: float
+            revenue: int
+            t: datetime
+
+            @pipeline
+            @inputs(MovieRating)
+            def pipeline_dedup(cls, rating: Dataset):
+                return rating.dedup(
+                    by=[MovieRating.movie], window=Tumbling("1d", lookback="1d")
+                )
+
+    assert (
+        str(e.value)
+        == """invalid dedup: not allowed to specify 'lookback' in the tumble window"""
+    )
+
+
 # Schema of deduped dataset should match source dataset
 def test_dedup_schema_different_fails():
     with pytest.raises(TypeError) as e:

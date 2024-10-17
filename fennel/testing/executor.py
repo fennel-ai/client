@@ -50,6 +50,11 @@ from fennel.testing.test_utils import (
     cast_col_to_arrow_dtype,
 )
 
+from fennel.dtypes.dtypes import (
+    Session,
+    Tumbling,
+)
+
 pd.set_option("display.max_columns", None)
 
 
@@ -103,6 +108,21 @@ def _cast_primitive_dtype_columns(
                 _primitive_type_to_pandas_dtype(col_type)
             )
     return df
+
+
+# Generate session ids for a given timestamp series and a session window. Timestamps must be sorted.
+def generate_session_id(timestamps: pd.Series, window: Session) -> pd.Series:
+    timestamps = timestamps.to_list()
+    session_ids = [0]
+    current_session_id = 0
+    for i in range(1, len(timestamps)):
+        if (timestamps[i] - timestamps[i - 1]) >= pd.Timedelta(
+            seconds=window.gap_total_seconds()
+        ):
+            current_session_id += 1
+        session_ids.append(current_session_id)
+    session_series = pd.Series(session_ids)
+    return session_series
 
 
 class Executor(Visitor):
@@ -875,9 +895,46 @@ class Executor(Visitor):
         if input_ret is None or input_ret.df is None:
             return None
         df = input_ret.df
-        df = df.drop_duplicates(
-            subset=obj.by + [input_ret.timestamp_field], keep="last"
-        )
+
+        if obj.window is None:
+            df = df.drop_duplicates(
+                subset=obj.by + [input_ret.timestamp_field], keep="last"
+            )
+        elif isinstance(obj.window, Tumbling):
+            df["__@@__index"] = df.index
+            # Using a stable sort algorithm to preserve the order of rows that have the same timestamp within the same tumbling window
+            df = df.sort_values(input_ret.timestamp_field, kind="mergesort")
+            df["__@@__tumbling_id"] = (
+                df[input_ret.timestamp_field]
+                .apply(lambda x: x.timestamp())
+                .astype("int64")
+                // obj.window.duration_total_seconds()
+            )
+            df = (
+                df.groupby(obj.by + ["__@@__tumbling_id"])
+                .last()
+                .reset_index()
+                .sort_values("__@@__index")
+            )
+            df = df.drop(columns=["__@@__tumbling_id", "__@@__index"])
+        elif isinstance(obj.window, Session):
+            df["__@@__index"] = df.index
+            # Using a stable sort algorithm to preserve the order of rows that have the same timestamp within the same session
+            df = df.sort_values(input_ret.timestamp_field, kind="mergesort")
+            df["__@@__session_id"] = generate_session_id(
+                df[input_ret.timestamp_field], obj.window
+            )
+            df = (
+                df.groupby(obj.by + ["__@@__session_id"])
+                .last()
+                .reset_index()
+                .sort_values("__@@__index")
+            )
+            df = df.drop(columns=["__@@__session_id", "__@@__index"])
+        else:
+            raise Exception(f"Unsupported window type {type(obj.window)}")
+
+        print(df)
         return NodeRet(
             df,
             input_ret.timestamp_field,

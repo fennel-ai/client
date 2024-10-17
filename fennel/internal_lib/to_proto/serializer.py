@@ -335,6 +335,9 @@ class Serializer(Visitor):
             dedup=proto.Dedup(
                 operand_id=self.visit(obj.node),
                 columns=obj.by,
+                window_type=(
+                    None if obj.window is None else obj.window.to_proto()
+                ),
             ),
         )
 

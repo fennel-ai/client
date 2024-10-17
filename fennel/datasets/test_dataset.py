@@ -1351,7 +1351,9 @@ def test_dataset_with_complex_pipe():
                     "user_id": int,
                 },
             )
-            ds_deduped = ds_transform.dedup(by=["user_id", "merchant_id"])
+            ds_deduped = ds_transform.dedup(
+                by=["user_id", "merchant_id"], window=Session("1d")
+            )
             return ds_deduped.groupby("merchant_id").aggregate(
                 [
                     Count(
@@ -1534,12 +1536,13 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[5]
     o = {
-        "id": "c898276d34d964b833155b0e36a4ba2b",
+        "id": "4522d140b6400791dd56c6017fb720fe",
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "dedup": {
             "operandId": "6158406804b946bda0c38a994229e995",
             "columns": ["user_id", "merchant_id"],
+            "windowType": {"session": {"gap": "86400s"}},
         },
         "dsVersion": 1,
     }
@@ -1550,12 +1553,12 @@ def test_dataset_with_complex_pipe():
 
     operator_req = sync_request.operators[6]
     o = {
-        "id": "45877eefa2fe6d8dbd5aba2fb07e5cb5",
+        "id": "70bead822edd4fd97c4198df5047511b",
         "isRoot": True,
         "pipelineName": "create_fraud_dataset",
         "datasetName": "FraudReportAggregatedDataset",
         "aggregate": {
-            "operandId": "c898276d34d964b833155b0e36a4ba2b",
+            "operandId": "4522d140b6400791dd56c6017fb720fe",
             "keys": ["merchant_id"],
             "specs": [
                 {
