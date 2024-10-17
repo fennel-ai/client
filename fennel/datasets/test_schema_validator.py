@@ -855,7 +855,7 @@ def test_dedup_with_hopping_window_fails():
             @inputs(MovieRating)
             def pipeline_dedup(cls, rating: Dataset):
                 return rating.dedup(
-                    by=[MovieRating.movie], window=Hopping("1d", "1h")
+                    by=[MovieRating.movie], window=Hopping("1d", "1h")  # type: ignore
                 )
 
     assert (
