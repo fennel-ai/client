@@ -60,6 +60,15 @@ where (d1, d2) = within.
    should be available for the event time of the LHS data.
 </Expandable>
 
+<Expandable title="fields" type="Optional[List[str]]" defaultVal="None">
+Optional kwarg that specifies the list of (non-key) fields of the right
+dataset that should be included in the output dataset. If this kwarg is
+not set, all such fields are included in the output dataset. If right dataset's
+timestamp field is included in `fields`, then it is included as a normal field
+in the output dataset, with left dataset's timestamp field as the output
+dataset's timestamp field.
+</Expandable>
+
 <pre snippet="api-reference/operators/join#basic" status="success"
    message="Inner join on 'merchant'">
 </pre>
