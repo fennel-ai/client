@@ -19,6 +19,8 @@ Concat
 const
 concat
 CDF
+Changelog
+changelog
 CIDR
 DDL
 DSL
