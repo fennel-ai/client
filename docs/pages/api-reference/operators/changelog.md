@@ -27,7 +27,7 @@ should be set.
 <Expandable type="Dataset">
 Returns a dataset with input keyed dataset into an append only CDC changelog
 stream. All key fields converted into normal fields, and an additional
-column is addedm which contains the type of change (insert or delete) for the
+column is added, which contains the type of change (insert or delete) for the
 delta.
 </Expandable>
 
