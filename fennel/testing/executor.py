@@ -694,10 +694,7 @@ class Executor(Visitor):
         # specified and join occurred with an entry with larger value than the query ts.
 
         def emited_ts(row):
-            if pd.isnull(row[tmp_right_ts]):
-                return row[tmp_left_ts]
-            else:
-                return max(row[tmp_right_ts], row[tmp_left_ts])
+            return row[tmp_left_ts]
 
         # Handling with empty dataframe case because pandas automatically defines dtype of float64 to null columns
         # and then conversion of flot64 dtype to pd.ArrowDtype(pa.timestamp("us", "UTC")) fails

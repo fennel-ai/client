@@ -1510,40 +1510,33 @@ def test_window_invalid_gap():
     )
 
 
-def test_join_with_wrong_right_index():
-    with pytest.raises(ValueError) as e:
+def test_join_work_without_offline_index():
+    @meta(owner="nitin@fennel.ai")
+    @dataset()
+    class Users:
+        user_id: str = field(key=True)
+        age: int
+        t: datetime
 
-        @meta(owner="nitin@fennel.ai")
-        @dataset(online=True)
-        class Users:
-            user_id: str = field(key=True)
-            age: int
-            t: datetime
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class Login:
+        user_id: str
+        cookie: str
+        t: datetime
 
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class Login:
-            user_id: str
-            cookie: str
-            t: datetime
+    @meta(owner="nitin@fennel.ai")
+    @dataset
+    class LoginEvent:
+        user_id: str
+        cookie: str
+        age: int
+        t: datetime
 
-        @meta(owner="nitin@fennel.ai")
-        @dataset
-        class LoginEvent:
-            user_id: str
-            cookie: str
-            age: int
-            t: datetime
-
-            @pipeline
-            @inputs(Login, Users)
-            def pipeline(cls, login: Dataset, users: Dataset):
-                return login.join(users, on=["user_id"], how="inner")
-
-    assert (
-        str(e.value)
-        == """`offline` needs to be set on index of the right dataset `Users` for `'[Pipeline:pipeline]->join node'`."""
-    )
+        @pipeline
+        @inputs(Login, Users)
+        def pipeline(cls, login: Dataset, users: Dataset):
+            return login.join(users, on=["user_id"], how="inner")
 
 
 def test_conflicting_key_field_error():
