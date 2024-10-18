@@ -4,10 +4,9 @@ order: 0
 status: published
 ---
 ### Changelog
-Operator to convert a keyed dataset into a keyless one, where the underlying delta
-frame of the dataset is presented as a changelog. All key fields are converted into
-normal fields, and an additional column is added which contains the kind (insert
-or delete) of the delta.
+Operator to convert a keyed dataset into a CDC changelog stream. All key fields
+are converted into normal fields, and an additional column is added, indicating the
+type of change (insert or delete) for the delta.
 
 #### Parameters
 
@@ -26,9 +25,10 @@ should be set.
 #### Returns
 
 <Expandable type="Dataset">
-Returns a dataset with underlying delta frame of the input dataset is presented as
-a insert only changelog. All key fields converted into normal fields and an additional
-column is added which contains the kind (insert or delete) of the delta.
+Returns a dataset with input keyed dataset into an append only CDC changelog
+stream. All key fields converted into normal fields, and an additional
+column is addedm which contains the type of change (insert or delete) for the
+delta.
 </Expandable>
 
 #### Errors

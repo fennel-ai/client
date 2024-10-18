@@ -36,6 +36,7 @@ sidebar:
     pages:
       - "api-reference/operators/aggregate"
       - "api-reference/operators/assign"
+      - "api-reference/operators/changelog"
       - "api-reference/operators/dedup"
       - "api-reference/operators/drop"
       - "api-reference/operators/dropnull"
