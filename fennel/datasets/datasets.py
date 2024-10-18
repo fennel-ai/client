@@ -2938,21 +2938,7 @@ class SchemaValidator(Visitor):
         def is_subset(subset: List[str], superset: List[str]) -> bool:
             return set(subset).issubset(set(superset))
 
-        def validate_right_index(right_dataset: Dataset):
-            right_index = get_index(right_dataset)
-            if right_index is None:
-                raise ValueError(
-                    f"Index needs to be set on the right dataset `{right_dataset._name}` for `{output_schema_name}`."
-                )
-
-            if right_index.offline == IndexDuration.none:
-                raise ValueError(
-                    f"`offline` needs to be set on index of the right dataset `{right_dataset._name}` "
-                    f"for `{output_schema_name}`."
-                )
-
         validate_join_bounds(obj.within)
-        validate_right_index(obj.dataset)
 
         if obj.on is not None and len(obj.on) > 0:
             # obj.on should be the key of the right dataset
