@@ -2019,7 +2019,7 @@ def test_optional_join():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC:  # noqa: F811
             user_id: int
             agent_id: int
             name: str
@@ -2051,7 +2051,7 @@ def test_optional_join():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC:  # noqa: F811
             user_id: Optional[int]
             agent_id: int
             name: str
@@ -2082,7 +2082,7 @@ def test_optional_join():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC:  # noqa: F811
             user_id: Optional[int]
             agent_id: int
             name: str
@@ -2117,7 +2117,7 @@ def test_optional_join():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC:  # noqa: F811
             user_id: Optional[int]
             agent_id: int
             name: str
@@ -2152,7 +2152,7 @@ def test_optional_join():
             timestamp: datetime
 
         @dataset
-        class XYZJoinedABC:
+        class XYZJoinedABC:  # noqa: F811
             user_id: int
             agent_id: int
             name: str

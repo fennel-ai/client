@@ -118,7 +118,7 @@ class TestJoinSnips(unittest.TestCase):
             df["timestamp"].tolist()
             == [datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)] * 3
         )
-        
+
     @mock
     def test_optional(self, client):
         # docsnip optional_join
@@ -126,6 +126,7 @@ class TestJoinSnips(unittest.TestCase):
         from fennel.lib import inputs
         from fennel.connectors import source, Webhook
         from typing import Optional
+
         webhook = Webhook(name="webhook")
 
         @source(webhook.endpoint("Transaction"), disorder="14d", cdc="append")
@@ -226,12 +227,19 @@ class TestJoinSnips(unittest.TestCase):
             ),
         )
         import numpy as np
+
         df = client.get_dataset_df("WithCategory")
         df = df.replace({np.nan: None})
         assert df["uid"].tolist() == [1, 1, 2, 3, 3]
         assert df["merchant"].tolist() == [4, None, 5, 4, 6]
         assert df["amount"].tolist() == [10, 15, 20, 30, 30]
-        assert df["category"].tolist() == ["grocery", None, "electronics", "grocery", None]
+        assert df["category"].tolist() == [
+            "grocery",
+            None,
+            "electronics",
+            "grocery",
+            None,
+        ]
         assert (
             df["timestamp"].tolist()
             == [datetime(2021, 1, 1, 0, 0, 0, tzinfo=timezone.utc)] * 5
