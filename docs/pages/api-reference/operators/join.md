@@ -26,8 +26,8 @@ a row even if there is no matching row on the right side.
 <Expandable title="on" type="Optional[List[str]]" defaultVal="None">
 Kwarg that specifies the list of fields along which join should happen. If present,
 both left and right side datasets must have fields with these names and matching
-data types. This list must be identical to the names of all key columns of the 
-right hand side. 
+data types (data types on left hand side can be optional). This list must be identical 
+to the names of all key columns of the right hand side. 
 
 If this isn't set, `left_on` and `right_on` must be set instead.
 </Expandable>
@@ -73,6 +73,11 @@ dataset's timestamp field.
    message="Inner join on 'merchant'">
 </pre>
 
+
+<pre snippet="api-reference/operators/join#optional_join" status="success"
+   message="Left join on 'merchant' with optional LHS fields">
+</pre>
+
 #### Returns
 <Expandable type="Dataset">
 Returns a dataset representing the joined dataset having the same keys & timestamp
@@ -84,6 +89,10 @@ non-timestamp columns from the right dataset.
 If the join was of type `inner`, the type of a joined
 RHS column of type `T` stays `T` but if the join was of type `left`, the type in
 the output dataset becomes `Optional[T]` if it was `T` on the RHS side.
+
+For LHS columns, the type is the same as the type in the LHS dataset if join type is `left`.
+If the join type is `inner`, if a join column on the LHS is `Optional[T]`, then the type
+in the output dataset is `T` (i.e., the `Optional` is dropped).
 </Expandable>
 
 #### Errors
