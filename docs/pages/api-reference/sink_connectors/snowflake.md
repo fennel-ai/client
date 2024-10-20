@@ -71,6 +71,9 @@ do this validation at commit time.
 when the sink dataset version is updated or when multiple branches have the same 
 sink defined. This suffix can be viewed in the 'Sink' tab of the console after 
 initiating a data sink.
+- A keyless dataset sink ensures at least once delivery, while a keyed dataset sink guarantees 
+exactly once delivery. For keyless datasets, use the `__fennel_hash__` column to identify and 
+filter out duplicate deliveries.
 :::
 
 
