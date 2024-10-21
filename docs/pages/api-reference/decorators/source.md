@@ -49,6 +49,16 @@ can ever arrive. And if such rows do arrive, Fennel has the liberty of discardin
 them and not including them in the computation.
 </Expandable>
 
+<Expandable title="sample" type='Optional[float] | Optional[Sample]'>
+if sample is provided dataset is sampled based on sampling rate and optional columns provided to sample,
+Sample consists of sampling rate which is a float between [0, 1] and
+using field which is list of columns used to hash for sampling.
+
+If no columns are given for sampling, 
+then for keyed dataset all key columns are used
+for non-keyed dataset all columns except timestamp are used.
+</Expandable>
+
 <Expandable title="cdc" type='"append" | "native" | "debezium"'>
 Specifies how should valid change data be constructed from the ingested data.
 
