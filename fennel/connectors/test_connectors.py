@@ -1242,11 +1242,12 @@ def test_source_with_sample():
         sync_request = view._get_sync_request_proto()
     except ValueError as e:
         assert (
-                str(e)
-                == "Column name is part of preproc so cannot be used for sampling"
+            str(e)
+            == "Column name is part of preproc so cannot be used for sampling"
         )
 
     try:
+
         @meta(owner="test@test.com")
         @source(
             mysql.table("users_mysql", cursor="added_on"),
@@ -1270,6 +1271,7 @@ def test_source_with_sample():
         assert str(e) == "Sample rate should be between 0 and 1"
 
     try:
+
         @meta(owner="test@test.com")
         @source(
             mysql.table("users_mysql", cursor="added_on"),
@@ -1291,6 +1293,60 @@ def test_source_with_sample():
         sync_request = view._get_sync_request_proto()
     except ValueError as e:
         assert str(e) == "Sample rate should be between 0 and 1"
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(0.5, None),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Using must be a non-empty list, try using sample=0.5 instead"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(0.5, []),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Using must be a non-empty list, try using sample=0.5 instead"
+        )
 
 
 def test_multiple_sources_mysql():

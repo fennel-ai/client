@@ -98,9 +98,11 @@ class Sample:
     rate: float
     using: List[str]
 
-    def __init__(self, rate, using=None):
-        if using is None:
-            using = []
+    def __init__(self, rate, using):
+        if using is None or len(using) == 0:
+            raise ValueError(
+                f"Using must be a non-empty list, try using sample={rate} instead"
+            )
         self.rate = rate
         self.using = using
 

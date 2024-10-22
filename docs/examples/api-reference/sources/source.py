@@ -42,7 +42,7 @@ def test_source_decorator(client):
                 ),  # converting age dtype to int
             },
             env="prod",
-            sample=Sample(0.2, using=["uid", "country"]),
+            sample=Sample(0.2, using=["email"]),
             bounded=True,
             idleness="1h",
         )

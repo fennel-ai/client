@@ -50,14 +50,18 @@ them and not including them in the computation.
 </Expandable>
 
 <Expandable title="sample" type='Optional[float] | Optional[Sample]'>
-if sample is provided, dataset is sampled based on sampling rate and optional columns provided to sample,
-Sample consists of sampling rate which is a float between [0, 1] and
-optional using field which is list of columns used to hash for sampling.
-preproc columns cannot be given for `using` field for sampling.
+When specifying sampling for a dataset, it can be provided in two ways:
+1. **Simply specify the sampling rate** when you want to sample the dataset without specifying the columns used for sampling.
+   - **Sampling Rate**: A float between 0 and 1 that determines the proportion of the dataset to include.
+2. **Use the `Sample` object** when you want to specify both the sampling rate and the specific columns used for sampling.
+   - **Sampling Rate**: A float between 0 and 1 that determines the proportion of the dataset to include.
+   - **Using**: A list of columns used to hash for sampling the data. Preproc columns and the timestamp field cannot be included in this list.
 
-If no columns are given for sampling,
-then for keyed dataset all key columns are used (except preproc columns)
-for non-keyed dataset all columns except (timestamp and preproc columns) are used.
+Default Behavior When No Columns Are Specified
+1. For Keyed Datasets:
+All key columns are used for sampling, excluding any preproc columns.
+2. For Non-Keyed Datasets:
+All columns are used for sampling except for the timestamp and preproc columns.
 </Expandable>
 
 <Expandable title="cdc" type='"append" | "native" | "debezium"'>
