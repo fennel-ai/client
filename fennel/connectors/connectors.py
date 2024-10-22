@@ -99,6 +99,8 @@ class Sample:
     using: List[str]
 
     def __init__(self, rate, using):
+        if rate < 0 or rate > 1:
+            raise ValueError("Sample rate should be between 0 and 1")
         if using is None or len(using) == 0:
             raise ValueError(
                 f"Using must be a non-empty list, try using sample={rate} instead"
@@ -203,8 +205,14 @@ def source(
             if sample < 0 or sample > 1:
                 raise ValueError("Sample rate should be between 0 and 1")
         elif isinstance(sample, Sample):
-            if sample.rate < 0 or sample.rate > 1:
-                raise ValueError("Sample rate should be between 0 and 1")
+            disallowed_columns = []
+            if preproc is not None:
+                disallowed_columns.extend(list(preproc.keys()))
+            for column in sample.using:
+                if column in disallowed_columns:
+                    raise ValueError(
+                        f"Column {column} is part of preproc so cannot be used for sampling"
+                    )
         else:
             raise ValueError(
                 "Sample should be either a float or a Sample object"

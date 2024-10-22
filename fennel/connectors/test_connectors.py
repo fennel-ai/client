@@ -1219,31 +1219,86 @@ def test_source_with_sample():
             == "Timestamp column: timestamp cannot be part of sampling columns"
         )
 
-    @meta(owner="test@test.com")
-    @source(
-        mysql.table("users_mysql", cursor="added_on"),
-        every="1h",
-        preproc={"name": "abc"},
-        disorder="14d",
-        cdc="upsert",
-        sample=Sample(0.1, ["user_id", "name"]),
-    )
-    @dataset
-    class UserInfoDatasetMySql:
-        user_id: int = field(key=True)
-        name: str
-        country: Optional[str]
-        timestamp: datetime = field(timestamp=True)
-
-    # mysql source
-    view = InternalTestClient()
-    view.add(UserInfoDatasetMySql)
     try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            preproc={"name": "abc"},
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(0.1, ["user_id", "name"]),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
         sync_request = view._get_sync_request_proto()
     except ValueError as e:
         assert (
             str(e)
             == "Column name is part of preproc so cannot be used for sampling"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            preproc={"user_id": 1},
+            disorder="14d",
+            cdc="upsert",
+            sample=0.1,
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "No columns left to sample from. all key columns are part of preproc"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            preproc={"user_id": 1},
+            disorder="14d",
+            cdc="append",
+            sample=0.1,
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "No columns left to sample from. all columns are part of preproc"
         )
 
     try:

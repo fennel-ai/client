@@ -1154,22 +1154,32 @@ def get_sampling_columns(
 
     if len(dataset.key_fields) != 0:
         key_columns = dataset.key_fields
-        return sorted(
+        sample_columns = sorted(
             [
                 column
                 for column in key_columns
                 if column not in disallowed_columns
             ]
         )
+        if len(sample_columns) == 0:
+            raise ValueError(
+                "No columns left to sample from. all key columns are part of preproc"
+            )
+        return sample_columns
     else:
         all_columns = [str(column) for column in dataset.fields]
-        return sorted(
+        sample_columns = sorted(
             [
                 column
                 for column in all_columns
                 if column not in disallowed_columns
             ]
         )
+        if len(sample_columns) == 0:
+            raise ValueError(
+                "No columns left to sample from. all columns are part of preproc"
+            )
+        return sample_columns
 
 
 def _sample_to_proto(
