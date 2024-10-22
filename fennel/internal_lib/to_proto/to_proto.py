@@ -35,7 +35,7 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
 from fennel.connectors import kinesis
-from fennel.connectors.connectors import CSV, SnapshotData, Sample
+from fennel.connectors.connectors import CSV, SnapshotData, Sample, PreProcValue
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
     indices_from_ds,
@@ -938,7 +938,7 @@ def _webhook_to_source_proto(
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -982,7 +982,7 @@ def _kafka_conn_to_source_proto(
         starting_from=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
         bounded=connector.bounded,
-        sampling_strategy=_sample_to_proto(connector.sample, dataset),
+        sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
         idleness=(
             to_duration_proto(connector.idleness)
             if connector.idleness
@@ -1086,7 +1086,7 @@ def _s3_conn_to_source_proto(
         cdc=to_cdc_proto(connector.cdc),
         pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
         bounded=connector.bounded,
-        sampling_strategy=_sample_to_proto(connector.sample, dataset),
+        sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
         idleness=(
             to_duration_proto(connector.idleness)
             if connector.idleness
@@ -1107,27 +1107,46 @@ def _renames_to_proto(renames: Optional[Dict[str, str]]) -> Mapping[str, str]:
     return renames
 
 
+def get_sampling_rate(sample: Optional[Union[float, Sample]]):
+    if isinstance(sample, float):
+        return sample
+    if isinstance(sample, Sample):
+        return sample.rate
+    raise ValueError(f"Invalid sample type: {type(sample)}")
+
+def get_sampling_columns(sample: Optional[Union[float, Sample]], dataset: Dataset, preproc: Optional[Dict[str, PreProcValue]]):
+    disallowed_columns = [dataset.timestamp_field]
+    if preproc is not None:
+        disallowed_columns.extend(list(preproc.keys()))
+
+    if isinstance(sample, Sample) and len(sample.using) != 0:
+        input_columns = sample.using
+        all_columns = [str(column) for column in dataset.fields]
+        for column in input_columns:
+            if column == dataset.timestamp_field:
+                raise ValueError(f"Timestamp column: {column} cannot be part of sampling columns")
+            if column in disallowed_columns:
+                raise ValueError(f"Column {column} is part of preproc so cannot be used for sampling")
+            if column not in all_columns:
+                raise ValueError(f"Column {column} is not part of dataset columns")
+        return sorted(input_columns)
+
+    if len(dataset.key_fields) != 0:
+        key_columns = dataset.key_fields
+        return sorted([column for column in key_columns if column not in disallowed_columns])
+    else:
+        all_columns = [str(column) for column in dataset.fields]
+        return sorted([column for column in all_columns if column not in disallowed_columns])
+
+
 def _sample_to_proto(
-    sample: Optional[Union[float, Sample]], dataset: Dataset
+    sample: Optional[Union[float, Sample]], dataset: Dataset, preproc: Optional[Dict[str, PreProcValue]],
 ) -> Optional[connector_proto.SamplingStrategy]:
     if sample is None:
         return None
-    if isinstance(sample, float):
-        return connector_proto.SamplingStrategy(sampling_rate=sample)
-    if isinstance(sample, Sample):
-        columns = [str(column) for column in dataset.fields]
-        for column in sample.using:
-            if dataset.timestamp_field == column:
-                raise ValueError(
-                    f"timestamp column {column} cannot be part of sampling columns"
-                )
-            if column not in columns:
-                raise ValueError(
-                    f"column {column} is not part of dataset columns"
-                )
-        return connector_proto.SamplingStrategy(
-            sampling_rate=sample.rate, columns_used=sample.using
-        )
+    return connector_proto.SamplingStrategy(
+        sampling_rate=get_sampling_rate(sample), columns_used=get_sampling_columns(sample, dataset, preproc)
+    )
 
 
 def _how_to_proto(
@@ -1326,7 +1345,7 @@ def _bigquery_conn_to_source_proto(
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1404,7 +1423,7 @@ def _redshift_conn_to_source_proto(
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1506,7 +1525,7 @@ def _mongo_conn_to_source_proto(
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1583,7 +1602,7 @@ def _pubsub_conn_to_source_proto(
             cdc=to_cdc_proto(connector.cdc),
             pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1671,7 +1690,7 @@ def _snowflake_conn_to_source_proto(
             starting_from=_to_timestamp_proto(connector.since),
             until=_to_timestamp_proto(connector.until),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1780,7 +1799,7 @@ def _mysql_conn_to_source_proto(
             until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1876,7 +1895,7 @@ def _pg_conn_to_source_proto(
             until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
@@ -1966,7 +1985,7 @@ def _kinesis_conn_to_source_proto(
             until=_to_timestamp_proto(connector.until),
             pre_proc=_pre_proc_to_proto(dataset, connector.pre_proc),
             bounded=connector.bounded,
-            sampling_strategy=_sample_to_proto(connector.sample, dataset),
+            sampling_strategy=_sample_to_proto(connector.sample, dataset, connector.pre_proc),
             idleness=(
                 to_duration_proto(connector.idleness)
                 if connector.idleness
