@@ -121,6 +121,7 @@ SSD
 SSDs
 SSL
 SSO
+Sample
 SearchRequest
 ShardIteratorType
 Signifier
@@ -336,6 +337,7 @@ repo
 rowset
 rowsets
 runtime
+sample
 sasl
 scalability
 scalable

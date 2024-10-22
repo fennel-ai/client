@@ -18,6 +18,7 @@ def test_source_decorator(client):
     import pandas as pd
     from fennel.connectors import source, S3, ref, eval
     from fennel.datasets import dataset, field
+    from fennel.connectors.connectors import Sample
 
     s3 = S3(name="my_s3")  # using IAM role based access
 
@@ -41,6 +42,7 @@ def test_source_decorator(client):
                 ),  # converting age dtype to int
             },
             env="prod",
+            sample=Sample(0.2, using=["email"]),
             bounded=True,
             idleness="1h",
         )

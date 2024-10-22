@@ -94,6 +94,21 @@ def preproc_has_indirection(preproc: Optional[Dict[str, PreProcValue]]):
     return False
 
 
+class Sample:
+    rate: float
+    using: List[str]
+
+    def __init__(self, rate, using):
+        if rate < 0 or rate > 1:
+            raise ValueError("Sample rate should be between 0 and 1")
+        if using is None or len(using) == 0:
+            raise ValueError(
+                f"Using must be a non-empty list, try using sample={rate} instead"
+            )
+        self.rate = rate
+        self.using = using
+
+
 def source(
     conn: DataConnector,
     disorder: Duration,
@@ -106,6 +121,7 @@ def source(
     bounded: bool = False,
     idleness: Optional[Duration] = None,
     where: Optional[Callable] = None,
+    sample: Optional[Union[float, Sample]] = None,
 ) -> Callable[[T], Any]:
     """
     Decorator to specify the source of data for a dataset. The source can be
@@ -184,6 +200,24 @@ def source(
             "idleness parameter should not be passed when bounded is set as False"
         )
 
+    if sample is not None:
+        if isinstance(sample, float):
+            if sample < 0 or sample > 1:
+                raise ValueError("Sample rate should be between 0 and 1")
+        elif isinstance(sample, Sample):
+            disallowed_columns = []
+            if preproc is not None:
+                disallowed_columns.extend(list(preproc.keys()))
+            for column in sample.using:
+                if column in disallowed_columns:
+                    raise ValueError(
+                        f"Column {column} is part of preproc so cannot be used for sampling"
+                    )
+        else:
+            raise ValueError(
+                "Sample should be either a float or a Sample object"
+            )
+
     def decorator(dataset_cls: T):
         connector = copy.deepcopy(conn)
         connector.every = every if every is not None else DEFAULT_EVERY
@@ -196,6 +230,7 @@ def source(
         connector.bounded = bounded
         connector.idleness = idleness
         connector.where = where
+        connector.sample = sample
         connectors = getattr(dataset_cls, SOURCE_FIELD, [])
         connectors.append(connector)
         setattr(dataset_cls, SOURCE_FIELD, connectors)
@@ -711,6 +746,7 @@ class DataConnector:
     bounded: bool = False
     idleness: Optional[Duration] = None
     where: Optional[Callable] = None
+    sample: Optional[Union[float, Sample]] = None
     how: Optional[Literal["incremental", "recreate"] | SnapshotData] = None
     create: Optional[bool] = None
     renames: Optional[Dict[str, str]] = {}

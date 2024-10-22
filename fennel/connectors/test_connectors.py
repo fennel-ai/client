@@ -25,7 +25,7 @@ from fennel.connectors import (
     PubSub,
     eval,
 )
-from fennel.connectors.connectors import CSV, Postgres
+from fennel.connectors.connectors import CSV, Postgres, Sample
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.expr import col, lit
 from fennel.integrations.aws import Secret
@@ -1002,6 +1002,406 @@ def test_multiple_sinks():
     assert extdb_request == expected_extdb_request, error_message(
         extdb_request, expected_extdb_request
     )
+
+
+def test_source_with_sample():
+    @meta(owner="test@test.com")
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        sample=Sample(0.1, ["user_id", "name"]),
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetMySql:
+        user_id: int = field(key=True)
+        name: str
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySql)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysql_table": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "table_name": "users_mysql",
+            },
+        },
+        "dataset": "UserInfoDatasetMySql",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "samplingStrategy": {
+            "columnsUsed": ["name", "user_id"],
+            "samplingRate": 0.1,
+        },
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        sample=0.1,
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetMySql:
+        user_id: int = field(key=True)
+        name: str
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySql)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysql_table": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "table_name": "users_mysql",
+            },
+        },
+        "dataset": "UserInfoDatasetMySql",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Upsert",
+        "disorder": "1209600s",
+        "samplingStrategy": {
+            "samplingRate": 0.1,
+            "columnsUsed": ["user_id"],
+        },
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="append",
+        sample=0.1,
+        since=datetime.strptime("2021-08-10T00:00:00Z", "%Y-%m-%dT%H:%M:%SZ"),
+    )
+    @dataset
+    class UserInfoDatasetMySql:
+        user_id: int
+        name: str
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySql)
+    sync_request = view._get_sync_request_proto()
+    source_request = sync_request.sources[0]
+    s = {
+        "table": {
+            "mysql_table": {
+                "db": {
+                    "name": "mysql",
+                    "mysql": {
+                        "host": "localhost",
+                        "database": "test",
+                        "user": "root",
+                        "password": "root",
+                        "port": 3306,
+                    },
+                },
+                "table_name": "users_mysql",
+            },
+        },
+        "dataset": "UserInfoDatasetMySql",
+        "dsVersion": 1,
+        "every": "3600s",
+        "cdc": "Append",
+        "disorder": "1209600s",
+        "samplingStrategy": {
+            "samplingRate": 0.1,
+            "columnsUsed": ["country", "name", "user_id"],
+        },
+        "cursor": "added_on",
+        "timestampField": "timestamp",
+        "startingFrom": "2021-08-10T00:00:00Z",
+    }
+    expected_source_request = ParseDict(s, connector_proto.Source())
+    assert source_request == expected_source_request, error_message(
+        source_request, expected_source_request
+    )
+
+    @meta(owner="test@test.com")
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        sample=Sample(0.1, ["user_id", "age"]),
+    )
+    @dataset
+    class UserInfoDatasetMySql:
+        user_id: int = field(key=True)
+        name: str
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySql)
+    try:
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert str(e) == "Column age is not part of dataset columns"
+
+    @meta(owner="test@test.com")
+    @source(
+        mysql.table("users_mysql", cursor="added_on"),
+        every="1h",
+        disorder="14d",
+        cdc="upsert",
+        sample=Sample(0.1, ["user_id", "timestamp"]),
+    )
+    @dataset
+    class UserInfoDatasetMySql:
+        user_id: int = field(key=True)
+        name: str
+        country: Optional[str]
+        timestamp: datetime = field(timestamp=True)
+
+    # mysql source
+    view = InternalTestClient()
+    view.add(UserInfoDatasetMySql)
+    try:
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Timestamp column: timestamp cannot be part of sampling columns"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            preproc={"name": "abc"},
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(0.1, ["user_id", "name"]),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Column name is part of preproc so cannot be used for sampling"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            preproc={"user_id": 1},
+            disorder="14d",
+            cdc="upsert",
+            sample=0.1,
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "No columns left to sample from. all key columns are part of preproc"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            preproc={"user_id": 1},
+            disorder="14d",
+            cdc="append",
+            sample=0.1,
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "No columns left to sample from. all columns are part of preproc"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(1.1, ["user_id", "name"]),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert str(e) == "Sample rate should be between 0 and 1"
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            disorder="14d",
+            cdc="upsert",
+            sample=1.1,
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert str(e) == "Sample rate should be between 0 and 1"
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(0.5, None),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Using must be a non-empty list, try using sample=0.5 instead"
+        )
+
+    try:
+
+        @meta(owner="test@test.com")
+        @source(
+            mysql.table("users_mysql", cursor="added_on"),
+            every="1h",
+            disorder="14d",
+            cdc="upsert",
+            sample=Sample(0.5, []),
+        )
+        @dataset
+        class UserInfoDatasetMySql:
+            user_id: int = field(key=True)
+            name: str
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        # mysql source
+        view = InternalTestClient()
+        view.add(UserInfoDatasetMySql)
+        sync_request = view._get_sync_request_proto()
+    except ValueError as e:
+        assert (
+            str(e)
+            == "Using must be a non-empty list, try using sample=0.5 instead"
+        )
 
 
 def test_multiple_sources_mysql():
