@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.5.42] - 2024-10-23
+- Increase client timeouts
+
+## [1.5.41] - 2024-10-21
+- Add window support dedup
+
 ## [1.5.40] - 2024-10-05
 - Add changelog operator
 
@@ -47,7 +53,7 @@
 ## [1.5.26] - 2024-09-19
 - Add support for `datetime` literal, timezone to a few datetime expressions
 - Improve rendering of some expression related errors
-- Add support for list lambdas - filter, map and reduce functions - sum, max, 
+- Add support for list lambdas - filter, map and reduce functions - sum, max,
   min, mean, any, all.
 
 ## [1.5.25] - 2024-09-19
@@ -108,7 +114,7 @@
 - Add support for removal of auto extractors
 
 ## [1.5.1] - 2024-08-05
-- Support chained lookup extractors 
+- Support chained lookup extractors
 
 ## [1.5.0] - 2024-08-04
 - Rust based expressions
@@ -129,13 +135,13 @@
 - Fixed rendering of lambda function in unformatted code.
 
 ## [1.4.0] - 2024-07-15
-- Added mock client support keyed window aggregations. 
+- Added mock client support keyed window aggregations.
 
 ## [1.3.38] - 2024-07-10
 - Return json instead of response in client methods
 
 ## [1.3.36] - 2024-07-10
-- Add support for exponential decay in aggregation. 
+- Add support for exponential decay in aggregation.
 
 ## [1.3.35] - 2024-06-24
 - Fix logging of optional complex dtypes in mock client.
@@ -162,16 +168,16 @@
 - Add support for indirections in preproc ref type
 
 ## [1.3.24] - 2024-05-28
-- Add support for hopping/tumbling/forever/session discrete window aggregation in mock. 
+- Add support for hopping/tumbling/forever/session discrete window aggregation in mock.
 
 ## [1.3.23] - 2024-05-28
-- Add support for bytes type. 
+- Add support for bytes type.
 
 ## [1.3.22] - 2024-05-28
 - Add validations around S3 with Deltalake format
 
 ## [1.3.21] - 2024-05-24
-- Add changelog operator to the client. 
+- Add changelog operator to the client.
 
 ## [1.3.20] - 2024-05-23
 - Updated schema validator to check special pyarrow dtypes.
@@ -180,7 +186,7 @@
 - Fix null check in pandas dtype conversion.
 
 ## [1.3.18] - 2024-05-23
-- Updated schema validator to be more robust in mock client. 
+- Updated schema validator to be more robust in mock client.
 
 ## [1.3.17] - 2024-05-21
 - Add support for emit param in aggregation and allow aggregation over aggregation.
@@ -192,10 +198,10 @@
 - Added support for specifying type of window during aggregation.
 
 ## [1.3.14] - 2024-05-17
-- Support ns precision for timestamp in mock client. 
+- Support ns precision for timestamp in mock client.
 
 ## [1.3.13] - 2024-05-17
-- Support aggregation on aggregation/key fields. 
+- Support aggregation on aggregation/key fields.
 
 ## [1.3.12] - 2024-05-17
 - Added support for window join.
@@ -204,7 +210,7 @@
 - Make sasl plain username and sasl plain password optional for kafka
 
 ## [1.3.10] - 2024-05-16
-- Strip sinks from the dataset decorator while code generation. 
+- Strip sinks from the dataset decorator while code generation.
 
 ## [1.3.9] - 2024-05-13
 - Add support for head less csv and arbitrary delimiter.
@@ -241,19 +247,19 @@
 
 ## [1.2.8] - 2024-04-16
 - Added support for aggregation on different timestamp axis.
-- 
+-
 ## [1.2.6] - 2024-04-10
-- Support stacked sources 
+- Support stacked sources
 
 ## [1.2.4] - 2024-04-10
 - Mandate cdc upsert for keyed sources
 - Allow index to be specified in the dataset decorator
 
 ## [1.2.3] - 2024-04-09
-- Fix delete method for client and mock client 
+- Fix delete method for client and mock client
 
 ## [1.2.2] - 2024-04-07
-- Allow / in branch name 
+- Allow / in branch name
 
 ## [1.2.1] - 2024-04-07
 - Fix inspect api for mock client
@@ -301,7 +307,7 @@
 - Introduce `bounded` and `idleness` parameters to all sources
 
 ## [1.0.3] - 2024-03-08
-- Add support for period in branch names. 
+- Add support for period in branch names.
 
 ## [1.0.2] - 2024-03-08
 - Allow only valid branch names.
@@ -342,7 +348,7 @@
   newline-delimitted json
 
 ## [0.20.11] - 2024-01-24
-- Enable JSONL (newline-delimitted json) as an allowed format for S3 
+- Enable JSONL (newline-delimitted json) as an allowed format for S3
 
 ## [0.20.10] - 2024-01-22
 - Added capability in lookup method in client to support as-of lookups on keyed datasets.
