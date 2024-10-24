@@ -1028,6 +1028,11 @@ def _kafka_conn_to_sink_proto(
         dataset=dataset_name,
         ds_version=ds_version,
         cdc=to_cdc_proto(connector.cdc),
+        how=_how_to_proto(connector.how),
+        create=connector.create,
+        renames=_renames_to_proto(connector.renames),
+        since=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
     )
     return ext_db, sink
 
@@ -1082,6 +1087,11 @@ def _http_conn_to_sink_proto(
         dataset=dataset_name,
         ds_version=ds_version,
         cdc=to_cdc_proto(connector.cdc),
+        how=_how_to_proto(connector.how),
+        create=connector.create,
+        renames=_renames_to_proto(connector.renames),
+        since=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
     )
     return ext_db, sink
 

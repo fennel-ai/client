@@ -350,14 +350,18 @@ def sink(
         conn.every = every
         conn.how = how
         conn.renames = renames
-        # Always pass this as True for now
-        conn.create = True
         conn.since = since
         conn.until = until
         conn.envs = EnvSelector(env)
         connectors = getattr(dataset_cls, SINK_FIELD, [])
         connectors.append(conn)
         setattr(dataset_cls, SINK_FIELD, connectors)
+
+        # Always set create as False for realtime sinks and True for batch sinks
+        if isinstance(conn, KafkaConnector) or isinstance(conn, HTTPConnector):
+            conn.create = False
+        else:
+            conn.create = True
 
         return dataset_cls
 
