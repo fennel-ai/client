@@ -67,6 +67,7 @@ sidebar:
       - "api-reference/source_connectors/pubsub"
       - "api-reference/source_connectors/redshift"
       - "api-reference/source_connectors/s3"
+      - "api-reference/source_connectors/secret"
       - "api-reference/source_connectors/snowflake"
       - "api-reference/source_connectors/webhook"
 

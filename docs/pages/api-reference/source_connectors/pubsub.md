@@ -15,7 +15,7 @@ A name to identify the source. The name should be unique across all Fennel conne
 The project ID of the Google Cloud project containing the Pub/Sub topic
 </Expandable>
 
-<Expandable title="service_account_key" type="Dict[str, str]">
+<Expandable title="service_account_key" type="Dict[str, str] | Secret">
 A dictionary containing the credentials for the Service Account to use to access
 Pub/Sub. See below for instructions on how to obtain this.
 </Expandable>

@@ -33,12 +33,12 @@ Do not set this parameter when using username/password for authentication
 The name of the database where the relevant data resides.
 </Expandable>
 
-<Expandable title="username" type="Optional[str]">
+<Expandable title="username" type="Optional[str] | Optional[Secret]">
 The username which should be used to access the database. This username should have access to the 
 database `db_name`. Do not set this parameter when using IAM authentication
 </Expandable>
 
-<Expandable title="password" type="Optional[str]">
+<Expandable title="password" type="Optional[str] | Optional[Secret]">
 The password associated with the username. Do not set this parameter when using IAM authentication
 </Expandable>
 

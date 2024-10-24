@@ -38,12 +38,12 @@ The name of the database where the relevant data resides.
 The schema where the required data table(s) resides.
 </Expandable>
 
-<Expandable title="username" type="str">
+<Expandable title="username" type="str | Secret">
 The username which should be used to access Snowflake. This username should 
 have required permissions to assume the provided `role`.
 </Expandable>
 
-<Expandable title="password" type="str">
+<Expandable title="password" type="str | Secret">
 The password associated with the username.
 </Expandable>
 
