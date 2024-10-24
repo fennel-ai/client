@@ -7,7 +7,7 @@ __owner__ = "saiharsha@fennel.ai"
 
 
 @mock
-def test_snowflake_sink(client):
+def test_http_sink(client):
     os.environ["KAFKA_USERNAME"] = "test"
     os.environ["KAFKA_PASSWORD"] = "test"
     os.environ["SNOWFLAKE_USERNAME"] = "some-name"

@@ -95,7 +95,7 @@ mongo = Mongo(
 
 http = HTTP(
     name="http_sink",
-    host="http://127.0.0.1",
+    host="http://127.0.0.1:8081",
     healthz="/health",
 )
 
