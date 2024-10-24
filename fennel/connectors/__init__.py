@@ -16,6 +16,8 @@ from fennel.connectors.connectors import (
     SINK_FIELD,
     DataConnector,
     DataSource,
+    HTTP,
+    HTTPConnector,
     S3Connector,
     KafkaConnector,
     TableConnector,

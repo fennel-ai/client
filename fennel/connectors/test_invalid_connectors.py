@@ -18,6 +18,7 @@ from fennel.connectors import (
     at_timestamp,
     BigQuery,
     S3Connector,
+    HTTP,
 )
 from fennel.datasets import dataset, field
 from fennel.expr import col
@@ -90,6 +91,12 @@ mongo = Mongo(
     db_name="mongo",
     username="username",
     password="password",
+)
+
+http = HTTP(
+    name="http_sink",
+    host="http://127.0.0.1",
+    healthz="/health",
 )
 
 
@@ -343,7 +350,7 @@ def test_invalid_sink(client):
 
     assert (
         str(e.value)
-        == 'Sink only support "json" format for now, found debezium'
+        == 'Kafka Sink only support "json" format for now, found debezium'
     )
 
     with pytest.raises(Exception) as e:
@@ -364,7 +371,9 @@ def test_invalid_sink(client):
 
         client.commit(message="msg", datasets=[UserInfoDataset], featuresets=[])
 
-    assert str(e.value) == 'Sink only support "debezium" cdc, found native'
+    assert (
+        str(e.value) == 'Kafka Sink only support "debezium" cdc, found native'
+    )
 
     with pytest.raises(Exception) as e:
 
@@ -391,7 +400,7 @@ def test_invalid_sink(client):
 
     assert (
         str(e.value)
-        == "Sink is only supported for Kafka, S3 and Snowflake, found <class 'fennel.connectors.connectors.KinesisConnector'>"
+        == "Sink is only supported for Kafka, S3, Snowflake and HTTP, found <class 'fennel.connectors.connectors.KinesisConnector'>"
     )
 
 
@@ -809,6 +818,56 @@ def test_invalid_snowflake_batch_sink():
         )
 
     assert "Cursor shouldn't be set for Snowflake sink" == str(e.value)
+
+
+def test_invalid_http_realtime_sink():
+    # Invalid every
+    with pytest.raises(ValueError) as e:
+        sink(
+            http.path(endpoint="/sink", limit=100, headers={"Foo": "Bar"}),
+            every="1m",
+            cdc="debezium",
+        )
+    assert '"every" should not be set for HTTP sink' == str(e.value)
+
+    # Invalid cdc
+    with pytest.raises(ValueError) as e:
+        sink(
+            http.path(endpoint="/sink", limit=100, headers={"Foo": "Bar"}),
+            cdc="append",
+        )
+
+    assert 'HTTP Sink only support "debezium" cdc, found append' == str(e.value)
+
+    # Recreate style passed for how
+    with pytest.raises(ValueError) as e:
+        sink(
+            http.path(endpoint="/sink", limit=100, headers={"Foo": "Bar"}),
+            how="recreate",
+            cdc="debezium",
+        )
+
+    assert 'Only "incremental" style supported for HTTP sink' == str(e.value)
+
+    # Renames passed
+    with pytest.raises(ValueError) as e:
+        sink(
+            http.path(endpoint="/sink", limit=100, headers={"Foo": "Bar"}),
+            cdc="debezium",
+            renames={"a": "b"},
+        )
+
+    assert "Renames are not supported for HTTP sink" == str(e.value)
+
+    # since passed
+    with pytest.raises(ValueError) as e:
+        sink(
+            http.path(endpoint="/sink", limit=100, headers={"Foo": "Bar"}),
+            cdc="debezium",
+            since=datetime.now(),
+        )
+
+    assert '"since" and "until" are not supported for HTTP sink' == str(e.value)
 
 
 def test_invalid_s3_batch_sink():
