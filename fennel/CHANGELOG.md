@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.44] - 2024-10-24
+- Add support for HTTP Sink
+
 ## [1.5.43] - 2024-10-23
 - Add support for keyless S3 and Snowflake sinks
 

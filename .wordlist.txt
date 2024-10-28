@@ -253,6 +253,7 @@ hardcoded
 hashable
 hashmap
 hasnull
+healthz
 hostname
 html
 hudi

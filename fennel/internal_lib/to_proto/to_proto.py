@@ -902,6 +902,8 @@ def _conn_to_sink_proto(
         return _s3_conn_to_sink_proto(connector, dataset_name, ds_version)
     if isinstance(connector, connectors.TableConnector):
         return _table_conn_to_sink_proto(connector, dataset_name, ds_version)
+    if isinstance(connector, connectors.HTTPConnector):
+        return _http_conn_to_sink_proto(connector, dataset_name, ds_version)
     else:
         raise ValueError(
             f"Unsupported connector type: {type(connector)} for sink"
@@ -1026,6 +1028,11 @@ def _kafka_conn_to_sink_proto(
         dataset=dataset_name,
         ds_version=ds_version,
         cdc=to_cdc_proto(connector.cdc),
+        how=_how_to_proto(connector.how),
+        create=connector.create,
+        renames=_renames_to_proto(connector.renames),
+        since=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
     )
     return ext_db, sink
 
@@ -1049,6 +1056,57 @@ def _kafka_to_ext_db_proto(
             sasl_jaas_config="",
             sasl_password_secret=to_secret_proto(sasl_plain_password),
             sasl_username_secret=to_secret_proto(sasl_plain_username),
+        ),
+    )
+
+
+def _http_conn_to_sink_proto(
+    connector: connectors.HTTPConnector,
+    dataset_name: str,
+    ds_version: int,
+) -> Tuple[connector_proto.ExtDatabase, connector_proto.Sink]:
+    data_source = connector.data_source
+    if not isinstance(data_source, connectors.HTTP):
+        raise ValueError("HTTPConnector must have HTTP as data_source")
+    if not connector.cdc:
+        raise ValueError("CDC should always be set for HTTP sink")
+    ext_db = _http_to_ext_db_proto(
+        data_source.name,
+        data_source.host,
+        data_source.healthz,
+    )
+    sink = connector_proto.Sink(
+        table=connector_proto.ExtTable(
+            http_path=connector_proto.HttpPath(
+                db=ext_db,
+                endpoint=connector.endpoint,
+                limit=connector.limit,
+                headers=connector.headers,
+            ),
+        ),
+        dataset=dataset_name,
+        ds_version=ds_version,
+        cdc=to_cdc_proto(connector.cdc),
+        how=_how_to_proto(connector.how),
+        create=connector.create,
+        renames=_renames_to_proto(connector.renames),
+        since=_to_timestamp_proto(connector.since),
+        until=_to_timestamp_proto(connector.until),
+    )
+    return ext_db, sink
+
+
+def _http_to_ext_db_proto(
+    name: str,
+    host: Union[str, Secret],
+    healthz: str,
+) -> connector_proto.ExtDatabase:
+    return connector_proto.ExtDatabase(
+        name=name,
+        http=connector_proto.Http(
+            host=to_string(host),
+            host_secret=to_secret_proto(host),
+            healthz=healthz,
         ),
     )
 

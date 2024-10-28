@@ -24,6 +24,7 @@ from fennel.connectors import (
     S3Connector,
     PubSub,
     eval,
+    HTTP,
 )
 from fennel.connectors.connectors import CSV, Postgres, Sample
 from fennel.datasets import dataset, field, pipeline, Dataset
@@ -542,6 +543,18 @@ pubsub_with_secret = PubSub(
     service_account_key=aws_secret["pubsub_service_account_key"],
 )
 
+http = HTTP(
+    name="http_sink",
+    host="http://127.0.0.1:8081",
+    healthz="/health",
+)
+
+http_with_secret = HTTP(
+    name="http_sink_with_secret",
+    host=aws_secret["http_host"],
+    healthz="/health",
+)
+
 
 def test_env_selector_on_connector():
     @meta(owner="test@test.com")
@@ -604,6 +617,18 @@ def test_env_selector_on_connector():
         cdc="upsert",
         env=["prod_new2"],
     )
+    @source(
+        kafka.topic("test_topic"),
+        disorder="14d",
+        cdc="upsert",
+        env=["prod_new3"],
+    )
+    @source(
+        kafka.topic("test_topic"),
+        disorder="14d",
+        cdc="upsert",
+        env=["prod_new4"],
+    )
     @dataset
     class UserInfoDataset:
         user_id: int = field(key=True)
@@ -640,6 +665,18 @@ def test_env_selector_on_connector():
         how="incremental",
         renames={"uid": "new_uid"},
         env=["prod_new2"],
+    )
+    @sink(
+        http.path(endpoint="/sink", limit=100, headers={"Foo": "Bar"}),
+        cdc="debezium",
+        env=["prod_new3"],
+    )
+    @sink(
+        http_with_secret.path(
+            endpoint="/sink", limit=100, headers={"Foo": "Bar"}
+        ),
+        cdc="debezium",
+        env=["prod_new4"],
     )
     @dataset
     class UserInfoDatasetDerived:
@@ -846,6 +883,76 @@ def test_env_selector_on_connector():
         "every": "86400s",
         "how": {"incremental": {}},
         "create": True,
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
+
+    sync_request = view._get_sync_request_proto(env="prod_new3")
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "http_path": {
+                "db": {
+                    "name": "http_sink",
+                    "http": {
+                        "host": "http://127.0.0.1:8081",
+                        "healthz": "/health",
+                    },
+                },
+                "endpoint": "/sink",
+                "limit": 100,
+                "headers": {
+                    "Foo": "Bar",
+                },
+            },
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "cdc": "Debezium",
+    }
+    expected_sink_request = ParseDict(s, connector_proto.Sink())
+    assert sink_request == expected_sink_request, error_message(
+        sink_request, expected_sink_request
+    )
+
+    sync_request = view._get_sync_request_proto(env="prod_new4")
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.sources) == 1
+    assert len(sync_request.sinks) == 1
+    assert len(sync_request.extdbs) == 2
+
+    sink_request = sync_request.sinks[0]
+    s = {
+        "table": {
+            "http_path": {
+                "db": {
+                    "name": "http_sink_with_secret",
+                    "http": {
+                        "hostSecret": {
+                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                            "path": ["http_host"],
+                        },
+                        "healthz": "/health",
+                    },
+                },
+                "endpoint": "/sink",
+                "limit": 100,
+                "headers": {
+                    "Foo": "Bar",
+                },
+            },
+        },
+        "dataset": "UserInfoDatasetDerived",
+        "dsVersion": 1,
+        "cdc": "Debezium",
     }
     expected_sink_request = ParseDict(s, connector_proto.Sink())
     assert sink_request == expected_sink_request, error_message(

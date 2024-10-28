@@ -147,6 +147,9 @@ def source(
             f"{', '.join(conn.required_fields())}."
         )
 
+    if isinstance(conn, HTTPConnector):
+        raise TypeError("HTTP Source is not supported yet")
+
     if (
         isinstance(conn, S3Connector)
         and conn.format == "delta"
@@ -267,20 +270,35 @@ def sink(
                 and not isinstance(conn.data_source, Snowflake)
             )
         )
+        and not isinstance(conn, HTTPConnector)
     ):
         raise ValueError(
-            "Sink is only supported for Kafka, S3 and Snowflake, found %s"
+            "Sink is only supported for Kafka, S3, Snowflake and HTTP, found %s"
             % type(conn),
         )
 
     if isinstance(conn, KafkaConnector):
         if cdc != "debezium":
-            raise ValueError('Sink only support "debezium" cdc, found %s' % cdc)
-
+            raise ValueError(
+                'Kafka Sink only support "debezium" cdc, found %s' % cdc
+            )
         if conn.format != "json":
             raise ValueError(
-                'Sink only support "json" format for now, found %s' % cdc
+                'Kafka Sink only support "json" format for now, found %s' % cdc
             )
+        if every:
+            raise ValueError('"every" should not be set for Kafka sink')
+        if how is not None and how != "incremental":
+            raise ValueError(
+                'Only "incremental" style supported for Kafka sink'
+            )
+        if renames and len(renames) > 0:
+            raise ValueError("Renames are not supported for Kafka sink")
+        if since or until:
+            raise ValueError(
+                '"since" and "until" are not supported for HTTP sink'
+            )
+
     if isinstance(conn, S3Connector):
         if cdc:
             raise ValueError("CDC shouldn't be set for S3 sink")
@@ -310,19 +328,39 @@ def sink(
                     "Only Incremental style supported for Snowflake sink"
                 )
 
+    if isinstance(conn, HTTPConnector):
+        if cdc != "debezium":
+            raise ValueError(
+                'HTTP Sink only support "debezium" cdc, found %s' % cdc
+            )
+        if every:
+            raise ValueError('"every" should not be set for HTTP sink')
+        if how is not None and how != "incremental":
+            raise ValueError('Only "incremental" style supported for HTTP sink')
+        if renames and len(renames) > 0:
+            raise ValueError("Renames are not supported for HTTP sink")
+        if since or until:
+            raise ValueError(
+                '"since" and "until" are not supported for HTTP sink'
+            )
+
     def decorator(dataset_cls: T):
         conn.cdc = cdc
         conn.every = every
         conn.how = how
         conn.renames = renames
-        # Always pass this as True for now
-        conn.create = True
         conn.since = since
         conn.until = until
         conn.envs = EnvSelector(env)
         connectors = getattr(dataset_cls, SINK_FIELD, [])
         connectors.append(conn)
         setattr(dataset_cls, SINK_FIELD, connectors)
+
+        # Always set create as False for realtime sinks and True for batch sinks
+        if isinstance(conn, KafkaConnector) or isinstance(conn, HTTPConnector):
+            conn.create = False
+        else:
+            conn.create = True
 
         return dataset_cls
 
@@ -722,6 +760,26 @@ class PubSub(DataSource):
         return f"[PubSub: {self.name}]"
 
 
+class HTTP(DataSource):
+    host: Union[str, Secret]
+    healthz: str
+
+    def required_fields(self) -> List[str]:
+        return ["endpoint"]
+
+    def path(
+        self,
+        endpoint: str,
+        limit: Optional[int] = None,
+        headers: Dict[str, str] = dict(),
+    ) -> HTTPConnector:
+        return HTTPConnector(self, endpoint, limit, headers)
+
+    @staticmethod
+    def get(name: str) -> HTTP:
+        return HTTP(name=name, _get=True, host="", healthz="")
+
+
 # ------------------------------------------------------------------------------
 # DataConnector
 # ------------------------------------------------------------------------------
@@ -992,6 +1050,31 @@ class PubSubConnector(DataConnector):
 
     def identifier(self) -> str:
         return f"{self.data_source.identifier()}(topic={self.topic_id}, format={self.format})"
+
+
+class HTTPConnector(DataConnector):
+    """
+    HTTP is a DataConnector that pushes data to customer's HTTP endpoint
+    """
+
+    endpoint: str
+    limit: Optional[int]
+    headers: Optional[Dict[str, str]]
+
+    def __init__(
+        self,
+        data_source: DataSource,
+        endpoint: str,
+        limit: Optional[int],
+        headers: Optional[Dict[str, str]],
+    ):
+        self.data_source = data_source
+        self.endpoint = endpoint
+        self.limit = limit
+        self.headers = headers
+
+    def identifier(self) -> str:
+        return f"{self.data_source.identifier()}(endpoint={self.endpoint})"
 
 
 def is_table_source(con: DataConnector) -> bool:

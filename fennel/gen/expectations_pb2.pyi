@@ -27,7 +27,7 @@ class Expectations(google.protobuf.message.Message):
         ValueType = typing.NewType("ValueType", builtins.int)
         V: typing_extensions.TypeAlias = ValueType
 
-    class _EntityTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Expectations._EntityType.ValueType], builtins.type):
+    class _EntityTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._EnumTypeWrapper[Expectations._EntityType.ValueType], builtins.type):  # noqa: F821
         DESCRIPTOR: google.protobuf.descriptor.EnumDescriptor
         Dataset: Expectations._EntityType.ValueType  # 0
         Featureset: Expectations._EntityType.ValueType  # 1
