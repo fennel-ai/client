@@ -55,12 +55,14 @@ def test_snowflake_sink(client):
     from fennel.connectors import sink
 
     @dataset
+    # docsnip-highlight start
     @sink(
         snowflake.table("test_table"),
         every="1d",
         how="incremental",
         renames={"uid": "new_uid"},
     )
+    # docsnip-highlight end
     class SomeDatasetFiltered:
         uid: int = field(key=True)
         email: str

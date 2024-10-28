@@ -14,7 +14,7 @@ def test_http_sink(client):
     os.environ["SNOWFLAKE_PASSWORD"] = "some-password"
     os.environ["DB_NAME"] = "some-db-name"
 
-    from fennel.connectors import source, Kafka, Snowflake
+    from fennel.connectors import source, Kafka
     from fennel.datasets import dataset, field
 
     kafka = Kafka(
@@ -38,29 +38,25 @@ def test_http_sink(client):
     from fennel.datasets import dataset, field, pipeline, Dataset
     from fennel.lib.params import inputs
 
+    # docsnip basic
+    from fennel.connectors import sink, HTTP
+
     # docsnip-highlight start
-    snowflake = Snowflake(
-        name="my_snowflake",
-        account="VPECCVJ-MUB03765",
-        warehouse="TEST",
-        db_name=os.environ["DB_NAME"],
-        schema="PUBLIC",
-        role="ACCOUNTADMIN",
-        username=os.environ["SNOWFLAKE_USERNAME"],
-        password=os.environ["SNOWFLAKE_PASSWORD"],
+    http = HTTP(
+        name="http",
+        host="http://http-echo-server.harsha.svc.cluster.local:8081/",
+        healthz="/health",
     )
     # docsnip-highlight end
 
-    # docsnip basic
-    from fennel.connectors import sink
-
     @dataset
+    # docsnip-highlight start
     @sink(
-        snowflake.table("test_table"),
-        every="1d",
+        http.path(endpoint="/sink", limit=1000, headers={"Foo": "Bar"}),
+        cdc="debezium",
         how="incremental",
-        renames={"uid": "new_uid"},
     )
+    # docsnip-highlight end
     class SomeDatasetFiltered:
         uid: int = field(key=True)
         email: str
