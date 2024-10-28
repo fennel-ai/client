@@ -902,7 +902,7 @@ def test_env_selector_on_connector():
                 "db": {
                     "name": "http_sink",
                     "http": {
-                        "host": "http://127.0.0.1",
+                        "host": "http://127.0.0.1:8081",
                         "healthz": "/health",
                     },
                 },
