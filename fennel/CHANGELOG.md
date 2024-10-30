@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.45] - 2024-10-30
+- Remove print statement in dedup operator
+
 ## [1.5.44] - 2024-10-24
 - Add support for HTTP Sink
 

@@ -931,7 +931,6 @@ class Executor(Visitor):
         else:
             raise Exception(f"Unsupported window type {type(obj.window)}")
 
-        print(df)
         return NodeRet(
             df,
             input_ret.timestamp_field,
