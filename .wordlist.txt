@@ -123,6 +123,7 @@ SSL
 SSO
 Sample
 SearchRequest
+Secret
 ShardIteratorType
 Signifier
 SnapshotData
@@ -346,6 +347,7 @@ schedulable
 schemaless
 schemas
 sdk
+secret
 signup
 signups
 sinked

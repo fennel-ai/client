@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.46] - 2024-10-30
+- Add support for AWS Secrets Manager
+
 ## [1.5.45] - 2024-10-30
 - Remove print statement in dedup operator
 

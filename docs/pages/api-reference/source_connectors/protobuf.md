@@ -22,7 +22,7 @@ time.
 The URL where the schema registry is hosted.
 </Expandable>
 
-<Expandable title="username" type="Optional[str]">
+<Expandable title="username" type="Optional[str] | Optional[Secret]">
 User name to access the schema registry (assuming the registry requires 
 authentication). If user name is provided, corresponding password must also be
 provided.
@@ -31,11 +31,11 @@ Assuming authentication is needed, either username/password must be provided or
 a token, but not both.
 </Expandable>
 
-<Expandable title="password" type="Optional[str]">
+<Expandable title="password" type="Optional[str] | Optional[Secret]">
 The password associated with the username.
 </Expandable>
 
-<Expandable title="token" type="Optional[str]">
+<Expandable title="token" type="Optional[str] | Optional[Secret]">
 Token to be used for authentication with the schema registry. Only one of 
 username/password or token must be provided.
 </Expandable>

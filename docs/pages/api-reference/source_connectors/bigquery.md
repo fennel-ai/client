@@ -19,7 +19,7 @@ The project ID of the Google Cloud project containing the BigQuery dataset.
 The ID of the BigQuery dataset containing the table(s) to replicate.
 </Expandable>
 
-<Expandable title="service_account_key" type="Dict[str, str]">
+<Expandable title="service_account_key" type="Dict[str, str] | Secret">
 A dictionary containing the credentials for the Service Account to use to access
 BigQuery. See below for instructions on how to obtain this.
 </Expandable>

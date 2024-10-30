@@ -30,11 +30,11 @@ Protocol used to communicate with the brokers.
 SASL mechanism to use for authentication. 
 </Expandable>
 
-<Expandable title="sasl_plain_username" type="Optional[str]">
+<Expandable title="sasl_plain_username" type="Optional[str] | Optional[Secret]">
 SASL username.
 </Expandable>
 
-<Expandable title="sasl_plain_password" type="Optional[str]">
+<Expandable title="sasl_plain_password" type="Optional[str] | Optional[Secret]">
 SASL password.
 </Expandable>
 
