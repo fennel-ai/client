@@ -726,26 +726,51 @@ class PubSub(google.protobuf.message.Message):
 global___PubSub = PubSub
 
 @typing_extensions.final
+class Certificate(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    CA_CERT_FIELD_NUMBER: builtins.int
+    CA_CERT_SECRET_FIELD_NUMBER: builtins.int
+    ca_cert: builtins.str
+    @property
+    def ca_cert_secret(self) -> secret_pb2.SecretRef: ...
+    def __init__(
+        self,
+        *,
+        ca_cert: builtins.str = ...,
+        ca_cert_secret: secret_pb2.SecretRef | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["ca_cert", b"ca_cert", "ca_cert_secret", b"ca_cert_secret", "ca_cert_variant", b"ca_cert_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["ca_cert", b"ca_cert", "ca_cert_secret", b"ca_cert_secret", "ca_cert_variant", b"ca_cert_variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["ca_cert_variant", b"ca_cert_variant"]) -> typing_extensions.Literal["ca_cert", "ca_cert_secret"] | None: ...
+
+global___Certificate = Certificate
+
+@typing_extensions.final
 class Http(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     HOST_FIELD_NUMBER: builtins.int
     HOST_SECRET_FIELD_NUMBER: builtins.int
     HEALTHZ_FIELD_NUMBER: builtins.int
+    AUTH_FIELD_NUMBER: builtins.int
     host: builtins.str
     @property
     def host_secret(self) -> secret_pb2.SecretRef: ...
     healthz: builtins.str
-    """Next id: 4"""
+    @property
+    def auth(self) -> global___Certificate:
+        """Next id: 5"""
     def __init__(
         self,
         *,
         host: builtins.str = ...,
         host_secret: secret_pb2.SecretRef | None = ...,
         healthz: builtins.str = ...,
+        auth: global___Certificate | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["healthz", b"healthz", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["auth", b"auth", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["auth", b"auth", "healthz", b"healthz", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> None: ...
     def WhichOneof(self, oneof_group: typing_extensions.Literal["host_variant", b"host_variant"]) -> typing_extensions.Literal["host", "host_secret"] | None: ...
 
 global___Http = Http

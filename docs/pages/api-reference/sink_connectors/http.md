@@ -19,6 +19,10 @@ The HTTP host URL. Example: https://127.0.0.1:8081
 The health check endpoint to verify the server's availability.
 </Expandable>
 
+<Expandable title="auth" type="Certificate">
+Parameter for certificate-based authentication
+</Expandable>
+
 #### HTTP Path Parameters
 <Expandable title="endpoint" type="str">
 The specific endpoint where data will be sent
