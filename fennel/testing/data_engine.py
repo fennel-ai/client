@@ -210,18 +210,20 @@ def _preproc_where_df(
                         f"Field `{name}` defined in schema for eval where not found " \
                         f"in dataframe."
                     )
-                if dtype != get_python_type_from_pd(schema[name]):
+                if dtype != get_python_type_from_pd(type(df[name].dtype)):
                     raise ValueError(
                         f"Field `{name}` defined in schema for eval where has " \
                         f"different type in the dataframe."
                     )
 
         if isinstance(where_val.eval_type, Expr):
+            schema.update(where_val.additional_schema)
             filtered = where_val.eval_type.eval(
                 new_df, schema
             )
             new_df = new_df.iloc[filtered.values.tolist()]
         elif isinstance(where_val.eval_type, TypedExpr):
+            schema.update(where_val.additional_schema)
             filtered = where_val.eval_type.expr.eval(
                 new_df, schema
             )
