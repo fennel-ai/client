@@ -41,6 +41,7 @@ def test_kafka_source(client):
 
 @mock
 def test_kafka_source_with_secret(client):
+    os.environ["SCHEMA_REGISTRY_URL"] = "http://localhost:8081"
     # docsnip secret
     from fennel.connectors import source, Kafka, Avro
     from fennel.datasets import dataset, field
@@ -51,35 +52,38 @@ def test_kafka_source_with_secret(client):
         arn="arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-name-I4hSKr",
         role_arn="arn:aws:iam::123456789012:role/secret-access-role",
     )
+    # docsnip-highlight end
 
     # secret with above arn has content like below
     # {
     #     "kafka": {
-    #         "username": "test",
-    #         "password": "test"
+    #         "username": "actual-kafka-username",
+    #         "password": "actual-kafka-password"
     #     },
     #     "schema_registry": {
-    #         "username": "test",
-    #         "password": "test"
+    #         "username": "actual-schema-registry-username",
+    #         "password": "actual-schema-registry-password"
     #     }
     # }
-    #
 
     kafka = Kafka(
         name="my_kafka",
         bootstrap_servers="localhost:9092",  # could come via os env var too
         security_protocol="SASL_PLAINTEXT",
         sasl_mechanism="PLAIN",
+        # docsnip-highlight start
         sasl_plain_username=aws_secret["kafka"]["username"],
         sasl_plain_password=aws_secret["kafka"]["password"],
+        # docsnip-highlight end
     )
     avro = Avro(
         registry="confluent",
         url=os.environ["SCHEMA_REGISTRY_URL"],
+        # docsnip-highlight start
         username=aws_secret["schema_registry"]["username"],
         password=aws_secret["schema_registry"]["password"],
+        # docsnip-highlight end
     )
-    # docsnip-highlight end
 
     # docsnip-highlight start
     @source(kafka.topic("user", format=avro), disorder="14d", cdc="upsert")
