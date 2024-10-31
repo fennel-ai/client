@@ -9,7 +9,7 @@ Certificate to be used for HTTP-based authentication
 #### Parameters
 
 <Expandable title="cert" type='str | Secret'>
-CA Certificate required for authentication
+CA Certificate required for client to authenticate the server
 </Expandable>
 
 <pre snippet="api-reference/sinks/http_sink#basic"
