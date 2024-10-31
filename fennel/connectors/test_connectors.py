@@ -547,14 +547,14 @@ http = HTTP(
     name="http_sink",
     host="https://127.0.0.1:8081",
     healthz="/health",
-    auth=Certificate(ca_cert=aws_secret["ca_cert"]),
+    ca_cert=Certificate(aws_secret["ca_cert"]),
 )
 
 http_with_secret = HTTP(
     name="http_sink_with_secret",
     host=aws_secret["http_host"],
     healthz="/health",
-    auth=Certificate(ca_cert=aws_secret["ca_cert"]),
+    ca_cert=Certificate(aws_secret["ca_cert"]),
 )
 
 
@@ -906,10 +906,10 @@ def test_env_selector_on_connector():
                     "http": {
                         "host": "https://127.0.0.1:8081",
                         "healthz": "/health",
-                        "auth": {
-                            "caCertSecret": {
-                                "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
-                                "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                        "ca_cert": {
+                            "secret_ref": {
+                                "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
                                 "path": ["ca_cert"],
                             },
                         },
@@ -944,14 +944,14 @@ def test_env_selector_on_connector():
                 "db": {
                     "name": "http_sink_with_secret",
                     "http": {
-                        "hostSecret": {
-                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
-                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                        "host_secret": {
+                            "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
                             "path": ["http_host"],
                         },
                         "healthz": "/health",
-                        "auth": {
-                            "ca_cert_secret": {
+                        "ca_cert": {
+                            "secret_ref": {
                                 "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
                                 "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
                                 "path": ["ca_cert"],

@@ -8,7 +8,7 @@ Certificate to be used for HTTP-based authentication
 
 #### Parameters
 
-<Expandable title="ca_cert" type='str | Secret'>
+<Expandable title="cert" type='str | Secret'>
 CA Certificate required for authentication
 </Expandable>
 

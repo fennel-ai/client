@@ -1080,7 +1080,7 @@ def _http_conn_to_sink_proto(
         data_source.name,
         data_source.host,
         data_source.healthz,
-        data_source.auth,
+        data_source.ca_cert,
     )
     sink = connector_proto.Sink(
         table=connector_proto.ExtTable(
@@ -1103,15 +1103,17 @@ def _http_conn_to_sink_proto(
     return ext_db, sink
 
 
-def to_certificate_proto(auth: Certificate) -> connector_proto.Certificate:
-    return connector_proto.Certificate(
-        ca_cert=to_string(auth.ca_cert),
-        ca_cert_secret=to_secret_proto(auth.ca_cert),
+def to_certificate_proto(
+    ca_cert: Certificate,
+) -> connector_proto.SensitiveDatum:
+    return connector_proto.SensitiveDatum(
+        secret=to_string(ca_cert.cert),
+        secret_ref=to_secret_proto(ca_cert.cert),
     )
 
 
 def _http_to_ext_db_proto(
-    name: str, host: Union[str, Secret], healthz: str, auth: Certificate
+    name: str, host: Union[str, Secret], healthz: str, ca_cert: Certificate
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1119,7 +1121,7 @@ def _http_to_ext_db_proto(
             host=to_string(host),
             host_secret=to_secret_proto(host),
             healthz=healthz,
-            auth=to_certificate_proto(auth),
+            ca_cert=to_certificate_proto(ca_cert),
         ),
     )
 

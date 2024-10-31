@@ -104,7 +104,7 @@ http = HTTP(
     name="http_sink",
     host="https://127.0.0.1:8081",
     healthz="/health",
-    auth=Certificate(ca_cert=aws_secret["ca_cert"]),
+    ca_cert=Certificate(aws_secret["ca_cert"]),
 )
 
 

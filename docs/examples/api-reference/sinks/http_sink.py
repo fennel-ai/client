@@ -52,7 +52,7 @@ def test_http_sink(client):
         name="http",
         host="http://http-echo-server.harsha.svc.cluster.local:8081/",
         healthz="/health",
-        auth=Certificate(ca_cert=aws_secret["ca_cert"]),
+        ca_cert=Certificate(aws_secret["ca_cert"]),
     )
     # docsnip-highlight end
 

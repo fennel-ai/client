@@ -726,25 +726,25 @@ class PubSub(google.protobuf.message.Message):
 global___PubSub = PubSub
 
 @typing_extensions.final
-class Certificate(google.protobuf.message.Message):
+class SensitiveDatum(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
-    CA_CERT_FIELD_NUMBER: builtins.int
-    CA_CERT_SECRET_FIELD_NUMBER: builtins.int
-    ca_cert: builtins.str
+    SECRET_FIELD_NUMBER: builtins.int
+    SECRET_REF_FIELD_NUMBER: builtins.int
+    secret: builtins.str
     @property
-    def ca_cert_secret(self) -> secret_pb2.SecretRef: ...
+    def secret_ref(self) -> secret_pb2.SecretRef: ...
     def __init__(
         self,
         *,
-        ca_cert: builtins.str = ...,
-        ca_cert_secret: secret_pb2.SecretRef | None = ...,
+        secret: builtins.str = ...,
+        secret_ref: secret_pb2.SecretRef | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["ca_cert", b"ca_cert", "ca_cert_secret", b"ca_cert_secret", "ca_cert_variant", b"ca_cert_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["ca_cert", b"ca_cert", "ca_cert_secret", b"ca_cert_secret", "ca_cert_variant", b"ca_cert_variant"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["ca_cert_variant", b"ca_cert_variant"]) -> typing_extensions.Literal["ca_cert", "ca_cert_secret"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["secret", b"secret", "secret_ref", b"secret_ref", "sensitive_datum_variant", b"sensitive_datum_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["secret", b"secret", "secret_ref", b"secret_ref", "sensitive_datum_variant", b"sensitive_datum_variant"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["sensitive_datum_variant", b"sensitive_datum_variant"]) -> typing_extensions.Literal["secret", "secret_ref"] | None: ...
 
-global___Certificate = Certificate
+global___SensitiveDatum = SensitiveDatum
 
 @typing_extensions.final
 class Http(google.protobuf.message.Message):
@@ -753,24 +753,29 @@ class Http(google.protobuf.message.Message):
     HOST_FIELD_NUMBER: builtins.int
     HOST_SECRET_FIELD_NUMBER: builtins.int
     HEALTHZ_FIELD_NUMBER: builtins.int
-    AUTH_FIELD_NUMBER: builtins.int
+    CA_CERT_FIELD_NUMBER: builtins.int
     host: builtins.str
     @property
     def host_secret(self) -> secret_pb2.SecretRef: ...
     healthz: builtins.str
     @property
-    def auth(self) -> global___Certificate:
-        """Next id: 5"""
+    def ca_cert(self) -> global___SensitiveDatum:
+        """Making this optional for now since local testing doesn't require it
+        Next id: 5
+        """
     def __init__(
         self,
         *,
         host: builtins.str = ...,
         host_secret: secret_pb2.SecretRef | None = ...,
         healthz: builtins.str = ...,
-        auth: global___Certificate | None = ...,
+        ca_cert: global___SensitiveDatum | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["auth", b"auth", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["auth", b"auth", "healthz", b"healthz", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_ca_cert", b"_ca_cert", "ca_cert", b"ca_cert", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_ca_cert", b"_ca_cert", "ca_cert", b"ca_cert", "healthz", b"healthz", "host", b"host", "host_secret", b"host_secret", "host_variant", b"host_variant"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_ca_cert", b"_ca_cert"]) -> typing_extensions.Literal["ca_cert"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["host_variant", b"host_variant"]) -> typing_extensions.Literal["host", "host_secret"] | None: ...
 
 global___Http = Http

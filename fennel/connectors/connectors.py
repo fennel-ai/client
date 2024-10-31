@@ -760,14 +760,15 @@ class PubSub(DataSource):
         return f"[PubSub: {self.name}]"
 
 
-class Certificate(BaseModel):
-    ca_cert: Union[str, Secret]
+@dataclass
+class Certificate:
+    cert: Union[str, Secret]
 
 
 class HTTP(DataSource):
     host: Union[str, Secret]
     healthz: str
-    auth: Certificate
+    ca_cert: Certificate
 
     def required_fields(self) -> List[str]:
         return ["endpoint"]
@@ -787,7 +788,7 @@ class HTTP(DataSource):
             _get=True,
             host="",
             healthz="",
-            auth=Certificate(ca_cert=""),
+            auth=Certificate(""),
         )
 
 

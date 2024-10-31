@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.5.47] - 2024-10-30
+## [1.5.47] - 2024-10-31
 - Add support for certificate based authentication for HTTP sink
 
 ## [1.5.46] - 2024-10-30
