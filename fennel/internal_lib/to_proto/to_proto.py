@@ -1103,7 +1103,7 @@ def _http_conn_to_sink_proto(
     return ext_db, sink
 
 
-def to_certificate_proto(
+def to_sensitive_datum_proto(
     ca_cert: Certificate,
 ) -> connector_proto.SensitiveDatum:
     return connector_proto.SensitiveDatum(
@@ -1121,7 +1121,7 @@ def _http_to_ext_db_proto(
             host=to_string(host),
             host_secret=to_secret_proto(host),
             healthz=healthz,
-            ca_cert=to_certificate_proto(ca_cert),
+            ca_cert=to_sensitive_datum_proto(ca_cert),
         ),
     )
 
