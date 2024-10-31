@@ -19,9 +19,11 @@ from fennel.connectors import (
     BigQuery,
     S3Connector,
     HTTP,
+    Certificate,
 )
 from fennel.datasets import dataset, field
 from fennel.expr import col
+from fennel.integrations import Secret
 from fennel.lib import meta
 
 # noinspection PyUnresolvedReferences
@@ -93,10 +95,16 @@ mongo = Mongo(
     password="password",
 )
 
+aws_secret = Secret(
+    arn="arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+    role_arn="arn:aws:iam::123456789012:role/fennel-test-role",
+)
+
 http = HTTP(
     name="http_sink",
-    host="http://127.0.0.1:8081",
+    host="https://127.0.0.1:8081",
     healthz="/health",
+    ca_cert=Certificate(aws_secret["ca_cert"]),
 )
 
 

@@ -33,5 +33,6 @@ from fennel.connectors.connectors import (
     at_timestamp,
     Eval,
     eval,
+    Certificate,
 )
 import fennel.connectors.kinesis as kinesis

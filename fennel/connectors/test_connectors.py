@@ -26,7 +26,7 @@ from fennel.connectors import (
     eval,
     HTTP,
 )
-from fennel.connectors.connectors import CSV, Postgres, Sample
+from fennel.connectors.connectors import CSV, Postgres, Sample, Certificate
 from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.expr import col, lit
 from fennel.integrations.aws import Secret
@@ -545,14 +545,16 @@ pubsub_with_secret = PubSub(
 
 http = HTTP(
     name="http_sink",
-    host="http://127.0.0.1:8081",
+    host="https://127.0.0.1:8081",
     healthz="/health",
+    ca_cert=Certificate(aws_secret["ca_cert"]),
 )
 
 http_with_secret = HTTP(
     name="http_sink_with_secret",
     host=aws_secret["http_host"],
     healthz="/health",
+    ca_cert=Certificate(aws_secret["ca_cert"]),
 )
 
 
@@ -902,8 +904,15 @@ def test_env_selector_on_connector():
                 "db": {
                     "name": "http_sink",
                     "http": {
-                        "host": "http://127.0.0.1:8081",
+                        "host": "https://127.0.0.1:8081",
                         "healthz": "/health",
+                        "ca_cert": {
+                            "secret_ref": {
+                                "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                "path": ["ca_cert"],
+                            },
+                        },
                     },
                 },
                 "endpoint": "/sink",
@@ -935,12 +944,19 @@ def test_env_selector_on_connector():
                 "db": {
                     "name": "http_sink_with_secret",
                     "http": {
-                        "hostSecret": {
-                            "secretArn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
-                            "roleArn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                        "host_secret": {
+                            "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                            "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
                             "path": ["http_host"],
                         },
                         "healthz": "/health",
+                        "ca_cert": {
+                            "secret_ref": {
+                                "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
+                                "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
+                                "path": ["ca_cert"],
+                            },
+                        },
                     },
                 },
                 "endpoint": "/sink",

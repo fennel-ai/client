@@ -35,7 +35,13 @@ import fennel.gen.schema_pb2 as schema_proto
 import fennel.gen.schema_registry_pb2 as schema_registry_proto
 import fennel.gen.services_pb2 as services_proto
 from fennel.connectors import kinesis
-from fennel.connectors.connectors import CSV, SnapshotData, Sample, PreProcValue
+from fennel.connectors.connectors import (
+    CSV,
+    SnapshotData,
+    Sample,
+    PreProcValue,
+    Certificate,
+)
 from fennel.datasets import Dataset, Pipeline, Field
 from fennel.datasets.datasets import (
     indices_from_ds,
@@ -1074,6 +1080,7 @@ def _http_conn_to_sink_proto(
         data_source.name,
         data_source.host,
         data_source.healthz,
+        data_source.ca_cert,
     )
     sink = connector_proto.Sink(
         table=connector_proto.ExtTable(
@@ -1096,10 +1103,17 @@ def _http_conn_to_sink_proto(
     return ext_db, sink
 
 
+def to_sensitive_datum_proto(
+    ca_cert: Certificate,
+) -> connector_proto.SensitiveDatum:
+    return connector_proto.SensitiveDatum(
+        secret=to_string(ca_cert.cert),
+        secret_ref=to_secret_proto(ca_cert.cert),
+    )
+
+
 def _http_to_ext_db_proto(
-    name: str,
-    host: Union[str, Secret],
-    healthz: str,
+    name: str, host: Union[str, Secret], healthz: str, ca_cert: Certificate
 ) -> connector_proto.ExtDatabase:
     return connector_proto.ExtDatabase(
         name=name,
@@ -1107,6 +1121,7 @@ def _http_to_ext_db_proto(
             host=to_string(host),
             host_secret=to_secret_proto(host),
             healthz=healthz,
+            ca_cert=to_sensitive_datum_proto(ca_cert),
         ),
     )
 

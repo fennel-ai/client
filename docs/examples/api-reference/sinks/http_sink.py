@@ -39,13 +39,20 @@ def test_http_sink(client):
     from fennel.lib.params import inputs
 
     # docsnip basic
-    from fennel.connectors import sink, HTTP
+    from fennel.connectors import sink, HTTP, Certificate
+    from fennel.integrations.aws import Secret
 
     # docsnip-highlight start
+    aws_secret = Secret(
+        arn="arn:aws:secretsmanager:us-east-1:123456789012:secret:my-secret-name-I4hSKr",
+        role_arn="arn:aws:iam::123456789012:role/secret-access-role",
+    )
+
     http = HTTP(
         name="http",
         host="http://http-echo-server.harsha.svc.cluster.local:8081/",
         healthz="/health",
+        ca_cert=Certificate(aws_secret["ca_cert"]),
     )
     # docsnip-highlight end
 

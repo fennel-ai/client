@@ -74,6 +74,7 @@ sidebar:
   - slug: "api-reference/sink_connectors"
     title: "Sink Connectors"
     pages:
+      - "api-reference/sink_connectors/certificate"
       - "api-reference/sink_connectors/http"
       - "api-reference/sink_connectors/kafka"
       - "api-reference/sink_connectors/s3"
