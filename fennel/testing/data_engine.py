@@ -194,7 +194,10 @@ def _preproc_callable_df(df: pd.DataFrame, callable: Callable, ds: Dataset):
 
 
 def _preproc_where_df(
-    df: pd.DataFrame, where_val: connectors.WhereValue, ds: Dataset
+    df: pd.DataFrame,
+    where_val: connectors.WhereValue,
+    pre_proc: Dict[str, connectors.PreProcValue],
+    ds: Dataset
 ) -> pd.DataFrame:
     new_df = df.copy()
     schema = ds.schema()
@@ -210,7 +213,10 @@ def _preproc_where_df(
                         f"Field `{name}` defined in schema for eval where not found " \
                         f"in dataframe."
                     )
-                if dtype != get_python_type_from_pd(type(df[name].dtype)):
+                name_in_preproc = False
+                if pre_proc and name in pre_proc.keys():
+                    name_in_preproc = True
+                if not name_in_preproc and dtype != get_python_type_from_pd(type(df[name].dtype)):
                     raise ValueError(
                         f"Field `{name}` defined in schema for eval where has " \
                         f"different type in the dataframe."
@@ -450,9 +456,12 @@ class DataEngine(object):
                     assert (
                         len(wheres) == 1
                     ), f"Multiple wheres found for {ds} and {webhook_endpoint}"
+                    preproc_value = None
+                    if len(preproc) == 1 and preproc[0] is not None:
+                        preproc_value = preproc[0]
                     try:
                         df = _preproc_where_df(
-                            df, wheres[0], self.datasets[ds].dataset
+                            df, wheres[0], preproc_value, self.datasets[ds].dataset
                         )
                     except ValueError as e:
                         raise ValueError(
