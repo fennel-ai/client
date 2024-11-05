@@ -4,7 +4,8 @@ order: 0
 status: published
 ---
 ### Pub/Sub
-Data connector to Google Pub/Sub messaging service.
+Data connector to Google Pub/Sub messaging service. Pub/Sub only supports at least once delivery guarantee.
+If exactly-once delivery is required, please use [Dedup](/api-reference/operators/dedup) operator to make it exactly once.
 
 #### Project Parameters
 <Expandable title="name" type="str">
