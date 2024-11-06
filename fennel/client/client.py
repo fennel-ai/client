@@ -461,7 +461,7 @@ class Client:
         input_s3: Optional[S3Connector] = None,
         output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
-        use_v2: bool = False,
+        use_v2: bool = True,
     ) -> Dict[str, Any]:
         """Extract point in time correct values of output features.
 
