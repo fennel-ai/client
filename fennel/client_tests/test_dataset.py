@@ -3487,7 +3487,7 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
 @mock
 def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        assert df.shape == (3, 5), "Shape is not correct {}".format(df.shape)
+        assert df.shape == (3, 5), "Shape is not correct expected (3, 5) got {}".format(df.shape)
         assert (
             "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)
