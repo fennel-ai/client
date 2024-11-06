@@ -3487,7 +3487,80 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
 @mock
 def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        assert df.shape == (3, 5), "Shape is not correct expected (3, 5) got {}".format(df.shape)
+        assert df.shape == (
+            3,
+            5,
+        ), "Shape is not correct expected (3, 5) got {}".format(df.shape)
+        assert (
+            "b1" not in df.columns
+        ), "b1 column should not be present, " "{}".format(df.columns)
+        return df
+
+    @source(webhook.endpoint("A"), disorder="14d", cdc="upsert")
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        v: int
+        t: datetime
+
+    @source(webhook.endpoint("B"), disorder="14d", cdc="upsert")
+    @meta(owner="aditya@fennel.ai")
+    @dataset(index=True)
+    class B:
+        b1: int = field(key=True)
+        v2: int
+        t: datetime
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class ABCDataset:
+        a1: int = field(key=True)
+        v: int
+        v2: Optional[int]
+        t: datetime
+
+        @pipeline
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            x = a.join(
+                b,
+                how="left",
+                left_on=["a1"],
+                right_on=["b1"],
+            )  # type: ignore
+            assert len(x.schema()) == 4
+            x = x.transform(test_dataframe)  # type: ignore
+            return x
+
+    client.commit(message="msg", datasets=[A, B, ABCDataset])
+
+    now = datetime.now(timezone.utc)
+    df1 = pd.DataFrame(
+        {
+            "a1": [1, 2, 3],
+            "v": [1, 2, 3],
+            "t": [now, now, now],
+        }
+    )
+    df2 = pd.DataFrame(
+        {
+            "b1": [1, 2, 4],
+            "v2": [1, 2, 4],
+            "t": [now, now, now],
+        }
+    )
+    client.log("fennel_webhook", "A", df1)
+    client.log("fennel_webhook", "B", df2)
+
+
+@mock
+def test_table_join(client):
+    def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+        assert df.shape == (
+            3,
+            5,
+        ), "Shape is not correct expected (3, 5) got {}".format(df.shape)
         assert (
             "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)

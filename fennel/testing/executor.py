@@ -496,7 +496,7 @@ class Executor(Visitor):
         left_df = input_ret.df
         if left_df is None or left_df.shape[0] == 0:
             return None
-        
+
         # Deal with empty right table
         if (
             right_ret is None
@@ -505,11 +505,13 @@ class Executor(Visitor):
         ):
             if obj.how == "inner":
                 return None
-            
+
             right_value_schema: List[str] = copy.deepcopy(
                 list(obj.dataset.dsschema().values.keys())
             )
-            merged_df = left_join_empty(input_ret, right_value_schema, right_value_schema, obj.fields)
+            merged_df = left_join_empty(
+                input_ret, right_value_schema, right_value_schema, obj.fields
+            )
         else:
             if len(input_ret.key_fields) > 0:
                 merged_df = table_table_join(
@@ -532,7 +534,7 @@ class Executor(Visitor):
                     obj.right_on,
                     obj.fields,
                 )
-        
+
         if len(input_ret.key_fields) > 0:
             merged_df = cast_df_to_arrow_dtype(
                 merged_df,
@@ -549,7 +551,7 @@ class Executor(Visitor):
                     )
                 ],
             )
-        
+
         left_timestamp_field = input_ret.timestamp_field
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
@@ -558,7 +560,6 @@ class Executor(Visitor):
         fields = obj.dsschema().to_fields_proto()
         sorted_df = cast_df_to_arrow_dtype(sorted_df, fields)
 
-        
         return NodeRet(
             sorted_df,
             left_timestamp_field,

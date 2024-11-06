@@ -20,6 +20,7 @@ def min_ts_with_nat(a, b):
         return a
     return min(a, b)
 
+
 def left_join_empty(
     left_node: NodeRet,
     right_node: Optional[NodeRet],
@@ -30,13 +31,27 @@ def left_join_empty(
     if right_fields is None:
         right_fields = right_value_schema
     for _, left_row in left_node.df.iterrows():
-        deleted_timestamp = left_row[FENNEL_DELETE_TIMESTAMP] if FENNEL_DELETE_TIMESTAMP in left_row else pd.NaT
-        result.append(_create_null_row(left_row, left_node, right_node, left_row[left_node.timestamp_field], deleted_timestamp, right_fields))
+        deleted_timestamp = (
+            left_row[FENNEL_DELETE_TIMESTAMP]
+            if FENNEL_DELETE_TIMESTAMP in left_row
+            else pd.NaT
+        )
+        result.append(
+            _create_null_row(
+                left_row,
+                left_node,
+                right_node,
+                left_row[left_node.timestamp_field],
+                deleted_timestamp,
+                right_fields,
+            )
+        )
     result = pd.DataFrame(result)
     result = result.drop(columns=[FENNEL_LOOKUP])
     if len(left_node.key_fields) == 0:
         result = result.drop(columns=[FENNEL_DELETE_TIMESTAMP])
     return result
+
 
 def _combine_rows(
     left_row,
@@ -92,7 +107,7 @@ def _create_null_row(
     if right_fields is None:
         if right_node is None:
             right_fields = []
-        else:   
+        else:
             right_fields = right_fields or [
                 x.name
                 for x in right_node.fields
@@ -236,8 +251,8 @@ def stream_table_join(
         right_by = [f"__@@__{col}" for col in on]
         left_by = copy.deepcopy(on)
     else:
-        left_by = copy.deepcopy(left_on) # type: ignore
-        right_by = copy.deepcopy(right_on) # type: ignore
+        left_by = copy.deepcopy(left_on)  # type: ignore
+        right_by = copy.deepcopy(right_on)  # type: ignore
 
     # Rename the right_by columns to avoid conflicts with any of the left columns.
     # We dont need to worry about right value columns conflicting with left key columns,
@@ -398,11 +413,11 @@ def table_table_join(
         right_on,
         right_fields,
     )
-    left_df_dict = {} # type: ignore
+    left_df_dict = {}  # type: ignore
     for _, row in left_df.iterrows():
         left_group = (
             tuple(row[col] for col in left_keys),
-            tuple(row[col] for col in left_join_cols), # type: ignore
+            tuple(row[col] for col in left_join_cols),  # type: ignore
         )
         if left_group not in left_df_dict:
             left_df_dict[left_group] = []
@@ -410,7 +425,7 @@ def table_table_join(
         left_df_dict[left_group].append(row_dict)
 
     # Create a dictionary of right dataframe grouped by keys
-    right_df_dict = {} # type: ignore
+    right_df_dict = {}  # type: ignore
     for _, row in right_df.iterrows():
         right_group = tuple(row[col] for col in right_keys)
         if right_group not in right_df_dict:
