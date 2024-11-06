@@ -46,11 +46,11 @@ def left_join_empty(
                 right_fields,
             )
         )
-    result = pd.DataFrame(result)
-    result = result.drop(columns=[FENNEL_LOOKUP])
+    result_df = pd.DataFrame(result)
+    result_df = result_df.drop(columns=[FENNEL_LOOKUP])
     if len(left_node.key_fields) == 0:
-        result = result.drop(columns=[FENNEL_DELETE_TIMESTAMP])
-    return result
+        result_df = result_df.drop(columns=[FENNEL_DELETE_TIMESTAMP])
+    return result_df
 
 
 def _combine_rows(

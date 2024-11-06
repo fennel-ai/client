@@ -2121,7 +2121,6 @@ class TestBasicFilter(unittest.TestCase):
                 keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
             )
             assert df.shape == (3, 3)
-            print(df)
             assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
             if client.is_integration_client():
                 # backend returns default values for aggregate dataset
@@ -3583,7 +3582,7 @@ def test_table_join(client):
         t: datetime
 
     @meta(owner="aditya@fennel.ai")
-    @dataset
+    @dataset(index=True)
     class ABCDataset:
         a1: int = field(key=True)
         v: int
@@ -3596,7 +3595,7 @@ def test_table_join(client):
             x = a.join(
                 b,
                 how="left",
-                left_on=["a1"],
+                left_on=["v"],
                 right_on=["b1"],
             )  # type: ignore
             assert len(x.schema()) == 4
@@ -3608,20 +3607,37 @@ def test_table_join(client):
     now = datetime.now(timezone.utc)
     df1 = pd.DataFrame(
         {
-            "a1": [1, 2, 3],
+            "a1": [1, 1, 1],
             "v": [1, 2, 3],
-            "t": [now, now, now],
+            "t": [now - timedelta(minutes=2), now - timedelta(minutes=1), now],
         }
     )
     df2 = pd.DataFrame(
         {
-            "b1": [1, 2, 4],
-            "v2": [1, 2, 4],
-            "t": [now, now, now],
+            "b1": [1, 2, 3],
+            "v2": [2, 4, 6],
+            "t": [now - timedelta(minutes=3), now - timedelta(minutes=2), now],
         }
     )
     client.log("fennel_webhook", "A", df1)
     client.log("fennel_webhook", "B", df2)
+
+    df, _ = client.lookup(
+        ABCDataset,
+        keys=pd.DataFrame({"a1": [1, 1, 1]}),
+        timestamps=pd.Series(
+            [
+                now - timedelta(minutes=2),
+                now - timedelta(minutes=1),
+                now,
+            ]
+        ),
+    )
+
+    assert df.shape == (3, 4)
+    assert df["a1"].tolist() == [1, 1, 1]
+    assert df["v"].tolist() == [1, 2, 3]
+    assert df["v2"].tolist() == [2, 4, 6]
 
 
 def extract_payload(

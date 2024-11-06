@@ -510,7 +510,7 @@ class Executor(Visitor):
                 list(obj.dataset.dsschema().values.keys())
             )
             merged_df = left_join_empty(
-                input_ret, right_value_schema, right_value_schema, obj.fields
+                input_ret, right_ret, right_value_schema, obj.fields
             )
         else:
             if len(input_ret.key_fields) > 0:
