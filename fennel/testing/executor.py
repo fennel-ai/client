@@ -482,16 +482,22 @@ class Executor(Visitor):
         )
 
     def visitJoin(self, obj) -> Optional[NodeRet]:
+        from fennel.testing.execute_join import (
+            table_table_join,
+            stream_table_join,
+            left_join_empty,
+        )
+
         input_ret = self.visit(obj.node)
         right_ret = self.visit(obj.dataset)
         if input_ret is None or input_ret.df is None:
             return None
 
         left_df = input_ret.df
-
         if left_df is None or left_df.shape[0] == 0:
             return None
 
+        # Deal with empty right table
         if (
             right_ret is None
             or right_ret.df is None
@@ -499,220 +505,54 @@ class Executor(Visitor):
         ):
             if obj.how == "inner":
                 return None
-            else:
-                right_df = pd.DataFrame(
-                    columns=[f.name for f in right_ret.fields]  # type: ignore
-                    + [FENNEL_DELETE_TIMESTAMP]
-                )
-                right_df = cast_df_to_arrow_dtype(right_df, right_ret.fields)  # type: ignore
-        else:
-            right_df = copy.deepcopy(right_ret.df)
 
-        right_timestamp_field = right_ret.timestamp_field  # type: ignore
+            right_value_schema: List[str] = copy.deepcopy(
+                list(obj.dataset.dsschema().values.keys())
+            )
+            merged_df = left_join_empty(
+                input_ret, right_ret, right_value_schema, obj.fields
+            )
+        else:
+            if len(input_ret.key_fields) > 0:
+                merged_df = table_table_join(
+                    input_ret,
+                    right_ret,
+                    obj.how,
+                    obj.on,
+                    obj.left_on,
+                    obj.right_on,
+                    obj.fields,
+                )
+            else:
+                merged_df = stream_table_join(
+                    input_ret,
+                    right_ret,
+                    obj.how,
+                    obj.within,
+                    obj.on,
+                    obj.left_on,
+                    obj.right_on,
+                    obj.fields,
+                )
+
+        if len(input_ret.key_fields) > 0:
+            merged_df = cast_df_to_arrow_dtype(
+                merged_df,
+                [
+                    schema_proto.Field(
+                        name=FENNEL_DELETE_TIMESTAMP,
+                        dtype=schema_proto.DataType(
+                            optional_type=schema_proto.OptionalType(
+                                of=schema_proto.DataType(
+                                    timestamp_type=schema_proto.TimestampType()
+                                )
+                            )
+                        ),
+                    )
+                ],
+            )
+
         left_timestamp_field = input_ret.timestamp_field
-        ts_query_field = "_@@_query_ts"
-        tmp_right_ts = "_@@_right_ts"
-        tmp_left_ts = "_@@_left_ts"
-        tmp_ts_low = "_@@_ts_low"
-
-        # Add a column to the right dataframe that contains the timestamp which will be used for `asof_join`
-        right_df[ts_query_field] = right_df[right_timestamp_field]
-        # rename the right timestamp to avoid conflicts
-        right_df = right_df.rename(
-            columns={right_timestamp_field: tmp_right_ts}
-        )
-        # Conserve the rhs timestamp field if the join demands it
-        if (
-            obj.fields is not None
-            and len(obj.fields) > 0
-            and right_timestamp_field in obj.fields
-        ):
-            right_df[right_timestamp_field] = right_df[tmp_right_ts]
-
-        # Set the value of the left timestamp - this is the timestamp that will be used for the join
-        # - to be the upper bound of the join query (this is the max ts of a valid right dataset entry)
-        def add_within_high(row):
-            return row[left_timestamp_field] + duration_to_timedelta(
-                obj.within[1]
-            )
-
-        left_df[ts_query_field] = left_df.apply(
-            lambda row: add_within_high(row), axis=1
-        ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
-
-        # Add a column to the left dataframe to specify the lower bound of the join query - this
-        # is the timestamp below which we will not consider any rows from the right dataframe for joins
-        def sub_within_low(row):
-            if obj.within[0] == "forever":
-                # datetime.min cannot be casted to nano seconds therefore using
-                # 1701-01-01 00:00:00.000000+00:0 as minimum datetime
-                return datetime(1700, 1, 1, tzinfo=timezone.utc)
-            else:
-                return row[left_timestamp_field] - duration_to_timedelta(
-                    obj.within[0]
-                )
-
-        left_df[tmp_ts_low] = left_df.apply(
-            lambda row: sub_within_low(row), axis=1
-        ).astype(pd.ArrowDtype(pa.timestamp("ns", "UTC")))
-
-        # rename the left timestamp to avoid conflicts
-        left_df = left_df.rename(columns={left_timestamp_field: tmp_left_ts})
-        if obj.on is not None and len(obj.on) > 0:
-            if not is_subset(obj.on, left_df.columns):
-                raise Exception(
-                    f"Join on fields {obj.on} not present in left dataframe"
-                )
-            if not is_subset(obj.on, right_df.columns):
-                raise Exception(
-                    f"Join on fields {obj.on} not present in right dataframe"
-                )
-            # Rename the "on" columns on RHS by prefixing them with "__@@__"
-            # This is to avoid conflicts with the "on" columns on LHS
-            right_df = right_df.rename(
-                columns={col: f"__@@__{col}" for col in obj.on}
-            )
-            right_by = [f"__@@__{col}" for col in obj.on]
-            left_by = copy.deepcopy(obj.on)
-        else:
-            if not is_subset(obj.left_on, left_df.columns):
-                raise Exception(
-                    f"Join keys {obj.left_on} not present in left dataframe"
-                )
-            if not is_subset(obj.right_on, right_df.columns):
-                raise Exception(
-                    f"Join keys {obj.right_on} not present in right dataframe"
-                )
-            left_by = copy.deepcopy(obj.left_on)
-            right_by = copy.deepcopy(obj.right_on)
-
-        # Rename the right_by columns to avoid conflicts with any of the left columns.
-        # We dont need to worry about right value columns conflicting with left key columns,
-        # because we have already verified that.
-        if set(right_by).intersection(set(left_df.columns)):
-            right_df = right_df.rename(
-                columns={col: f"__@@__{col}" for col in right_by}
-            )
-            right_by = [f"__@@__{col}" for col in right_by]
-
-        left_df = left_df.sort_values(by=ts_query_field)
-        right_df = right_df.sort_values(by=ts_query_field)
-
-        for col in left_by:
-            # If any of the columns is a dictionary, convert it to a frozen dict
-            if left_df[col].apply(lambda x: isinstance(x, dict)).any():
-                left_df[col] = left_df[col].apply(lambda x: frozendict(x))
-
-        # Drop fields from right which are not in fields
-        if obj.fields is not None and len(obj.fields) > 0:
-            all_right_fields = [f.name for f in right_ret.fields]  # type: ignore
-            for col_name in obj.fields:
-                if col_name in right_ret.key_fields:  # type: ignore
-                    raise Exception(
-                        f"fields member {col_name} cannot be one of right dataframe's "  # type: ignore
-                        f"key fields {right_ret.key_fields}"
-                    )
-                if col_name not in all_right_fields:
-                    raise Exception(
-                        f"fields member {col_name} not present in right dataframe's "  # type: ignore
-                        f"fields {right_ret.fields}"  # type: ignore
-                    )
-
-            cols_to_drop = []
-            for field in right_ret.fields:  # type: ignore
-                col_name = field.name
-                if (
-                    col_name not in right_ret.key_fields  # type: ignore
-                    and col_name != right_ret.timestamp_field  # type: ignore
-                    and col_name not in obj.fields
-                ):
-                    cols_to_drop.append(col_name)
-
-            right_df.drop(columns=cols_to_drop, inplace=True)
-
-        try:
-            # TODO(Nitin): Use FENNEL_DELETE_TIMESTAMP to filter out deleted rows appropriately
-            right_df = right_df.drop(columns=[FENNEL_DELETE_TIMESTAMP])
-            merged_df = pd.merge_asof(
-                left=left_df,
-                right=right_df,
-                on=ts_query_field,
-                left_by=left_by,
-                right_by=right_by,
-            )
-        except Exception as e:
-            raise Exception(
-                f"Error in join function for pipeline "
-                f"`{self.cur_pipeline_name}` in dataset `{self.cur_ds_name}, {e}"
-            )
-        if obj.how == "inner":
-            # Drop rows which have null values in any of the RHS key columns
-            merged_df = merged_df.dropna(subset=right_by)
-        # Drop the RHS key columns from the merged dataframe
-        merged_df = merged_df.drop(columns=right_by)
-        right_df = right_df.drop(columns=right_by)
-
-        # Filter out rows that are outside the bounds of the join query
-        def filter_bounded_row(row):
-            # if the dataset was not found, we want to keep the row around with null values
-            if pd.isnull(row[tmp_right_ts]):
-                return row
-            if row[tmp_right_ts] >= row[tmp_ts_low]:
-                return row
-            # if the row is outside the bounds, we want to assume that right join did not succeed
-            # - we do so by setting all the right columns to null
-            for col in right_df.columns.values:
-                if col not in left_df.columns.values:
-                    row[col] = pd.NA
-            return row
-
-        original_dtypes = merged_df.dtypes
-        # If any of the columns in the merged df was transformed to have NaN values (these are columns from RHS),
-        # check if the dtype of the column is int, if so, convert that into float so that
-        # it will accept NaN values - this is what Pandas does, emulating the same behavior here.
-        # Handling with empty dataframe case because pandas automatically defines dtype of float64 to null columns
-        # and then conversion of flot64 dtype to pd.ArrowDtype(pa.timestamp("us", "UTC")) fails
-        if merged_df.shape[0] > 0:
-            merged_df = merged_df.transform(
-                lambda row: filter_bounded_row(row), axis=1
-            )
-        # Try transforming to the original dtypes
-        # In case of failures, ignore them, which will result in the column being converted to `object` dtype
-        merged_df = merged_df.astype(original_dtypes, errors="ignore")
-        transformed_dtypes = merged_df.dtypes
-        for index, dtype in zip(original_dtypes.index, original_dtypes.values):
-            if (
-                index in right_df.columns.values
-                and index not in left_df.columns.values
-            ):
-                if dtype == np.int64 and transformed_dtypes[index] == object:
-                    original_dtypes[index] = np.dtype(np.float64)
-        merged_df = merged_df.astype(original_dtypes)
-
-        # Set the timestamp of the row to be the max of the left and right timestamps - this is the timestamp
-        # that is present in the downstream operators. We take the max because it is possible that upper bound is
-        # specified and join occurred with an entry with larger value than the query ts.
-
-        def emited_ts(row):
-            return row[tmp_left_ts]
-
-        # Handling with empty dataframe case because pandas automatically defines dtype of float64 to null columns
-        # and then conversion of flot64 dtype to pd.ArrowDtype(pa.timestamp("us", "UTC")) fails
-        if merged_df.shape[0] > 0:
-            merged_df[left_timestamp_field] = merged_df.apply(
-                lambda row: emited_ts(row), axis=1
-            )
-        else:
-            merged_df[left_timestamp_field] = pd.Series(
-                [], dtype=pd.ArrowDtype(pa.timestamp("ns", "UTC"))
-            )
-
-        # drop the temporary columns
-        merged_df.drop(
-            columns=[tmp_ts_low, ts_query_field, tmp_left_ts, tmp_right_ts],
-            inplace=True,
-        )
-
         # sort the dataframe by the timestamp
         sorted_df = merged_df.sort_values(left_timestamp_field)
 

@@ -2121,7 +2121,6 @@ class TestBasicFilter(unittest.TestCase):
                 keys=pd.DataFrame({"movie": ["Jumanji", "Titanic", "RaOne"]}),
             )
             assert df.shape == (3, 3)
-            print(df)
             assert df["movie"].tolist() == ["Jumanji", "Titanic", "RaOne"]
             if client.is_integration_client():
                 # backend returns default values for aggregate dataset
@@ -3487,7 +3486,10 @@ class TestE2eIntegrationTestMUInfoBounded(unittest.TestCase):
 @mock
 def test_join(client):
     def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        assert df.shape == (3, 5), "Shape is not correct {}".format(df.shape)
+        assert df.shape == (
+            3,
+            5,
+        ), "Shape is not correct expected (3, 5) got {}".format(df.shape)
         assert (
             "b1" not in df.columns
         ), "b1 column should not be present, " "{}".format(df.columns)
@@ -3549,6 +3551,93 @@ def test_join(client):
     )
     client.log("fennel_webhook", "A", df1)
     client.log("fennel_webhook", "B", df2)
+
+
+@mock
+def test_table_join(client):
+    def test_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+        assert df.shape == (
+            3,
+            5,
+        ), "Shape is not correct expected (3, 5) got {}".format(df.shape)
+        assert (
+            "b1" not in df.columns
+        ), "b1 column should not be present, " "{}".format(df.columns)
+        return df
+
+    @source(webhook.endpoint("A"), disorder="14d", cdc="upsert")
+    @meta(owner="aditya@fennel.ai")
+    @dataset
+    class A:
+        a1: int = field(key=True)
+        v: int
+        t: datetime
+
+    @source(webhook.endpoint("B"), disorder="14d", cdc="upsert")
+    @meta(owner="aditya@fennel.ai")
+    @dataset(index=True)
+    class B:
+        b1: int = field(key=True)
+        v2: int
+        t: datetime
+
+    @meta(owner="aditya@fennel.ai")
+    @dataset(index=True)
+    class ABCDataset:
+        a1: int = field(key=True)
+        v: int
+        v2: Optional[int]
+        t: datetime
+
+        @pipeline
+        @inputs(A, B)
+        def pipeline1(cls, a: Dataset, b: Dataset):
+            x = a.join(
+                b,
+                how="left",
+                left_on=["v"],
+                right_on=["b1"],
+            )  # type: ignore
+            assert len(x.schema()) == 4
+            x = x.transform(test_dataframe)  # type: ignore
+            return x
+
+    client.commit(message="msg", datasets=[A, B, ABCDataset])
+
+    now = datetime.now(timezone.utc)
+    df1 = pd.DataFrame(
+        {
+            "a1": [1, 1, 1],
+            "v": [1, 2, 3],
+            "t": [now - timedelta(minutes=2), now - timedelta(minutes=1), now],
+        }
+    )
+    df2 = pd.DataFrame(
+        {
+            "b1": [1, 2, 3],
+            "v2": [2, 4, 6],
+            "t": [now - timedelta(minutes=3), now - timedelta(minutes=2), now],
+        }
+    )
+    client.log("fennel_webhook", "A", df1)
+    client.log("fennel_webhook", "B", df2)
+
+    df, _ = client.lookup(
+        ABCDataset,
+        keys=pd.DataFrame({"a1": [1, 1, 1]}),
+        timestamps=pd.Series(
+            [
+                now - timedelta(minutes=2),
+                now - timedelta(minutes=1),
+                now,
+            ]
+        ),
+    )
+
+    assert df.shape == (3, 4)
+    assert df["a1"].tolist() == [1, 1, 1]
+    assert df["v"].tolist() == [1, 2, 3]
+    assert df["v2"].tolist() == [2, 4, 6]
 
 
 def extract_payload(
