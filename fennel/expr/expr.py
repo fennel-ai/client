@@ -561,6 +561,16 @@ class Concat(StringOp):
     other: Expr
 
 
+@dataclass
+class StringJsonExtract(StringOp):
+    path: str
+
+
+@dataclass
+class StringSplit(StringOp):
+    sep: str
+
+
 class _String(Expr):
     def __init__(self, expr: Expr, op: StringOp):
         self.op = op
@@ -576,6 +586,12 @@ class _String(Expr):
     def contains(self, item) -> _Bool:
         item_expr = make_expr(item)
         return _Bool(_String(self, StrContains(item_expr)))
+
+    def json_extract(self, path: str) -> _String:
+        return _String(self, StringJsonExtract(path))
+
+    def split(self, sep: str) -> _List:
+        return _List(_String(self, StringSplit(sep)), ListNoop())
 
     def concat(self, other: Expr) -> _String:
         other = make_expr(other)

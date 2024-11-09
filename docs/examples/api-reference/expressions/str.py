@@ -324,8 +324,6 @@ def test_strptime():
     assert expr.typeof(schema={"x": str}) == datetime
     assert expr.typeof(schema={"x": Optional[str]}) == Optional[datetime]
 
-    # TODO: replace NaT with pd.NA
-    # TODO: replace pd.Timestamp with datetime
     df = pd.DataFrame({"x": ["2021-01-01", "2021-02-01", None]})
     schema = {"x": Optional[str]}
     assert expr.eval(df, schema).tolist() == [
@@ -352,4 +350,48 @@ def test_strptime():
     expr = col("x").str.strptime("%Y-%m-%d", timezone="invalid")
     with pytest.raises(Exception):
         expr.eval(df, schema)
+    # /docsnip
+
+
+def test_json_extract():
+    # docsnip json_extract
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("s").str.json_extract("$.x.y")
+
+    # return type is always Optional[str]
+    assert expr.typeof(schema={"s": str}) == Optional[str]
+    assert expr.typeof(schema={"s": Optional[str]}) == Optional[str]
+
+    # can be evaluated with a dataframe
+    df = pd.DataFrame(
+        {"s": ['{"x": {"y": "hello"}}', '{"x": {"y": 1}}', "{}", None]}
+    )
+    schema = {"s": Optional[str]}
+    # NOTE that the integer value 1 is returned as a string and not an int
+    # also invalid paths (e.g. "$.x.y" in case 3 of "{}") return null
+    assert expr.eval(df, schema).tolist() == ["hello", "1", pd.NA, pd.NA]
+    # /docsnip
+
+
+def test_split():
+    # docsnip split
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("s").str.split(",")
+
+    assert expr.typeof(schema={"s": str}) == List[str]
+    assert expr.typeof(schema={"s": Optional[str]}) == Optional[List[str]]
+
+    # can be evaluated with a dataframe
+    df = pd.DataFrame({"s": ["a,b,c", "d,e", "f", None]})
+    schema = {"s": Optional[str]}
+    assert expr.eval(df, schema).tolist() == [
+        ["a", "b", "c"],
+        ["d", "e"],
+        ["f"],
+        pd.NA,
+    ]
     # /docsnip

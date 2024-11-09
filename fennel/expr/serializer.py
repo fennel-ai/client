@@ -54,6 +54,8 @@ from fennel.expr.expr import (
     StringStrpTime,
     StringParse,
     StrStartsWith,
+    StringSplit,
+    StringJsonExtract,
     StrEndsWith,
     Lower,
     Upper,
@@ -293,6 +295,14 @@ class ExprSerializer(Visitor):
                 proto.StringOp(
                     endswith=proto.EndsWith(key=self.visit(obj.op.item))
                 )
+            )
+        elif isinstance(obj.op, StringJsonExtract):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(json_extract=proto.JsonExtract(path=obj.op.path))
+            )
+        elif isinstance(obj.op, StringSplit):
+            expr.string_fn.fn.CopyFrom(
+                proto.StringOp(split=proto.Split(sep=obj.op.sep))
             )
         else:
             raise InvalidExprException("invalid string operation: %s" % obj.op)
