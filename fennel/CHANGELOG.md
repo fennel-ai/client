@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.49] - 2024-11-09
+- Add json_extract and split string expressions
+
 ## [1.5.48] - 2024-11-06
 - Use v2 by default in query_offline
 
@@ -22,7 +25,7 @@
 - Increase client timeouts
 
 ## [1.5.41] - 2024-10-21
-- Add window support dedup
+- Add support for window based dedup operator
 
 ## [1.5.40] - 2024-10-05
 - Add changelog operator
