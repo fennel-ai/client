@@ -755,12 +755,19 @@ class Executor(Visitor):
             )
             df = df.drop(columns=["__@@__tumbling_id", "__@@__index"])
         elif isinstance(obj.window, Session):
-            df["__@@__index"] = df.index
+            df["__@@__index"] = range(df.shape[0])
             # Using a stable sort algorithm to preserve the order of rows that have the same timestamp within the same session
             df = df.sort_values(input_ret.timestamp_field, kind="mergesort")
-            df["__@@__session_id"] = generate_session_id(
-                df[input_ret.timestamp_field], obj.window
-            )
+            index_to_session_id = {}
+            for _, group in df.groupby(obj.by):
+                session_ids = generate_session_id(
+                    group[input_ret.timestamp_field], obj.window
+                )
+                for i, session_id in enumerate(session_ids):
+                    index_to_session_id[group.iloc[i]["__@@__index"]] = (
+                        session_id
+                    )
+            df["__@@__session_id"] = df["__@@__index"].map(index_to_session_id)
             df = (
                 df.groupby(obj.by + ["__@@__session_id"])
                 .last()
@@ -768,6 +775,7 @@ class Executor(Visitor):
                 .sort_values("__@@__index")
             )
             df = df.drop(columns=["__@@__session_id", "__@@__index"])
+            df = df.reset_index(drop=True)
         else:
             raise Exception(f"Unsupported window type {type(obj.window)}")
 
