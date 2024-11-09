@@ -1,6 +1,8 @@
 # Changelog
+## [1.5.51] - 2024-11-09
+- Fix bug in mock client for session based dedup operator
 
-## [1.5.49] - 2024-11-09
+## [1.5.50] - 2024-11-09
 - Add json_extract and split string expressions
 
 ## [1.5.48] - 2024-11-06
