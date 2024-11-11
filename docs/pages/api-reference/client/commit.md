@@ -49,10 +49,20 @@ those with matching values. Rules of selection:
   or same as `env` or is `~x` for some other x
 </Expandable>
 
+<Expandable title="backfill" type="bool" defaultVal="True">
+If set to False, Returns error if commit will result in a backfill of any dataset.
+backfill of a dataset is done when there is no existing dataset that is isomorphic to the new dataset.
+backfill param can be set as False to prevent accidental backfills.
+</Expandable>
+
 <pre snippet="api-reference/client/commit#basic" status="success"
     message="Silver source and no extractor are committed">
 </pre>
 
 <pre snippet="api-reference/client/commit#incremental" status="success"
     message="Second commit adds a featureset & leaves dataset unchanged">
+</pre>
+
+<pre snippet="api-reference/client/commit#backfill" status="success"
+    message="Backfill param will prevent backfill of Transaction dataset when committing to main branch">
 </pre>

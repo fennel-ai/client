@@ -149,6 +149,7 @@ class MockClient(Client):
         preview=False,
         env: Optional[str] = None,
         incremental: bool = False,
+        backfill: bool = True,
     ):
         def is_superset_featureset(featureset_new, featureset_old):
             features_new = set(
@@ -247,7 +248,7 @@ class MockClient(Client):
         # Run all validation for converting them to protos
         _ = to_sync_request_proto(self.to_register_objects, message, env)
         return self._get_branch().commit(
-            datasets, featuresets, preview, incremental, env
+            datasets, featuresets, preview, incremental, env, backfill
         )
 
     def query(

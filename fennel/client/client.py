@@ -95,6 +95,7 @@ class Client:
         preview=False,
         env: Optional[str] = None,
         incremental: bool = False,
+        backfill: bool = True,
     ):
         """Commit the changes to the branch pointed to by the client.
 
@@ -112,6 +113,7 @@ class Client:
         env (Optional[str]): The environment to register the datasets and featuresets in.
         incremental (bool):  If the commit is only used for adding datasets and featuresets and not changing
             anything existing.
+        backfill (bool): When False will return an error if commit will result in a backfill.
 
         Returns:
         ----------
@@ -140,7 +142,7 @@ class Client:
                 self.add(featureset)
         sync_request = self._get_sync_request_proto(message, env)
         response = self._post_bytes(
-            f"{V1_API}/commit?preview={str(preview).lower()}&incremental={str(incremental).lower()}",
+            f"{V1_API}/commit?preview={str(preview).lower()}&incremental={str(incremental).lower()}&backfill={str(backfill).lower()}",
             sync_request.SerializeToString(),
             False,
             300,

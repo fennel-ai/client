@@ -123,6 +123,7 @@ class Branch:
         preview=False,
         incremental=False,
         env: Optional[str] = None,
+        backfill=True,
     ):
         if not incremental:
             self._reset()
