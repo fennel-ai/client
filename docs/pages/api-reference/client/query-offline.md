@@ -60,6 +60,13 @@ IAM role has write permissions on this bucket - talk to Fennel support if you
 need help.
 </Expandable>
 
+<Expandable title="workflow" type="str" defaultVal="'default'">
+The name of the workflow associated with the feature query. Only relevant
+when `log` is set to True, in which case, features associated with the same workflow
+are collected together. Useful if you want to separate logged features between, say,
+login fraud and transaction fraud.
+</Expandable>
+
 <Expandable title="feature_to_column_map" type="Optional[Dict[Feature, str]]" defaultVal="None">
 When reading input data from s3, sometimes the column names in s3 don't match
 one-to-one with the names of the input features. In such cases, a dictionary

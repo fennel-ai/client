@@ -226,6 +226,7 @@ class Client:
 
         workflow (Optional[str]): The name of the workflow associated with the
             feature extraction. Only relevant when log is set to True.
+
         sampling_rate (float): The rate at which feature data should be sampled
             before logging. Only relevant when log is set to True. The default
             value is 1.0.
@@ -461,6 +462,7 @@ class Client:
         input_s3: Optional[S3Connector] = None,
         output_s3: Optional[S3Connector] = None,
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
+        workflow: Optional[str] = None,
         use_v2: bool = True,
     ) -> Dict[str, Any]:
         """Extract point in time correct values of output features.
@@ -497,6 +499,8 @@ class Client:
         feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that
             maps columns in the S3 data to the required features.
 
+        workflow (Optional[str]): The name of the workflow associated with the
+            feature extraction. Only relevant when log is set to True.
 
         Returns: Dict[str, Any]:
         ----------
@@ -611,6 +615,8 @@ class Client:
             "s3_output": _s3_connector_dict(output_s3) if output_s3 else None,
             "use_v2": use_v2,
         }
+        if workflow is not None:
+            req["workflow"] = workflow
         response = self._post_json(
             "{}/query_offline".format(
                 V1_API,
