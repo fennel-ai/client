@@ -52,7 +52,7 @@ those with matching values. Rules of selection:
 <Expandable title="backfill" type="bool" defaultVal="True">
 If set to False, Returns error if commit will result in a backfill of any dataset.
 backfill of a dataset is done when there is no existing dataset that is isomorphic to the new dataset.
-backfill param can be set as False to prevent accidental backfills.
+backfill parameter can be set as False to prevent accidental backfill.
 </Expandable>
 
 <pre snippet="api-reference/client/commit#basic" status="success"
