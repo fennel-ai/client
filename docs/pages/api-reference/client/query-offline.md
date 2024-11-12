@@ -61,10 +61,9 @@ need help.
 </Expandable>
 
 <Expandable title="workflow" type="str" defaultVal="'default'">
-The name of the workflow associated with the feature query. Only relevant
-when `log` is set to True, in which case, features associated with the same workflow
-are collected together. Useful if you want to separate logged features between, say,
-login fraud and transaction fraud.
+The name of the workflow associated with the feature query.
+It functions like a tag for example, "fraud" or "finance" to categorize the query.
+If this parameter is not provided, it will default to "default".
 </Expandable>
 
 <Expandable title="feature_to_column_map" type="Optional[Dict[Feature, str]]" defaultVal="None">

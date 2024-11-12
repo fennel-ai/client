@@ -499,8 +499,9 @@ class Client:
         feature_to_column_map (Optional[Dict[Feature, str]]): A dictionary that
             maps columns in the S3 data to the required features.
 
-        workflow (Optional[str]): The name of the workflow associated with the
-            feature extraction. Only relevant when log is set to True.
+        workflow (Optional[str]): The name of the workflow associated with offline query.
+            workflow param is equivalent to tagging (ex: fraud, finance etc.).
+             If not provided, the "default" value will be used.
 
         Returns: Dict[str, Any]:
         ----------
