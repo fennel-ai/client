@@ -68,6 +68,7 @@ def test_basic(client):
                 },
             ),
             timestamp_column="timestamp",
+            workflow="fraud",
         )
         print(response)
         # /docsnip
@@ -112,6 +113,7 @@ def test_basic(client):
             timestamp_column="timestamp",
             input_s3=s3_input_connection,
             output_s3=s3_output_connection,
+            workflow="fraud",
         )
         # docsnip-highlight end
         # /docsnip
