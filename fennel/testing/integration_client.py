@@ -78,9 +78,10 @@ class IntegrationClient(Client):
         preview=False,
         env: Optional[str] = None,
         incremental: bool = False,
+        backfill: bool = True,
     ):
         resp = super().commit(
-            message, datasets, featuresets, preview, env, incremental
+            message, datasets, featuresets, preview, env, incremental, backfill
         )
         # It takes a while to setup the server
         time.sleep(10)

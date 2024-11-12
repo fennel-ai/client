@@ -100,3 +100,43 @@ def test_incremental(client):
     )
     # docsnip-highlight end
     # /docsnip
+
+
+@mock
+def test_backfill(client):
+    # docsnip backfill
+    from fennel.datasets import dataset, field
+    from fennel.connectors import source, Webhook
+
+    webhook = Webhook(name="some_webhook")
+
+    @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Transaction:
+        txid: int = field(key=True)
+        amount: int
+        timestamp: datetime
+
+    client.checkout("test_backfill", init=True)
+    client.commit(
+        message="transaction: add transaction dataset",
+        datasets=[Transaction],
+        backfill=True,  # default is True, so didn't need to include this
+    )
+
+    @source(webhook.endpoint("endpoint"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class Transaction:
+        txid: int = field(key=True)
+        amount: int
+        timestamp: datetime
+
+    # docsnip-highlight start
+    client.checkout("main", init=True)
+    client.commit(
+        message="adding transaction dataset to main",
+        datasets=[Transaction],
+        backfill=False,  # set backfill as False to prevent accidental backfill for Transaction dataset
+    )
+    # docsnip-highlight end
+    # /docsnip
