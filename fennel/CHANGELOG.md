@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.54] - 2024-11-12
+- Add backfill parameter to commit operation
+
 ## [1.5.53] - 2024-11-12
 - Add support for workflow parameter in offline query
 
