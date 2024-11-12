@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.53] - 2024-11-12
+- Add support for workflow parameter in offline query
+
 ## [1.5.52] - 2024-11-12
 - Source: support expressions in where
 

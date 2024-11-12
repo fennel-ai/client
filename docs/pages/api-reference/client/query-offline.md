@@ -60,6 +60,12 @@ IAM role has write permissions on this bucket - talk to Fennel support if you
 need help.
 </Expandable>
 
+<Expandable title="workflow" type="str" defaultVal="'default'">
+The name of the workflow associated with the feature query.
+It functions like a tag for example, "fraud" or "finance" to categorize the query.
+If this parameter is not provided, it will default to "default".
+</Expandable>
+
 <Expandable title="feature_to_column_map" type="Optional[Dict[Feature, str]]" defaultVal="None">
 When reading input data from s3, sometimes the column names in s3 don't match
 one-to-one with the names of the input features. In such cases, a dictionary
