@@ -39,11 +39,15 @@ from fennel.expr.expr import (
     Floor,
     StringNoop,
     StringParse,
+    StringJsonExtract,
     StrLen,
     Lower,
     Upper,
     StringStrpTime,
     StrContains,
+    StrStartsWith,
+    StrEndsWith,
+    StringSplit,
     DictContains,
     Concat,
     DictGet,
@@ -301,6 +305,14 @@ class ExprPrinter(Visitor):
             return f"STRPTIME({self.visit(obj.operand)}, {obj.op.format})"
         elif isinstance(obj.op, StringParse):
             return f"PARSE({self.visit(obj.operand)}, {obj.op.dtype})"
+        elif isinstance(obj.op, StrStartsWith):
+            return f"STARTSWITH({self.visit(obj.operand)}, {self.visit(obj.op.item)})"
+        elif isinstance(obj.op, StrEndsWith):
+            return f"ENDSWITH({self.visit(obj.operand)}, {self.visit(obj.op.item)})"
+        elif isinstance(obj.op, StringJsonExtract):
+            return f"JSON_EXTRACT({self.visit(obj.operand)}, {obj.op.path})"
+        elif isinstance(obj.op, StringSplit):
+            return f"SPLIT({self.visit(obj.operand)}, {obj.op.sep})"
         else:
             raise InvalidExprException("invalid string operation: %s" % obj.op)
 

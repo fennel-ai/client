@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.55] - 2024-11-14
+- Add print visitor for couple missing string operations
+
 ## [1.5.54] - 2024-11-12
 - Add backfill parameter to commit operation
 
