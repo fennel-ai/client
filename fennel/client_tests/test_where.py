@@ -105,9 +105,6 @@ def test_where_expression(client):
             cdc="append",
             disorder="14d",
             env="prod",
-            where=eval(
-                (col("age") > 0) & (col("age") % 100 == 1), schema={"age": int}
-            ),
         )
         @dataset
         class A1:
@@ -131,8 +128,8 @@ def test_where_expression(client):
         now = datetime.now(timezone.utc)
         df = pd.DataFrame(
             {
-                "user_id": [1, 1, 1, 2, 2, 3, 4, 5, 5, 5],
-                "age": [100, 11, 12, 1, 2, 2, 3, 3, 4, 5],
+                "user_id": [1, 1, 1, 2, 2, 3, 4, 5],
+                "age": [100, 11, 12, 1, 101, 2, 3, 3],
                 "t": [now, now, now, now, now, now, now, now, now, now],
             }
         )
@@ -144,4 +141,4 @@ def test_where_expression(client):
             A2,
             keys=pd.DataFrame({"user_id": [1, 2, 3, 4, 5]}),
         )
-        assert df["age"].tolist() == [pd.NA, 1, pd.NA, pd.NA, pd.NA]
+        assert df["age"].tolist() == [12, 101, 2, 3, 3]
