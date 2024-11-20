@@ -84,9 +84,9 @@ def test_where(client):
             }
         )
 
+        client.sleep(30)
         client.log("fennel_webhook", "A1", df)
-        if client.is_integration_client():
-            client.sleep(60)
+        client.sleep(60)
 
         df, _ = client.lookup(
             A2,
@@ -139,9 +139,9 @@ def test_where_expression(client):
         )
         df["age"] = df["age"].astype(pd.Int64Dtype())
 
+        client.sleep(30)
         client.log("fennel_webhook", "A1", df)
-        if client.is_integration_client():
-            client.sleep(60)
+        client.sleep(60)
 
         df, _ = client.lookup(
             A2,
@@ -204,9 +204,9 @@ def test_where_expression_with_additional_schema(client):
         )
         df["name"] = df["name"].astype(pd.StringDtype())
 
+        client.sleep(30)
         client.log("fennel_webhook", "A1", df)
-        if client.is_integration_client():
-            client.sleep(60)
+        client.sleep(60)
 
         df, _ = client.lookup(
             A2,
@@ -272,9 +272,9 @@ def test_where_expression_with_additional_schema_and_preproc(client):
         )
         df["first_name"] = df["first_name"].astype(pd.StringDtype())
 
+        client.sleep(30)
         client.log("fennel_webhook", "A1", df)
-        if client.is_integration_client():
-            client.sleep(60)
+        client.sleep(60)
 
         df, _ = client.lookup(
             A2,
