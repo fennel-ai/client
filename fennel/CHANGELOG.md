@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.56] - 2024-11-24
+- Add to_string method to num namespace in expressions
+
 ## [1.5.55] - 2024-11-14
 - Add print visitor for couple missing string operations
 

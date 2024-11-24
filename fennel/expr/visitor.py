@@ -35,6 +35,7 @@ from fennel.expr.expr import (
     MathNoop,
     Round,
     Ceil,
+    NumToStr,
     Abs,
     Floor,
     StringNoop,
@@ -267,6 +268,8 @@ class ExprPrinter(Visitor):
             return "CEIL(%s)" % self.visit(obj.operand)
         elif isinstance(obj.op, Abs):
             return "ABS(%s)" % self.visit(obj.operand)
+        elif isinstance(obj.op, NumToStr):
+            return f"TO_STRING({self.visit(obj.operand)})"
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
 

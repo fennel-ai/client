@@ -147,6 +147,7 @@ sidebar:
       - "api-reference/expressions/num/ceil"
       - "api-reference/expressions/num/floor"
       - "api-reference/expressions/num/round"
+      - "api-reference/expressions/num/to_string"
 
   - slug: "api-reference/expressions/str"
     title: "String Expressions"
