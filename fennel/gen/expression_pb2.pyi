@@ -726,6 +726,7 @@ class MathOp(google.protobuf.message.Message):
     ABS_FIELD_NUMBER: builtins.int
     CEIL_FIELD_NUMBER: builtins.int
     FLOOR_FIELD_NUMBER: builtins.int
+    TO_STRING_FIELD_NUMBER: builtins.int
     @property
     def round(self) -> global___Round: ...
     @property
@@ -734,6 +735,8 @@ class MathOp(google.protobuf.message.Message):
     def ceil(self) -> global___Ceil: ...
     @property
     def floor(self) -> global___Floor: ...
+    @property
+    def to_string(self) -> global___ToString: ...
     def __init__(
         self,
         *,
@@ -741,10 +744,11 @@ class MathOp(google.protobuf.message.Message):
         abs: global___Abs | None = ...,
         ceil: global___Ceil | None = ...,
         floor: global___Floor | None = ...,
+        to_string: global___ToString | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "round", b"round"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "round", b"round"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["round", "abs", "ceil", "floor"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "round", b"round", "to_string", b"to_string"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "round", b"round", "to_string", b"to_string"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["round", "abs", "ceil", "floor", "to_string"] | None: ...
 
 global___MathOp = MathOp
 
@@ -792,6 +796,16 @@ class Floor(google.protobuf.message.Message):
     ) -> None: ...
 
 global___Floor = Floor
+
+@typing_extensions.final
+class ToString(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___ToString = ToString
 
 @typing_extensions.final
 class MathFn(google.protobuf.message.Message):

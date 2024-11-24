@@ -165,6 +165,17 @@ def test_math_expr():
     assert ref_extractor.refs == {"a", "b", "d"}
 
 
+def test_math_expr_to_string():
+    expr = col("a").num.to_string()
+    printer = ExprPrinter()
+    assert printer.print(expr.root) == 'TO_STRING(col("a"))'
+
+    df = pd.DataFrame({"a": [1.1232, 2.1232, 3.1232]})
+    ret = expr.eval(df, {"a": float})
+    assert ret.tolist() == ["1.1232", "2.1232", "3.1232"]
+    assert expr.typeof({"a": float}) == str
+
+
 def test_bool_expr():
     expr = (col("a") == 5) | ((col("b") == "random") & (col("c") == 3.2))
     printer = ExprPrinter()

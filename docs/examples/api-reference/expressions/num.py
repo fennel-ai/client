@@ -123,3 +123,26 @@ def test_round():
 
     with pytest.raises(Exception):
         expr = col("x").round(1.1)
+
+
+def test_to_string():
+    # docsnip to_string
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.to_string()
+
+    # type is str or optional str
+    assert expr.typeof(schema={"x": int}) == str
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[str]
+    assert expr.typeof(schema={"x": float}) == str
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[str]
+
+    # can be evaluated with a dataframe
+    df = pd.DataFrame({"x": pd.Series([1.1, -2.3, None])})
+    assert expr.eval(df, schema={"x": Optional[float]}).tolist() == [
+        "1.1",
+        "-2.3",
+        pd.NA,
+    ]
+    # /docsnip
