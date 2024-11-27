@@ -2001,7 +2001,7 @@ def test_keyed_input_aggregate():
 def test_optional_join():
 
     # Test that optional can join
-    # inner join drop null on join keys
+    # inner join should notdrop null on join keys
     if True:
 
         @dataset
@@ -2020,7 +2020,7 @@ def test_optional_join():
 
         @dataset
         class XYZJoinedABC:  # noqa: F811
-            user_id: int
+            user_id: Optional[int]
             agent_id: int
             name: str
             age: int
@@ -2063,76 +2063,6 @@ def test_optional_join():
             def create_pipeline(cls, a: Dataset, b: Dataset):
                 c = a.join(b, how="left", left_on=["user_id", "agent_id"], right_on=["user_id_2", "agent_id_2"])  # type: ignore
                 return c
-
-    # Test wrong optional
-    with pytest.raises(TypeError) as e:
-
-        @dataset
-        class XYZ:
-            user_id: Optional[str]
-            agent_id: int
-            name: str
-            timestamp: datetime
-
-        @dataset(index=True)
-        class ABC:
-            user_id: int = field(key=True)
-            agent_id: int = field(key=True)
-            age: int
-            timestamp: datetime
-
-        @dataset
-        class XYZJoinedABC:  # noqa: F811
-            user_id: Optional[int]
-            agent_id: int
-            name: str
-            age: int
-            timestamp: datetime
-
-            @pipeline
-            @inputs(XYZ, ABC)
-            def create_pipeline(cls, a: Dataset, b: Dataset):
-                c = a.join(b, how="inner", on=["user_id", "agent_id"])  # type: ignore
-                return c
-
-    assert str(e.value) == (
-        "Key field `user_id` has type `Optional[str]` in left schema but type `int` in right schema for `'[Pipeline:create_pipeline]->join node'`"
-    )
-
-    # After inner join, optional type should be removed
-    with pytest.raises(TypeError) as e:
-
-        @dataset
-        class XYZ:
-            user_id: Optional[int]
-            agent_id: int
-            name: str
-            timestamp: datetime
-
-        @dataset(index=True)
-        class ABC:
-            user_id: int = field(key=True)
-            agent_id: int = field(key=True)
-            age: int
-            timestamp: datetime
-
-        @dataset
-        class XYZJoinedABC:  # noqa: F811
-            user_id: Optional[int]
-            agent_id: int
-            name: str
-            age: int
-            timestamp: datetime
-
-            @pipeline
-            @inputs(XYZ, ABC)
-            def create_pipeline(cls, a: Dataset, b: Dataset):
-                c = a.join(b, how="inner", on=["user_id", "agent_id"])  # type: ignore
-                return c
-
-    assert str(e.value) == (
-        "[TypeError('Field `user_id` has type `int` in `pipeline create_pipeline output value` schema but type `Optional[int]` in `XYZJoinedABC value` schema.')]"
-    )
 
     # If left join, optional type should not be dropped
     with pytest.raises(TypeError) as e:

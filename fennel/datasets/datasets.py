@@ -1062,9 +1062,6 @@ class Join(_Node):
 
         rhs_keys = set(self.dataset.dsschema().keys)
         join_keys = set(self.on) if self.on is not None else set(self.right_on)
-        final_join_cols = (
-            set(self.on) if self.on is not None else set(self.left_on)
-        )
         # Ensure on or right_on are the keys of the right dataset
         if join_keys != rhs_keys:
             raise ValueError(
@@ -1132,11 +1129,6 @@ class Join(_Node):
                 )
             else:
                 joined_dsschema.append_value_column(right_ts, datetime.datetime)
-
-        # Drop null on join keys if how is inner
-        if self.how == "inner":
-            for key in final_join_cols:
-                joined_dsschema.drop_null_column(key)
 
         return joined_dsschema
 
