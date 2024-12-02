@@ -575,9 +575,15 @@ class Filter(_Node):
             )
 
     def signature(self):
-        if isinstance(self.node, Dataset):
-            return fhash(self.node._name, self.func)
-        return fhash(self.node.signature(), self.func)
+        item = (
+            self.node._name
+            if isinstance(self.node, Dataset)
+            else self.node.signature()
+        )
+        if self.func is not None:
+            return fhash(item, self.func)
+        else:
+            return fhash(item, self.filter_expr)
 
     def dsschema(self):
         return self.node.dsschema()
