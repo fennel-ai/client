@@ -22,7 +22,7 @@ from fennel.datasets import (
     FirstK,
 )
 from fennel.dtypes import Embedding, Window, Continuous, Session
-from fennel.expr import lit
+from fennel.expr import lit, col
 from fennel.gen.services_pb2 import SyncRequest
 from fennel.lib import includes, meta, inputs, desc
 from fennel.testing import *
@@ -3704,4 +3704,159 @@ def test_complex_union():
     expected_operator_request = ParseDict(union, ds_proto.Operator())
     assert operators[6] == expected_operator_request, error_message(
         operators[6], expected_operator_request
+    )
+
+
+def test_multiple_filters():
+    @source(webhook.endpoint("Events"), cdc="append", disorder="14d")
+    @dataset
+    class Events:
+        user_id: int
+        event_id: int
+        event_name: str
+        ts: datetime
+
+    @dataset
+    class DedupedEvents:
+        user_id: int
+        event_id: int
+        event_name: str
+        ts: datetime
+
+        @pipeline
+        @inputs(Events)
+        def pipeline(cls, raw_events: Dataset):
+            """Cleans the raw events from duplicates. The cut event is firing many times per cut
+            images so we need to deduplicate that.
+
+            Other events are deduplicated by event_id
+            """
+            end_events = raw_events.filter(col("event_name") == "end").dedup(
+                "user_id", "event_id"
+            )
+
+            start_events = raw_events.filter(
+                col("event_name") == "start"
+            ).dedup("user_id", "event_id")
+            return end_events + start_events
+
+    view = InternalTestClient()
+    view.add(Events)
+    view.add(DedupedEvents)
+    sync_request = view._get_sync_request_proto()
+    assert len(sync_request.datasets) == 2
+    assert len(sync_request.pipelines) == 1
+    assert len(sync_request.operators) == 6
+
+    operators = sync_request.operators
+    ds_ref = {
+        "id": "Events",
+        "pipelineName": "pipeline",
+        "datasetName": "DedupedEvents",
+        "datasetRef": {"referringDatasetName": "Events"},
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(ds_ref, ds_proto.Operator())
+    assert operators[0] == expected_operator_request, error_message(
+        operators[0], expected_operator_request
+    )
+
+    filter_1 = {
+        "id": "04a92ad1fbc5ad921e04c8677be2c773",
+        "pipelineName": "pipeline",
+        "datasetName": "DedupedEvents",
+        "filterExpr": {
+            "operandId": "Events",
+            "expr": {
+                "binary": {
+                    "left": {"ref": {"name": "event_name"}},
+                    "right": {
+                        "jsonLiteral": {
+                            "dtype": {"stringType": {}},
+                            "literal": '"end"',
+                        }
+                    },
+                    "op": "EQ",
+                }
+            },
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(filter_1, ds_proto.Operator())
+    assert operators[1] == expected_operator_request, error_message(
+        operators[1], expected_operator_request
+    )
+
+    dedup_1 = {
+        "id": "57552c0b8d1ffe5f0a83d77e148040cb",
+        "pipelineName": "pipeline",
+        "datasetName": "DedupedEvents",
+        "dedup": {
+            "operand_id": "04a92ad1fbc5ad921e04c8677be2c773",
+            "columns": ["user_id", "event_id"],
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(dedup_1, ds_proto.Operator())
+    assert operators[2] == expected_operator_request, error_message(
+        operators[2], expected_operator_request
+    )
+
+    filter_2 = {
+        "id": "25b244bbd82b8302d371c3e5a561b716",
+        "pipelineName": "pipeline",
+        "datasetName": "DedupedEvents",
+        "filterExpr": {
+            "operandId": "Events",
+            "expr": {
+                "binary": {
+                    "left": {"ref": {"name": "event_name"}},
+                    "right": {
+                        "jsonLiteral": {
+                            "dtype": {"stringType": {}},
+                            "literal": '"start"',
+                        }
+                    },
+                    "op": "EQ",
+                }
+            },
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(filter_2, ds_proto.Operator())
+    assert operators[3] == expected_operator_request, error_message(
+        operators[3], expected_operator_request
+    )
+
+    dedup_2 = {
+        "id": "8a5c8880f9443773aee08debf9808da6",
+        "pipelineName": "pipeline",
+        "datasetName": "DedupedEvents",
+        "dedup": {
+            "operand_id": "25b244bbd82b8302d371c3e5a561b716",
+            "columns": ["user_id", "event_id"],
+        },
+        "dsVersion": 1,
+    }
+    expected_operator_request = ParseDict(dedup_2, ds_proto.Operator())
+    assert operators[4] == expected_operator_request, error_message(
+        operators[4], expected_operator_request
+    )
+
+    union = {
+        "id": "d2065e2e0e90c55afb55a84bb3cc8d43",
+        "pipelineName": "pipeline",
+        "datasetName": "DedupedEvents",
+        "union": {
+            "operand_ids": [
+                "57552c0b8d1ffe5f0a83d77e148040cb",
+                "8a5c8880f9443773aee08debf9808da6",
+            ],
+        },
+        "dsVersion": 1,
+        "is_root": True,
+    }
+    expected_operator_request = ParseDict(union, ds_proto.Operator())
+    assert operators[5] == expected_operator_request, error_message(
+        operators[5], expected_operator_request
     )

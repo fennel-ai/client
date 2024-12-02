@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.57] - 2024-12-02
+- Fix signature method for filter class
+
 ## [1.5.56] - 2024-11-24
 - Add to_string method to num namespace in expressions
 
