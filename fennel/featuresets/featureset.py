@@ -610,7 +610,7 @@ class Featureset:
             extractor.inputs = inputs
             input_types = {inp.name: inp.dtype for inp in inputs}
             computed_dtype = expr.typeof(input_types)
-            if computed_dtype != feature.dtype:
+            if not expr.matches_type(feature.dtype, input_types):  # type: ignore
                 raise TypeError(
                     f"expression '{expr}' for feature '{feature.name}' is of type '{dtype_to_string(feature.dtype)}' not '{dtype_to_string(computed_dtype)}'"
                 )
