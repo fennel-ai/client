@@ -2,7 +2,8 @@ import heapq
 import math
 from abc import ABC, abstractmethod
 from collections import Counter
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
+from decimal import Decimal
 from math import sqrt
 from typing import Dict, List, Type, Union, Any
 
@@ -304,7 +305,7 @@ class Heap:
 
 
 class MinState(AggState):
-    def __init__(self, default: float):
+    def __init__(self, default: Union[float, int, date, datetime, Decimal]):
         self.counter = Counter()  # type: ignore
         self.min_heap = Heap(heap_type="min")
         self.default = default
@@ -335,7 +336,7 @@ class MinState(AggState):
 
 
 class MaxState(AggState):
-    def __init__(self, default: float):
+    def __init__(self, default: Union[float, int, date, datetime, Decimal]):
         self.counter = Counter()  # type: ignore
         self.max_heap = Heap(heap_type="max")
         self.default = default

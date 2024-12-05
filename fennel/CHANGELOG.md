@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.58] - 2024-11-24
+- Allow min/max aggregation on date, datetime and decimal dtypes
+
 ## [1.5.57] - 2024-12-02
 - Fix signature method for filter class
 

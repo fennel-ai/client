@@ -2834,7 +2834,7 @@ class SchemaValidator(Visitor):
                         f"invalid min: type of field `{agg.of}` is not int, float, date or datetime"
                     )
                 if primtive_dtype == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
+                    int(agg.default) != agg.default  # type: ignore
                 ):
                     raise TypeError(
                         f"invalid min: default value `{agg.default}` not of type `int`"
@@ -2852,7 +2852,7 @@ class SchemaValidator(Visitor):
                         f"invalid max: type of field `{agg.of}` is not int, float, date or datetime"
                     )
                 if primtive_dtype == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
+                    int(agg.default) != agg.default  # type: ignore
                 ):
                     raise TypeError(
                         f"invalid max: default value `{agg.default}` not of type `int`"
