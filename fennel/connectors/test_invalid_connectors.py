@@ -23,10 +23,11 @@ from fennel.connectors import (
     HTTP,
     Certificate,
 )
-from fennel.datasets import dataset, field
+from fennel.datasets import dataset, field, pipeline, Dataset
 from fennel.expr import col
 from fennel.integrations import Secret
 from fennel.lib import meta
+from fennel.lib.params import inputs
 
 # noinspection PyUnresolvedReferences
 from fennel.testing import *
@@ -109,6 +110,13 @@ aws_secret = Secret(
 http = HTTP(
     name="http_sink",
     host="https://127.0.0.1:8081",
+    healthz="/health",
+    ca_cert=Certificate(aws_secret["ca_cert"]),
+)
+
+http_with_secret = HTTP(
+    name="http_sink_with_secret",
+    host=aws_secret["http_host"],
     healthz="/health",
     ca_cert=Certificate(aws_secret["ca_cert"]),
 )
@@ -1083,5 +1091,190 @@ def test_invalid_where(client):
         "Schema validation failed during data insertion to `UserInfoDataset`: "
         "Error using where for dataset `UserInfoDataset`: "
         "Field `age` defined in schema for eval where has different type in the dataframe."
+        == str(e.value)
+    )
+
+
+@mock
+def test_multiple_non_stacked_sinks(client):
+    with pytest.raises(ValueError) as e:
+
+        @source(
+            kafka.topic("test_topic"),
+            disorder="14d",
+            cdc="upsert",
+            env=["prod_new4"],
+        )
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        @sink(
+            http_with_secret.path(
+                endpoint="/sink", limit=100, headers={"Foo": "Bar"}
+            ),
+            cdc="debezium",
+            env=["prod_new4"],
+            stacked=True,
+        )
+        @sink(
+            http_with_secret.path(
+                endpoint="/sink3", limit=100, headers={"Foo": "Bar"}
+            ),
+            cdc="debezium",
+            env=["prod_new4"],
+            stacked=True,
+        )
+        @dataset
+        class UserInfoDatasetDerived:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+            @pipeline
+            @inputs(UserInfoDataset)
+            def create_user_transactions(cls, dataset: Dataset):
+                return dataset
+
+        client.commit(
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerived],
+            featuresets=[],
+        )
+
+    assert (
+        "Expected 1 stacked sinks on top of dataset: UserInfoDatasetDerived but found 2"
+        == str(e.value)
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @source(
+            kafka.topic("test_topic"),
+            disorder="14d",
+            cdc="upsert",
+            env=["prod_new4"],
+        )
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        @sink(
+            http_with_secret.path(
+                endpoint="/sink", limit=100, headers={"Foo": "Bar"}
+            ),
+            cdc="debezium",
+            env=["prod_new4"],
+        )
+        @sink(
+            http_with_secret.path(
+                endpoint="/sink3", limit=100, headers={"Foo": "Bar"}
+            ),
+            cdc="debezium",
+            env=["prod_new4"],
+        )
+        @dataset
+        class UserInfoDatasetDerived:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+            @pipeline
+            @inputs(UserInfoDataset)
+            def create_user_transactions(cls, dataset: Dataset):
+                return dataset
+
+        client.commit(
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerived],
+            featuresets=[],
+        )
+
+    assert (
+        "Add the new sinks as stacked on top of dataset: UserInfoDatasetDerived"
+        == str(e.value)
+    )
+
+    with pytest.raises(ValueError) as e:
+
+        @source(
+            kafka.topic("test_topic"),
+            disorder="14d",
+            cdc="upsert",
+            env=["prod_new4"],
+        )
+        @dataset
+        class UserInfoDataset:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+        @sink(
+            http_with_secret.path(
+                endpoint="/sink3", limit=100, headers={"Foo": "Bar"}
+            ),
+            cdc="debezium",
+            env=["prod_new4"],
+            stacked=True,
+        )
+        @dataset
+        class UserInfoDatasetDerived:
+            user_id: int = field(key=True)
+            name: str
+            gender: str
+            # Users date of birth
+            dob: str
+            age: int
+            account_creation_date: datetime
+            country: Optional[str]
+            timestamp: datetime = field(timestamp=True)
+
+            @pipeline
+            @inputs(UserInfoDataset)
+            def create_user_transactions(cls, dataset: Dataset):
+                return dataset
+
+        client.commit(
+            message="msg",
+            datasets=[UserInfoDataset, UserInfoDatasetDerived],
+            featuresets=[],
+        )
+
+    assert (
+        "Stacked sink not supported when there is only one sink added on top of dataset: UserInfoDatasetDerived"
         == str(e.value)
     )
