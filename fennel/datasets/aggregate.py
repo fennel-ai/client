@@ -1,3 +1,5 @@
+from datetime import date, datetime
+from decimal import Decimal as PythonDecimal
 from typing import List, Union, Optional
 
 import fennel.gen.spec_pb2 as spec_proto
@@ -212,17 +214,25 @@ class ExpDecaySum(AggregateType):
 
 class Max(AggregateType):
     of: str
-    default: float
+    default: Union[float, int, date, datetime, PythonDecimal]
 
     def to_proto(self):
         if self.window is None:
             raise ValueError("Window must be specified for Distinct")
+        if isinstance(self.default, datetime):
+            default = float(self.default.timestamp() * 1000000.0)
+        elif isinstance(self.default, date):
+            default = float((self.default - date(1970, 1, 1)).days)
+        elif isinstance(self.default, PythonDecimal):
+            default = float(self.default)
+        else:
+            default = float(self.default)
         return spec_proto.PreSpec(
             max=spec_proto.Max(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=self.default,
+                default=default,
             )
         )
 
@@ -235,17 +245,25 @@ class Max(AggregateType):
 
 class Min(AggregateType):
     of: str
-    default: float
+    default: Union[float, int, date, datetime, PythonDecimal]
 
     def to_proto(self):
         if self.window is None:
             raise ValueError("Window must be specified for Distinct")
+        if isinstance(self.default, datetime):
+            default = float(self.default.timestamp() * 1000000.0)
+        elif isinstance(self.default, date):
+            default = float((self.default - date(1970, 1, 1)).days)
+        elif isinstance(self.default, PythonDecimal):
+            default = float(self.default)
+        else:
+            default = float(self.default)
         return spec_proto.PreSpec(
             min=spec_proto.Min(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=self.default,
+                default=default,
             )
         )
 
