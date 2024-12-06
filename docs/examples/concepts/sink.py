@@ -35,7 +35,7 @@ def test_stacked_sinks(client):
         update_time: datetime
 
     # docsnip stacked
-    from fennel.connectors import sink, Kafka, Snowflake
+    from fennel.connectors import Kafka, Snowflake
     from fennel.datasets import dataset, pipeline, Dataset
     from fennel.lib.params import inputs
 
