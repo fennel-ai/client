@@ -62,12 +62,6 @@ This means that the column denoted by the key is aliased to another column in th
 This is useful, for instance, when you want to rename columns while sinking them.
 </Expandable>
 
-<Expandable title="stacked" type='Optional[bool]' defaultVal="None">
-This indicates whether the sink is stacked on top of an existing sink. 
-If multiple sinks are added to the dataset, set this field to True
-for all sinks except the first one.
-</Expandable>
-
 <pre snippet="api-reference/sinks/sink#sink_decorator"
     status="success" message="Specifying options in sink decorator"
 >

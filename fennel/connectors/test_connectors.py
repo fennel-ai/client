@@ -680,14 +680,6 @@ def test_env_selector_on_connector():
         cdc="debezium",
         env=["prod_new4"],
     )
-    @sink(
-        http_with_secret.path(
-            endpoint="/sink3", limit=100, headers={"Foo": "Bar"}
-        ),
-        cdc="debezium",
-        env=["prod_new4"],
-        stacked=True,
-    )
     @dataset
     class UserInfoDatasetDerived:
         user_id: int = field(key=True)
@@ -942,10 +934,10 @@ def test_env_selector_on_connector():
     sync_request = view._get_sync_request_proto(env="prod_new4")
     assert len(sync_request.datasets) == 2
     assert len(sync_request.sources) == 1
-    assert len(sync_request.sinks) == 2
+    assert len(sync_request.sinks) == 1
     assert len(sync_request.extdbs) == 2
 
-    sink_request = sync_request.sinks[1]
+    sink_request = sync_request.sinks[0]
     s = {
         "table": {
             "http_path": {
@@ -977,45 +969,6 @@ def test_env_selector_on_connector():
         "dataset": "UserInfoDatasetDerived",
         "dsVersion": 1,
         "cdc": "Debezium",
-    }
-    expected_sink_request = ParseDict(s, connector_proto.Sink())
-    assert sink_request == expected_sink_request, error_message(
-        sink_request, expected_sink_request
-    )
-
-    sink_request = sync_request.sinks[0]
-    s = {
-        "table": {
-            "http_path": {
-                "db": {
-                    "name": "http_sink_with_secret",
-                    "http": {
-                        "host_secret": {
-                            "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
-                            "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                            "path": ["http_host"],
-                        },
-                        "healthz": "/health",
-                        "ca_cert": {
-                            "secret_ref": {
-                                "secret_arn": "arn:aws:secretsmanager:us-west-2:123456789012:secret:fennel-test-secret-1",
-                                "role_arn": "arn:aws:iam::123456789012:role/fennel-test-role",
-                                "path": ["ca_cert"],
-                            },
-                        },
-                    },
-                },
-                "endpoint": "/sink3",
-                "limit": 100,
-                "headers": {
-                    "Foo": "Bar",
-                },
-            },
-        },
-        "dataset": "UserInfoDatasetDerived",
-        "dsVersion": 1,
-        "cdc": "Debezium",
-        "stacked": True,
     }
     expected_sink_request = ParseDict(s, connector_proto.Sink())
     assert sink_request == expected_sink_request, error_message(
