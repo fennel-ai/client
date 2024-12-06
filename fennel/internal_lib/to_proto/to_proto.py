@@ -178,37 +178,15 @@ def to_sync_request_proto(
                     external_dbs.append(ext_db)
 
             db_with_sinks = sinks_from_ds(obj, is_source_dataset, env)
-            num_stacked_sinks = 0
 
-            for ext_db, sink in db_with_sinks:
-                if sink.stacked:
-                    num_stacked_sinks += 1
-                conn_sinks.append(sink)
+            for ext_db, sinks in db_with_sinks:
+                conn_sinks.append(sinks)
                 # dedup external dbs by the name
                 # TODO(mohit): Also validate that if the name is the same, there should
                 # be no difference in the other fields
                 if ext_db.name not in external_dbs_by_name:
                     external_dbs_by_name[ext_db.name] = ext_db
                     external_dbs.append(ext_db)
-
-            # Perform validations for stacked sinks
-            if len(db_with_sinks) == 1 and num_stacked_sinks == 1:
-                raise ValueError(
-                    f"Stacked sink not supported when there is only one sink added on top of dataset: {obj._name}"
-                )
-
-            if len(db_with_sinks) > 1 and num_stacked_sinks == 0:
-                raise ValueError(
-                    f"Add the new sinks as stacked on top of dataset: {obj._name}"
-                )
-
-            if (
-                len(db_with_sinks) > 1
-                and num_stacked_sinks != len(db_with_sinks) - 1
-            ):
-                raise ValueError(
-                    f"Expected {len(db_with_sinks) - 1} stacked sinks on top of dataset: {obj._name} but found {num_stacked_sinks}"
-                )
 
         elif isinstance(obj, Featureset):
             featuresets.append(featureset_to_proto(obj))
@@ -1152,7 +1130,6 @@ def _kafka_conn_to_sink_proto(
         renames=_renames_to_proto(connector.renames),
         since=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
-        stacked=connector.stacked,
     )
     return ext_db, sink
 
@@ -1213,7 +1190,6 @@ def _http_conn_to_sink_proto(
         renames=_renames_to_proto(connector.renames),
         since=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
-        stacked=connector.stacked,
     )
     return ext_db, sink
 
@@ -1447,7 +1423,6 @@ def _s3_conn_to_sink_proto(
         renames=_renames_to_proto(connector.renames),
         since=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
-        stacked=connector.stacked,
     )
     return ext_db, sink
 
@@ -1916,7 +1891,6 @@ def _snowflake_conn_to_sink_proto(
         renames=_renames_to_proto(connector.renames),
         since=_to_timestamp_proto(connector.since),
         until=_to_timestamp_proto(connector.until),
-        stacked=connector.stacked,
     )
     return ext_db, sink
 

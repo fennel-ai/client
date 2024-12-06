@@ -252,7 +252,6 @@ def sink(
     since: Optional[datetime] = None,
     until: Optional[datetime] = None,
     env: Optional[Union[str, List[str]]] = None,
-    stacked: Optional[bool] = None,
 ) -> Callable[[T], Any]:
     if not isinstance(conn, DataConnector):
         if not isinstance(conn, DataSource):
@@ -353,7 +352,6 @@ def sink(
         conn.renames = renames
         conn.since = since
         conn.until = until
-        conn.stacked = stacked
         conn.envs = EnvSelector(env)
         connectors = getattr(dataset_cls, SINK_FIELD, [])
         connectors.append(conn)
@@ -823,7 +821,6 @@ class DataConnector:
     how: Optional[Literal["incremental", "recreate"] | SnapshotData] = None
     create: Optional[bool] = None
     renames: Optional[Dict[str, str]] = {}
-    stacked: Optional[bool] = None
 
     def identifier(self):
         raise NotImplementedError
