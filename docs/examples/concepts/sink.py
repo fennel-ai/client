@@ -1,16 +1,24 @@
+import os
 import sys
 from datetime import datetime
-
-from fennel.connectors import Kafka, S3, eval, source, sink
-from fennel.datasets import dataset
 from fennel.expr import col
 from fennel.testing import mock
 
 __owner__ = "owner@example.com"
 
+os.environ["KAFKA_HOST"] = "some-host"
+os.environ["KAFKA_USERNAME"] = "some-username"
+os.environ["KAFKA_PASSWORD"] = "some-password"
+os.environ["DB_NAME"] = "some-db"
+os.environ["SNOWFLAKE_USERNAME"] = "snowflake-username"
+os.environ["SNOWFLAKE_PASSWORD"] = "snowflake-password"
+
 
 @mock
 def test_stacked_sinks(client):
+    from fennel.connectors import Kafka, S3, eval, source
+    from fennel.datasets import dataset
+
     kafka = Kafka(
         name="my_kafka",
         bootstrap_servers="localhost:9092",
@@ -35,7 +43,7 @@ def test_stacked_sinks(client):
         update_time: datetime
 
     # docsnip stacked
-    from fennel.connectors import Kafka, Snowflake
+    from fennel.connectors import Kafka, Snowflake, sink
     from fennel.datasets import dataset, pipeline, Dataset
     from fennel.lib.params import inputs
 
@@ -81,4 +89,6 @@ def test_stacked_sinks(client):
             return dataset.filter(lambda row: row["country"] != "United States")
 
     # /docsnip
-    client.commit(message="some commit msg", datasets=[Order])
+    client.commit(
+        message="some commit msg", datasets=[UserLocationFiltered, UserLocation]
+    )
