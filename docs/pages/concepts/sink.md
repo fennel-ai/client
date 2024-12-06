@@ -27,3 +27,11 @@ publishing changes to your Kafka.
 Fennel ships with data sinks to a couple of [common datastores](/api-reference/sink_connectors) 
 so that you can 'sink' from your Fennel datasets to your external datasets.
 Sinks to many other common data stores will be added soon.
+
+## Stacking Multiple Sinks
+Stacking two (or more) sinks on top of a dataset simply leads to the dataset
+getting sinked to all of them.
+
+<pre snippet="concepts/sink#stacked" status="success" 
+  message="Writing data to Snowflake and Kafka"
+></pre>
