@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.59] - 2024-12-10
+- Allow None as default value for min/max/avg/stddev aggregations.
+
 ## [1.5.58] - 2024-11-24
 - Allow min/max aggregation on date, datetime and decimal dtypes
 

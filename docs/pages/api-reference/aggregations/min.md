@@ -24,10 +24,11 @@ aggregation. This field is expected to be of type `int`, `float`, `date` or
 `of`.
 </Expandable>
 
-<Expandable title="default" type="Union[int, float]">
+<Expandable title="default" type="Optional[Union[int, float, Decimal, datetime, date]]">
 Min over an empty set of rows isn't well defined - Fennel returns `default`
 in such cases. The type of `default` must be same as that of `of` in the input
-dataset.
+dataset. If the default is not set or is None, Fennel returns None and in that case, 
+the expected type of `into_field` must be `Optional[T]`.
 </Expandable>
 
 <pre snippet="api-reference/aggregations/min#basic" status="success" 
@@ -43,11 +44,11 @@ dataset. If there are no rows in the aggregation window, `default` is used.
 
 #### Errors
 <Expandable title="Min on other types">
-The input column denoted by `of` must be of `int`, `float`, `date` or `datetime`
-types. 
+The input column denoted by `of` must be of `int`, `float`, `decimal`, 
+`date` or `datetime` types. 
 
-Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
-aren't allowed.
+Note that like SQL, aggregations over `Optional[int]` or `Optional[float]` 
+are allowed.
 </Expandable>
 
 <Expandable title="Types of input, output & default don't match">
