@@ -22,9 +22,11 @@ The name of the field in the output dataset that should store the result of this
 aggregation. This field is expected to be of type `float`.
 </Expandable>
 
-<Expandable title="default" type="float">
+<Expandable title="default" type="Optional[float]">
 Standard deviation over an empty set of rows isn't well defined - Fennel 
-returns `default` in such cases.
+returns `default` in such cases. If the default is not set or is None, 
+Fennel returns None and in that case, the expected type of `into_field` 
+must be `Optional[float]`.
 </Expandable>
 
 <pre snippet="api-reference/aggregations/stddev#basic" status="success" 
@@ -32,7 +34,7 @@ returns `default` in such cases.
 </pre>
 
 #### Returns
-<Expandable type="float">
+<Expandable type="Union[float, Optional[float]]">
 Stores the result of the aggregation in the appropriate field of the output 
 dataset. If there are no rows in the aggregation window, `default` is used.
 </Expandable>
@@ -40,10 +42,11 @@ dataset. If there are no rows in the aggregation window, `default` is used.
 
 #### Errors
 <Expandable title="Stddev on non int/float types">
-The input column denoted by `of` must either be of `int` or `float` types. 
+The input column denoted by `of` must either be of `int` or `float` or 
+`decimal` types.
 
-Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
-aren't allowed.
+Note that like SQL, aggregations over `Optional[int]` or `Optional[float]` 
+are allowed.
 </Expandable>
 
 <Expandable title="Output and/or default aren't float">
@@ -52,7 +55,7 @@ The type of the field denoted by `into_field` in the output dataset and that of
 </Expandable>
 
 <pre snippet="api-reference/aggregations/stddev#incorrect_type" status="error" 
-    message="Can not take stddev over string, only int or float">
+    message="Can not take stddev over string, only int or float or decimal">
 </pre>
 
 <pre snippet="api-reference/aggregations/stddev#non_matching_types" status="error" 

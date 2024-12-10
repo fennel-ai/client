@@ -41,6 +41,7 @@ def test_basic(client):
                     of="amount",
                     limit=10,
                     dedup=False,
+                    dropnull=False,
                     window=Continuous("1d"),
                 ),
                 # docsnip-highlight end
@@ -142,6 +143,7 @@ def test_invalid_type(client):
                         of="amount",
                         limit=10,
                         dedup=False,
+                        dropnull=False,
                         window=Continuous("1d"),
                     ),
                     # docsnip-highlight end

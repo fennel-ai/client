@@ -9,7 +9,7 @@ Aggregation to compute a rolling exponential decay for each group within a windo
 #### Parameters
 <Expandable title="of" type="str">
 Name of the field in the input dataset over which the decayed sum should be computed. 
-This field can only either be `int` or `float.
+This field can only either be `int` or `float` or `decimal`.
 </Expandable>
 
 <Expandable title="window" type="Window">
@@ -46,8 +46,8 @@ are no rows to count, by default, it returns 0.0
 The input column denoted by `of` must either be of `int` or `float` types. 
 The output field denoted by `into_field` must always be of type `float`.
 
-Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
-aren't allowed.
+Note that like SQL, aggregations over `Optional[int]` or `Optional[float]` 
+are allowed.
 </Expandable>
 
 <pre snippet="api-reference/aggregations/exp-decay-sum#incorrect_type_exp_decay" status="error" 

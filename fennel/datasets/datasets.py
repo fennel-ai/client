@@ -5,6 +5,7 @@ import datetime
 import functools
 import inspect
 import sys
+from decimal import Decimal as PythonDecimal
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
@@ -2799,7 +2800,10 @@ class SchemaValidator(Visitor):
                     raise TypeError(
                         f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
-                values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                if agg.default is None:
+                    values[agg.into_field] = Optional[pd.Float64Dtype]  # type: ignore
+                else:
+                    values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
                 if agg.dropnull:
@@ -2831,15 +2835,37 @@ class SchemaValidator(Visitor):
                 ]
                 if primtive_dtype not in allowed_types:
                     raise TypeError(
-                        f"invalid min: type of field `{agg.of}` is not int, float, date or datetime"
+                        f"invalid min: type of field `{agg.of}` is not int, float, decimal, date or datetime"
                     )
-                if primtive_dtype == pd.Int64Dtype and (
-                    int(agg.default) != agg.default  # type: ignore
-                ):
-                    raise TypeError(
-                        f"invalid min: default value `{agg.default}` not of type `int`"
-                    )
-                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
+                if agg.default is not None:
+                    if primtive_dtype == pd.Int64Dtype and (
+                        int(agg.default) != agg.default  # type: ignore
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `int`"
+                        )
+                    if isinstance(primtive_dtype, Decimal) and not isinstance(
+                        agg.default, PythonDecimal
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `Decimal`"
+                        )
+                    if primtive_dtype == datetime.date and not isinstance(
+                        agg.default, datetime.date
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `date`"
+                        )
+                    if primtive_dtype == datetime.datetime and not isinstance(
+                        agg.default, datetime.datetime
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `datetime`"
+                        )
+                if agg.default is None:
+                    values[agg.into_field] = Optional[fennel_get_optional_inner(dtype)]  # type: ignore
+                else:
+                    values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
                 primtive_dtype = get_primitive_dtype_with_optional(dtype)
@@ -2849,15 +2875,37 @@ class SchemaValidator(Visitor):
                 ]
                 if primtive_dtype not in allowed_types:
                     raise TypeError(
-                        f"invalid max: type of field `{agg.of}` is not int, float, date or datetime"
+                        f"invalid max: type of field `{agg.of}` is not int, float, decimal, date or datetime"
                     )
-                if primtive_dtype == pd.Int64Dtype and (
-                    int(agg.default) != agg.default  # type: ignore
-                ):
-                    raise TypeError(
-                        f"invalid max: default value `{agg.default}` not of type `int`"
-                    )
-                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
+                if agg.default is not None:
+                    if primtive_dtype == pd.Int64Dtype and (
+                        int(agg.default) != agg.default  # type: ignore
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `int`"
+                        )
+                    if isinstance(primtive_dtype, Decimal) and not isinstance(
+                        agg.default, PythonDecimal
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `Decimal`"
+                        )
+                    if primtive_dtype == datetime.date and not isinstance(
+                        agg.default, datetime.date
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `date`"
+                        )
+                    if primtive_dtype == datetime.datetime and not isinstance(
+                        agg.default, datetime.datetime
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `datetime`"
+                        )
+                if agg.default is None:
+                    values[agg.into_field] = Optional[fennel_get_optional_inner(dtype)]  # type: ignore
+                else:
+                    values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Stddev):
                 dtype = input_schema.get_type(agg.of)
                 if (
@@ -2867,7 +2915,10 @@ class SchemaValidator(Visitor):
                     raise TypeError(
                         f"Cannot get standard deviation of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                if agg.default is None:
+                    values[agg.into_field] = Optional[pd.Float64Dtype]  # type: ignore
+                else:
+                    values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, Quantile):
                 dtype = input_schema.get_type(agg.of)
                 if (

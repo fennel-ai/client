@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, date
 from decimal import Decimal as PythonDecimal
+from typing import Optional
 
 import pandas as pd
 import pytest
@@ -13,6 +14,8 @@ from fennel.datasets import (
     Dataset,
     Max,
     Min,
+    Average,
+    Stddev,
 )
 from fennel.dtypes import Decimal, Continuous
 from fennel.featuresets import featureset, feature as F
@@ -201,4 +204,128 @@ def test_complex_min_max(client):
         datetime(1997, 5, 22, tzinfo=timezone.utc),
         datetime(1987, 6, 6, tzinfo=timezone.utc),
         datetime(1970, 1, 2, tzinfo=timezone.utc),
+    ]
+
+
+@pytest.mark.integration
+@mock
+def test_none_default(client):
+    @source(webhook.endpoint("UserInfoDataset"), disorder="14d", cdc="append")
+    @dataset
+    class UserInfoDataset:
+        user_id: int
+        country: str
+        income: float
+        timestamp: datetime = field(timestamp=True)
+
+    @dataset(index=True)
+    class CountryDS:
+        country: str = field(key=True)
+        min_income: Optional[float]
+        max_income: Optional[float]
+        avg_income: Optional[float]
+        stddev_income: Optional[float]
+        timestamp: datetime = field(timestamp=True)
+
+        @pipeline
+        @inputs(UserInfoDataset)
+        def avg_income_pipeline(cls, event: Dataset):
+            return event.groupby("country").aggregate(
+                min_income=Min(
+                    of="income",
+                    window=Continuous("forever"),
+                    default=None,
+                ),
+                max_income=Max(
+                    of="income",
+                    window=Continuous("forever"),
+                    default=None,
+                ),
+                avg_income=Average(
+                    of="income",
+                    window=Continuous("forever"),
+                    default=None,
+                ),
+                stddev_income=Stddev(
+                    of="income",
+                    window=Continuous("forever"),
+                    default=None,
+                ),
+            )
+
+    @featureset
+    class CountryFeatures:
+        country: str
+        min_income: float = F(CountryDS.min_income, default=1.20)
+        max_income: float = F(CountryDS.max_income, default=2.20)
+        avg_income: float = F(CountryDS.avg_income, default=1.20)
+        stddev_income: Optional[float] = F(CountryDS.stddev_income)
+
+    # Sync the dataset
+    response = client.commit(
+        message="msg",
+        datasets=[UserInfoDataset, CountryDS],
+        featuresets=[CountryFeatures],
+    )
+    assert response.status_code == requests.codes.OK, response.json()
+
+    client.sleep(30)
+
+    now = datetime.now(timezone.utc)
+    df = pd.DataFrame(
+        {
+            "user_id": [1, 2, 3, 4, 5],
+            "country": ["India", "USA", "India", "USA", "UK"],
+            "income": [
+                1200.10,
+                1000.10,
+                1400.10,
+                90.10,
+                1100.10,
+            ],
+            "timestamp": [now, now, now, now, now],
+        }
+    )
+    response = client.log("fennel_webhook", "UserInfoDataset", df)
+    assert response.status_code == requests.codes.OK, response.json()
+
+    client.sleep()
+
+    df = client.query(
+        inputs=[CountryFeatures.country],
+        outputs=[CountryFeatures],
+        input_dataframe=pd.DataFrame(
+            {"CountryFeatures.country": ["India", "USA", "UK", "China"]}
+        ),
+    )
+    assert df.shape == (4, 5)
+    assert df["CountryFeatures.country"].tolist() == [
+        "India",
+        "USA",
+        "UK",
+        "China",
+    ]
+    assert df["CountryFeatures.min_income"].tolist() == [
+        1200.10,
+        90.10,
+        1100.10,
+        1.20,
+    ]
+    assert df["CountryFeatures.max_income"].tolist() == [
+        1400.10,
+        1000.10,
+        1100.10,
+        2.20,
+    ]
+    assert df["CountryFeatures.avg_income"].tolist() == [
+        1300.1,
+        545.1,
+        1100.1,
+        1.2,
+    ]
+    assert df["CountryFeatures.stddev_income"].tolist() == [
+        100.0,
+        455.0,
+        0,
+        pd.NA,
     ]

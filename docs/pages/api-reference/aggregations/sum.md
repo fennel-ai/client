@@ -28,7 +28,7 @@ type of the field in the input dataset corresponding to `of`.
 </pre>
 
 #### Returns
-<Expandable type="Union[int, float]">
+<Expandable type="Union[int, float, Decimal]">
 Accumulates the count in the appropriate field of the output dataset. If there 
 are no rows to count, by default, it returns 0 (or 0.0 if `of` is float).
 </Expandable>
@@ -36,10 +36,11 @@ are no rows to count, by default, it returns 0 (or 0.0 if `of` is float).
 
 #### Errors
 <Expandable title="Sum on non int/float types">
-The input column denoted by `of` must either be of `int` or `float` types. 
+The input column denoted by `of` must either be of `int` or `float` 
+or `decimal` types.
 
-Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
-aren't allowed.
+Note that like SQL, aggregations over `Optional[int]` or `Optional[float]` 
+are allowed.
 </Expandable>
 
 <pre snippet="api-reference/aggregations/sum#incorrect_type" status="error" 
