@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.61] - 2024-12-12
+- Add appropriate warnings for aggregations on top of keyed datasets.
+
 ## [1.5.60] - 2024-12-10
 - Add support for indirections in preproc ref type for Avro format
 
