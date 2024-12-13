@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.60] - 2024-12-10
+- Add support for indirections in preproc ref type for Avro format
+
 ## [1.5.59] - 2024-12-10
 - Allow None as default value for min/max/avg/stddev aggregations.
 
