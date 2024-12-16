@@ -334,7 +334,7 @@ class Executor(Visitor):
 
             for col in key_dfs.columns:
                 # If any of the columns is a dictionary, convert it to a frozen dict
-                if key_dfs[col].apply(lambda x: isinstance(x, dict)).any():
+                if any([isinstance(x, dict) for x in key_dfs[col].tolist()]):
                     key_dfs[col] = key_dfs[col].apply(lambda x: frozendict(x))
 
             # Find the values for all columns as of the timestamp in key_dfs

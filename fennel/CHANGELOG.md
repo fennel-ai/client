@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.62] - 2024-12-16
+- Fix casting for empty dataframes.
+
 ## [1.5.61] - 2024-12-12
 - Add appropriate warnings for aggregations on top of keyed datasets.
 

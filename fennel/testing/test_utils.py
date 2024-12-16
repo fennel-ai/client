@@ -381,7 +381,9 @@ def add_deletes(
             last_index_for_key[key] = i
 
     # Add the delete timestamp as a hidden column to the dataframe
-    sorted_df[FENNEL_DELETE_TIMESTAMP] = delete_timestamps
+    sorted_df[FENNEL_DELETE_TIMESTAMP] = pd.Series(
+        delete_timestamps, dtype=pd.ArrowDtype(pa.timestamp("ns", "UTC"))
+    )
 
     if len(rows_to_delete) > 0:
         # Drop the rows that are marked for deletion
