@@ -58,10 +58,11 @@ dataset. If there are no rows in the aggregation window, `default` is used.
 
 #### Errors
 <Expandable title="Quantile on non int/float types">
-The input column denoted by `of` must either be of `int` or `float` types. 
+The input column denoted by `of` must either be of `int` or `float` or 
+`decimal` types.
 
-Note that unlike SQL, even aggregations over `Optional[int]` or `Optional[float]` 
-aren't allowed.
+Note that like SQL, aggregations over `Optional[int]` or `Optional[float]` 
+are allowed.
 </Expandable>
 
 <Expandable title="Types of output & default don't match">
@@ -81,7 +82,7 @@ right expectations and be compatible with future addition of exact quantiles.
 </Expandable>
 
 <pre snippet="api-reference/aggregations/quantile#incorrect_type" status="error" 
-    message="Can not take quantile over string, only int or float">
+    message="Can not take quantile over string, only int or float or decimal">
 </pre>
 <pre snippet="api-reference/aggregations/quantile#invalid_default" status="error" 
     message="Default is not specified, so the output field should be Optional[float]">

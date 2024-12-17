@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.5.62] - 2024-12-16
+- Fix casting for empty dataframes.
+
+## [1.5.61] - 2024-12-12
+- Add appropriate warnings for aggregations on top of keyed datasets.
+
+## [1.5.60] - 2024-12-10
+- Add support for indirections in preproc ref type for Avro format
+
+## [1.5.59] - 2024-12-10
+- Allow None as default value for min/max/avg/stddev aggregations.
+
+## [1.5.58] - 2024-11-24
+- Allow min/max aggregation on date, datetime and decimal dtypes
+
+## [1.5.57] - 2024-12-02
+- Fix signature method for filter class
+
+## [1.5.56] - 2024-11-24
+- Add to_string method to num namespace in expressions
+
 ## [1.5.55] - 2024-11-14
 - Add print visitor for couple missing string operations
 

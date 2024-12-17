@@ -35,6 +35,11 @@ If set to True, only distinct values are stored else values stored in the last
 can have duplicates too.
 </Expandable>
 
+<Expandable title="dropnull" type="bool">
+If set to True, None values are dropped from the result. It expects `of` field
+to be of type `Optional[T]` and `into_field` gets the type `List[T]`.
+</Expandable>
+
 <pre snippet="api-reference/aggregations/lastk#basic" status="success" 
     message="LastK in window of 1 day">
 </pre>

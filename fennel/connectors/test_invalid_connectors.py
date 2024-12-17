@@ -709,20 +709,6 @@ def test_invalid_preproc_value():
         == str(e.value)
     )
 
-    # Preproc value of type A[B][C] cannot be set for data other than JSON and Protobuf formats
-    with pytest.raises(ValueError) as e:
-        source(
-            kafka.topic(topic="topic", format="Avro"),
-            every="1h",
-            disorder="14d",
-            cdc="debezium",
-            preproc={"C": ref("A[B][C]"), "D": "A[B][C]"},
-        )
-    assert (
-        "Preproc of type ref('A[B][C]') is applicable only for data in JSON and Protobuf formats"
-        == str(e.value)
-    )
-
     # Preproc value of type A[B][C] cannot be set for table sources
     with pytest.raises(ValueError) as e:
         source(

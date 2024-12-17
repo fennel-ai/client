@@ -1,0 +1,209 @@
+{
+    "report": {
+        "date_generated": "2024-07-16T01:52:42.912331716Z",
+        "days_requested": 365,
+        "items": [
+            {
+                "accounts": [
+                    {
+                        "transactions": [
+                            {
+                                "account_id": "NZzx4oRPkAHzyRekpG4PTZkoGpNAR4uypaj1E",
+                                "account_owner": null,
+                                "amount": 37.07,
+                                "check_number": null,
+                                "credit_category": {
+                                    "detailed": "GENERAL_MERCHANDISE_ONLINE_MARKETPLACES",
+                                    "primary": "GENERAL_MERCHANDISE"
+                                },
+                                "date": "2024-07-12",
+                                "date_posted": "2024-07-12T00:00:00Z",
+                                "date_transacted": "2024-07-12",
+                                "iso_currency_code": "USD",
+                                "location": {
+                                    "address": null,
+                                    "city": null,
+                                    "country": null,
+                                    "lat": null,
+                                    "lon": null,
+                                    "postal_code": null,
+                                    "region": null,
+                                    "state": null,
+                                    "store_number": null,
+                                    "zip": null
+                                },
+                                "merchant_name": "Amazon",
+                                "original_description": "AMZN Mktp US*11111111 Amzn.com/bill WA AM",
+                                "pending": false,
+                                "transaction_id": "XA7ZLy8rXzt7D3j9B6LMIgv5VxyQkAhbKjzmp",
+                                "unofficial_currency_code": null
+                            },
+                            {
+                                "account_id": "NZzx4oRPkAHzyRekpG4PTZkoGpNAR4uypaj1E",
+                                "account_owner": null,
+                                "amount": 51.61,
+                                "check_number": null,
+                                "credit_category": {
+                                    "detailed": "DINING_DINING",
+                                    "primary": "DINING"
+                                },
+                                "date": "2024-07-12",
+                                "date_posted": "2024-07-12T00:00:00Z",
+                                "date_transacted": "2024-07-12",
+                                "iso_currency_code": "USD",
+                                "location": {
+                                    "address": null,
+                                    "city": null,
+                                    "country": null,
+                                    "lat": null,
+                                    "lon": null,
+                                    "postal_code": null,
+                                    "region": null,
+                                    "state": null,
+                                    "store_number": null,
+                                    "zip": null
+                                },
+                                "merchant_name": "Domino's",
+                                "original_description": "DOMINO's XXXX 111-222-3333",
+                                "pending": false,
+                                "transaction_id": "VEPeMbWqRluPVZLQX4MDUkKRw41Ljzf9gyLBW",
+                                "unofficial_currency_code": null
+                            },
+                            {
+                                "account_id": "NZzx4oRPkAHzyRekpG4PTZkoGpNAR4uypaj1E",
+                                "account_owner": null,
+                                "amount": 7.55,
+                                "check_number": null,
+                                "credit_category": {
+                                    "detailed": "GENERAL_MERCHANDISE_FURNITURE_AND_HARDWARE",
+                                    "primary": "GENERAL_MERCHANDISE"
+                                },
+                                "date": "2024-07-12",
+                                "date_posted": "2024-07-12T00:00:00Z",
+                                "date_transacted": "2024-07-12",
+                                "iso_currency_code": "USD",
+                                "location": {
+                                    "address": null,
+                                    "city": "Chicago",
+                                    "country": null,
+                                    "lat": null,
+                                    "lon": null,
+                                    "postal_code": null,
+                                    "region": null,
+                                    "state": null,
+                                    "store_number": null,
+                                    "zip": null
+                                },
+                                "merchant_name": "IKEA",
+                                "original_description": "IKEA CHICAGO",
+                                "pending": false,
+                                "transaction_id": "6GQZARgvroCAE1eW5wpQT7w3oB6nvzi8DKMBa",
+                                "unofficial_currency_code": null
+                            },
+                            {
+                                "account_id": "NZzx4oRPkAHzyRekpG4PTZkoGpNAR4uypaj1E",
+                                "account_owner": null,
+                                "amount": 44.21,
+                                "check_number": null,
+                                "credit_category": {
+                                    "detailed": "DINING_DINING",
+                                    "primary": "DINING"
+                                },
+                                "date": "2024-07-12",
+                                "date_posted": "2024-07-12T00:00:00Z",
+                                "date_transacted": "2024-07-12",
+                                "iso_currency_code": "USD",
+                                "location": {
+                                    "address": null,
+                                    "city": null,
+                                    "country": null,
+                                    "lat": null,
+                                    "lon": null,
+                                    "postal_code": null,
+                                    "region": null,
+                                    "state": null,
+                                    "store_number": null,
+                                    "zip": null
+                                },
+                                "merchant_name": null,
+                                "original_description": "POKE BROS * POKE BRO IL",
+                                "pending": false,
+                                "transaction_id": "RpdN7W8GmRSdjZB9Jm7ATj4M86vdnktapkrgL",
+                                "unofficial_currency_code": null
+                            },
+                            {
+                                "account_id": "NZzx4oRPkAHzyRekpG4PTZkoGpNAR4uypaj1E",
+                                "account_owner": null,
+                                "amount": 36.82,
+                                "check_number": null,
+                                "credit_category": {
+                                    "detailed": "GENERAL_MERCHANDISE_DISCOUNT_STORES",
+                                    "primary": "GENERAL_MERCHANDISE"
+                                },
+                                "date": "2024-07-13",
+                                "date_posted": "2024-07-13T00:00:00Z",
+                                "date_transacted": "2024-07-13",
+                                "iso_currency_code": "USD",
+                                "location": {
+                                    "address": null,
+                                    "city": null,
+                                    "country": null,
+                                    "lat": null,
+                                    "lon": null,
+                                    "postal_code": null,
+                                    "region": null,
+                                    "state": null,
+                                    "store_number": null,
+                                    "zip": null
+                                },
+                                "merchant_name": "Family Dollar",
+                                "original_description": "FAMILY DOLLAR",
+                                "pending": false,
+                                "transaction_id": "5AeQWvo5KLtAD9wNL68PTdAgPE7VNWf5Kye1G",
+                                "unofficial_currency_code": null
+                            },
+                            {
+                                "account_id": "NZzx4oRPkAHzyRekpG4PTZkoGpNAR4uypaj1E",
+                                "account_owner": null,
+                                "amount": 54.24,
+                                "check_number": null,
+                                "credit_category": {
+                                    "detailed": "FOOD_RETAIL_GROCERIES",
+                                    "primary": "FOOD_RETAIL"
+                                },
+                                "date": "2024-07-15",
+                                "date_posted": "2024-07-15T00:00:00Z",
+                                "date_transacted": "2024-07-15",
+                                "iso_currency_code": "USD",
+                                "location": {
+                                    "address": null,
+                                    "city": "Portland",
+                                    "country": null,
+                                    "lat": null,
+                                    "lon": null,
+                                    "postal_code": null,
+                                    "region": "OR",
+                                    "state": "OR",
+                                    "store_number": "1111",
+                                    "zip": null
+                                },
+                                "merchant_name": "Safeway",
+                                "original_description": "SAFEWAY #1111 PORTLAND OR            111111",
+                                "pending": false,
+                                "transaction_id": "P13aP8b7nmS3WQoxg1PMsdvMK679RNfo65B4G",
+                                "unofficial_currency_code": null
+                            }
+                        ]
+                    }
+                ],
+                "date_last_updated": "2024-07-16T01:52:42.912331716Z",
+                "institution_id": "ins_109512",
+                "institution_name": "Houndstooth Bank",
+                "item_id": "NZzx4oRPkAHzyRekpG4PTZkDNkQW93tWnyGeA"
+            }
+        ],
+        "report_id": "f3bb434f-1c9b-4ef2-b76c-3d1fd08156ec"
+    },
+    "warnings": [],
+    "request_id": "FibfL8t3s71KJnj"
+}

@@ -1,11 +1,13 @@
 import dataclasses
-from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal as PythonDecimal
+from datetime import datetime, date
 from typing import Any, Optional, Union, Dict
 
 import numpy as np
 import pandas as pd
 from frozendict import frozendict
+from google.protobuf.timestamp_pb2 import Timestamp
+
 from fennel.gen import schema_pb2 as schema_proto
 from fennel.gen.schema_pb2 import DataType
 from fennel.internal_lib import FENNEL_STRUCT
@@ -118,8 +120,8 @@ def cast_col_to_pandas(
         return pd.Series(
             [
                 (
-                    Decimal("%0.{}f".format(scale) % float(x))
-                    if not isinstance(x, Decimal)
+                    PythonDecimal("%0.{}f".format(scale) % float(x))
+                    if not isinstance(x, PythonDecimal)
                     else x
                 )
                 for x in series
@@ -219,3 +221,21 @@ def parse_datetime_in_value(
         return output
     else:
         return value
+
+
+def to_timestamp_proto(dt: datetime) -> Timestamp:
+    ts = Timestamp()
+    ts.FromDatetime(dt)
+    return ts
+
+
+def to_date_proto(dt: date) -> schema_proto.Date:
+    return schema_proto.Date(
+        days=(dt - date(1970, 1, 1)).days,
+    )
+
+
+def to_decimal_proto(decimal: PythonDecimal) -> schema_proto.Decimal:
+    exponent = abs(int(decimal.as_tuple().exponent))
+    value = int((decimal * pow(10, exponent)).to_integral_exact())
+    return schema_proto.Decimal(value=value, scale=exponent)

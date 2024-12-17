@@ -1,9 +1,17 @@
-from typing import List, Union, Optional
+from datetime import date, datetime
+from decimal import Decimal as PythonDecimal
+from typing import List, Union, Optional, Any
 
 import fennel.gen.spec_pb2 as spec_proto
+import fennel.gen.schema_pb2 as schema_proto
 from fennel._vendor.pydantic import BaseModel, Extra, validator  # type: ignore
 from fennel.dtypes import Continuous, Tumbling, Hopping
 from fennel.internal_lib.duration import Duration, duration_to_timedelta
+from fennel.internal_lib.utils.utils import (
+    to_timestamp_proto,
+    to_date_proto,
+    to_decimal_proto,
+)
 
 ItemType = Union[str, List[str]]
 
@@ -107,7 +115,7 @@ class Sum(AggregateType):
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for Sum")
         return spec_proto.PreSpec(
             sum=spec_proto.Sum(
                 window=self.window.to_proto(),
@@ -122,17 +130,24 @@ class Sum(AggregateType):
 
 class Average(AggregateType):
     of: str
-    default: float = 0.0
+    default: Optional[float] = 0.0
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for Average")
+        if self.default is None:
+            default = 0.0
+            default_null = True
+        else:
+            default = self.default
+            default_null = False
         return spec_proto.PreSpec(
             average=spec_proto.Average(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=self.default,
+                default=default,
+                default_null=default_null,
             )
         )
 
@@ -148,7 +163,7 @@ class Quantile(AggregateType):
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for Quantile")
         return spec_proto.PreSpec(
             quantile=spec_proto.Quantile(
                 window=self.window.to_proto(),
@@ -181,6 +196,8 @@ class ExpDecaySum(AggregateType):
     half_life: Duration
 
     def to_proto(self):
+        if self.window is None:
+            raise ValueError("Window must be specified for ExpDecaySum")
         half_life = duration_to_timedelta(self.half_life)
         return spec_proto.PreSpec(
             exp_decay=spec_proto.ExponentialDecayAggregate(
@@ -212,17 +229,34 @@ class ExpDecaySum(AggregateType):
 
 class Max(AggregateType):
     of: str
-    default: float
+    default: Any
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for Max")
+        default_null = False
+        if isinstance(self.default, datetime):
+            default = float(self.default.timestamp() * 1000000.0)
+        elif isinstance(self.default, date):
+            default = float((self.default - date(1970, 1, 1)).days)
+        elif isinstance(self.default, PythonDecimal):
+            default = float(self.default)
+        elif isinstance(self.default, float):
+            default = self.default
+        elif isinstance(self.default, int):
+            default = float(self.default)
+        elif self.default is None:
+            default = 0.0
+            default_null = True
+        else:
+            raise ValueError(f"invalid default value for Min: `{self.default}`")
         return spec_proto.PreSpec(
             max=spec_proto.Max(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=self.default,
+                default=default,
+                default_null=default_null,
             )
         )
 
@@ -235,17 +269,34 @@ class Max(AggregateType):
 
 class Min(AggregateType):
     of: str
-    default: float
+    default: Any
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for Min")
+        default_null = False
+        if isinstance(self.default, datetime):
+            default = float(self.default.timestamp() * 1000000.0)
+        elif isinstance(self.default, date):
+            default = float((self.default - date(1970, 1, 1)).days)
+        elif isinstance(self.default, PythonDecimal):
+            default = float(self.default)
+        elif isinstance(self.default, float):
+            default = self.default
+        elif isinstance(self.default, int):
+            default = float(self.default)
+        elif self.default is None:
+            default = 0.0
+            default_null = True
+        else:
+            raise ValueError(f"invalid default value for Min: `{self.default}`")
         return spec_proto.PreSpec(
             min=spec_proto.Min(
                 window=self.window.to_proto(),
                 name=self.into_field,
                 of=self.of,
-                default=self.default,
+                default=default,
+                default_null=default_null,
             )
         )
 
@@ -306,16 +357,23 @@ class FirstK(AggregateType):
 
 class Stddev(AggregateType):
     of: str
-    default: float = -1.0
+    default: Optional[float] = -1.0
 
     def to_proto(self):
         if self.window is None:
-            raise ValueError("Window must be specified for Distinct")
+            raise ValueError("Window must be specified for Stddev")
+        if self.default is None:
+            default = 0.0
+            default_null = True
+        else:
+            default = self.default
+            default_null = False
         return spec_proto.PreSpec(
             stddev=spec_proto.Stddev(
                 window=self.window.to_proto(),
                 name=self.into_field,
-                default=self.default,
+                default=default,
+                default_null=default_null,
                 of=self.of,
             )
         )

@@ -1,13 +1,10 @@
 import copy
 import types
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any, Optional, Dict, List
 
-import numpy as np
 import pandas as pd
 from fennel.expr.visitor import ExprPrinter
-import pyarrow as pa
 from frozendict import frozendict
 
 import fennel.gen.schema_pb2 as schema_proto
@@ -28,7 +25,6 @@ from fennel.datasets.aggregate import (
     Stddev,
 )
 from fennel.gen.schema_pb2 import Field
-from fennel.internal_lib.duration import duration_to_timedelta
 from fennel.internal_lib.schema import get_datatype, fennel_is_optional
 from fennel.internal_lib.schema import validate_field_in_df
 from fennel.internal_lib.to_proto import (
@@ -338,7 +334,7 @@ class Executor(Visitor):
 
             for col in key_dfs.columns:
                 # If any of the columns is a dictionary, convert it to a frozen dict
-                if key_dfs[col].apply(lambda x: isinstance(x, dict)).any():
+                if any([isinstance(x, dict) for x in key_dfs[col].tolist()]):
                     key_dfs[col] = key_dfs[col].apply(lambda x: frozendict(x))
 
             # Find the values for all columns as of the timestamp in key_dfs
@@ -510,13 +506,13 @@ class Executor(Visitor):
                 list(obj.dataset.dsschema().values.keys())
             )
             merged_df = left_join_empty(
-                input_ret, right_ret, right_value_schema, obj.fields
+                input_ret, right_ret, right_value_schema, obj.fields  # type: ignore
             )
         else:
             if len(input_ret.key_fields) > 0:
                 merged_df = table_table_join(
-                    input_ret,
-                    right_ret,
+                    input_ret,  # type: ignore
+                    right_ret,  # type: ignore
                     obj.how,
                     obj.on,
                     obj.left_on,
@@ -525,8 +521,8 @@ class Executor(Visitor):
                 )
             else:
                 merged_df = stream_table_join(
-                    input_ret,
-                    right_ret,
+                    input_ret,  # type: ignore
+                    right_ret,  # type: ignore
                     obj.how,
                     obj.within,
                     obj.on,

@@ -174,9 +174,10 @@ def source(
                 conn.format is not None
                 and conn.format != "json"
                 and not isinstance(conn.format, Protobuf)
+                and not isinstance(conn.format, Avro)
             ):
                 raise ValueError(
-                    "Preproc of type ref('A[B][C]') is applicable only for data in JSON and Protobuf formats"
+                    "Preproc of type ref('A[B][C]') is applicable only for data in JSON, Protobuf and Avro formats"
                 )
         else:
             raise ValueError(

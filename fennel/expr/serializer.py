@@ -47,6 +47,7 @@ from fennel.expr.expr import (
     MathNoop,
     Round,
     Ceil,
+    NumToStr,
     Abs,
     Floor,
     StringNoop,
@@ -231,6 +232,8 @@ class ExprSerializer(Visitor):
             expr.math_fn.fn.CopyFrom(proto.MathOp(abs=proto.Abs()))
         elif isinstance(obj.op, Floor):
             expr.math_fn.fn.CopyFrom(proto.MathOp(floor=proto.Floor()))
+        elif isinstance(obj.op, NumToStr):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(to_string=proto.ToString()))
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
         expr.math_fn.operand.CopyFrom(self.visit(obj.operand))

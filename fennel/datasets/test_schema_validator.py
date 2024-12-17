@@ -460,7 +460,7 @@ def test_aggregation_min_max():
 
     assert (
         str(e.value)
-        == """invalid max: type of field `b` is not int, float, date or datetime"""
+        == """invalid max: type of field `b` is not int, float, decimal, date or datetime"""
     )
 
 

@@ -482,6 +482,10 @@ class Floor(MathOp):
     pass
 
 
+class NumToStr(MathOp):
+    pass
+
+
 class MathNoop(MathOp):
     pass
 
@@ -503,6 +507,9 @@ class _Number(Expr):
 
     def floor(self) -> _Number:
         return _Number(self, Floor())
+
+    def to_string(self) -> _String:
+        return _String(_Number(self, NumToStr()), StringNoop())
 
 
 #########################################################

@@ -5,6 +5,7 @@ import datetime
 import functools
 import inspect
 import sys
+from decimal import Decimal as PythonDecimal
 from dataclasses import dataclass
 from enum import Enum
 from typing import (
@@ -575,9 +576,15 @@ class Filter(_Node):
             )
 
     def signature(self):
-        if isinstance(self.node, Dataset):
-            return fhash(self.node._name, self.func)
-        return fhash(self.node.signature(), self.func)
+        item = (
+            self.node._name
+            if isinstance(self.node, Dataset)
+            else self.node.signature()
+        )
+        if self.func is not None:
+            return fhash(item, self.func)
+        else:
+            return fhash(item, self.filter_expr)
 
     def dsschema(self):
         return self.node.dsschema()
@@ -2665,8 +2672,9 @@ class SchemaValidator(Visitor):
                 )
 
         values: Dict[str, Type] = {}
-        found_discrete = False
-        found_non_discrete = False
+        all_discrete = False
+        all_continuous = False
+        all_discrete_forever = True
         lookback = None
         for agg in obj.aggregates:
             # If default window is present in groupby then each aggregate spec cannot have window different from
@@ -2680,21 +2688,27 @@ class SchemaValidator(Visitor):
                 if not agg.window:
                     agg.window = obj.window_field
 
-            # Check if all specs are either discrete or non-discrete
+            # Check if all specs are either discrete or continuous
             if isinstance(agg.window, (Hopping, Tumbling, Session)):
-                if found_non_discrete:
+                if all_continuous:
                     raise ValueError(
                         f"Windows in all specs have to be either discrete (Hopping/Tumbling/Session) or"
                         f" non-discrete (Continuous/Forever) not both in pipeline `{self.pipeline_name}`."
                     )
-                found_discrete = True
+                if (
+                    isinstance(agg.window, Session)
+                    or agg.window.duration != "forever"
+                ):
+                    all_discrete_forever = False
+                all_discrete = True
             else:
-                if found_discrete:
+                if all_discrete:
                     raise ValueError(
                         f"Windows in all specs have to be either discrete (Hopping/Tumbling/Session) or"
                         f" non-discrete (Continuous/Forever) not both in pipeline `{self.pipeline_name}`."
                     )
-                found_non_discrete = True
+                all_discrete_forever = False
+                all_continuous = True
 
             # Check lookback in all windows are same
             if isinstance(agg.window, (Hopping, Tumbling)):
@@ -2793,7 +2807,10 @@ class SchemaValidator(Visitor):
                     raise TypeError(
                         f"Cannot take average of field `{agg.of}` of type `{dtype_to_string(dtype)}`"
                     )
-                values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                if agg.default is None:
+                    values[agg.into_field] = Optional[pd.Float64Dtype]  # type: ignore
+                else:
+                    values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, LastK):
                 dtype = input_schema.get_type(agg.of)
                 if agg.dropnull:
@@ -2825,15 +2842,37 @@ class SchemaValidator(Visitor):
                 ]
                 if primtive_dtype not in allowed_types:
                     raise TypeError(
-                        f"invalid min: type of field `{agg.of}` is not int, float, date or datetime"
+                        f"invalid min: type of field `{agg.of}` is not int, float, decimal, date or datetime"
                     )
-                if primtive_dtype == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
-                ):
-                    raise TypeError(
-                        f"invalid min: default value `{agg.default}` not of type `int`"
-                    )
-                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
+                if agg.default is not None:
+                    if primtive_dtype == pd.Int64Dtype and (
+                        int(agg.default) != agg.default  # type: ignore
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `int`"
+                        )
+                    if isinstance(primtive_dtype, Decimal) and not isinstance(
+                        agg.default, PythonDecimal
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `Decimal`"
+                        )
+                    if primtive_dtype == datetime.date and not isinstance(
+                        agg.default, datetime.date
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `date`"
+                        )
+                    if primtive_dtype == datetime.datetime and not isinstance(
+                        agg.default, datetime.datetime
+                    ):
+                        raise TypeError(
+                            f"invalid min: default value `{agg.default}` not of type `datetime`"
+                        )
+                if agg.default is None:
+                    values[agg.into_field] = Optional[fennel_get_optional_inner(dtype)]  # type: ignore
+                else:
+                    values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Max):
                 dtype = input_schema.get_type(agg.of)
                 primtive_dtype = get_primitive_dtype_with_optional(dtype)
@@ -2843,15 +2882,37 @@ class SchemaValidator(Visitor):
                 ]
                 if primtive_dtype not in allowed_types:
                     raise TypeError(
-                        f"invalid max: type of field `{agg.of}` is not int, float, date or datetime"
+                        f"invalid max: type of field `{agg.of}` is not int, float, decimal, date or datetime"
                     )
-                if primtive_dtype == pd.Int64Dtype and (
-                    int(agg.default) != agg.default
-                ):
-                    raise TypeError(
-                        f"invalid max: default value `{agg.default}` not of type `int`"
-                    )
-                values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
+                if agg.default is not None:
+                    if primtive_dtype == pd.Int64Dtype and (
+                        int(agg.default) != agg.default  # type: ignore
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `int`"
+                        )
+                    if isinstance(primtive_dtype, Decimal) and not isinstance(
+                        agg.default, PythonDecimal
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `Decimal`"
+                        )
+                    if primtive_dtype == datetime.date and not isinstance(
+                        agg.default, datetime.date
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `date`"
+                        )
+                    if primtive_dtype == datetime.datetime and not isinstance(
+                        agg.default, datetime.datetime
+                    ):
+                        raise TypeError(
+                            f"invalid max: default value `{agg.default}` not of type `datetime`"
+                        )
+                if agg.default is None:
+                    values[agg.into_field] = Optional[fennel_get_optional_inner(dtype)]  # type: ignore
+                else:
+                    values[agg.into_field] = fennel_get_optional_inner(dtype)  # type: ignore
             elif isinstance(agg, Stddev):
                 dtype = input_schema.get_type(agg.of)
                 if (
@@ -2861,7 +2922,10 @@ class SchemaValidator(Visitor):
                     raise TypeError(
                         f"Cannot get standard deviation of field {agg.of} of type {dtype_to_string(dtype)}"
                     )
-                values[agg.into_field] = pd.Float64Dtype  # type: ignore
+                if agg.default is None:
+                    values[agg.into_field] = Optional[pd.Float64Dtype]  # type: ignore
+                else:
+                    values[agg.into_field] = pd.Float64Dtype  # type: ignore
             elif isinstance(agg, Quantile):
                 dtype = input_schema.get_type(agg.of)
                 if (
@@ -2904,9 +2968,20 @@ class SchemaValidator(Visitor):
                 "'along' param can not be used with emit=\"final\" strategy"
             )
 
-        is_terminal = (
-            found_non_discrete and obj.emit_strategy == EmitStrategy.Eager
-        )
+        is_terminal = all_continuous and obj.emit_strategy == EmitStrategy.Eager
+
+        # If input_schema is keyed then we allow aggregation only if all the windows are discrete forever or along is
+        # set
+        if len(input_schema.keys) > 0:
+            if (
+                obj.along is None
+                or not all_discrete_forever
+                or obj.along == input_schema.timestamp
+            ):
+                warnings.warn(
+                    "aggregation on keyed dataset will be deprecated in coming release. It will be allowed if either "
+                    "all the windows are discrete forever or along is set."
+                )
 
         return DSSchema(
             keys=keys,
