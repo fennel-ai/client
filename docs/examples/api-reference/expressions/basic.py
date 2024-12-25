@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pytest
-from typing import Optional
+from typing import Optional, List
 import pandas as pd
 
 
@@ -176,8 +176,58 @@ def test_now():
         {"birthdate": [datetime(1997, 12, 24), datetime(2001, 1, 21), None]}
     )
     assert expr.eval(df, schema={"birthdate": Optional[datetime]}).tolist() == [
-        26,
+        27,
         23,
         pd.NA,
+    ]
+    # /docsnip
+
+
+def test_repeat():
+    # docsnip repeat
+    from fennel.expr import repeat, col
+
+    # docsnip-highlight next-line
+    expr = repeat(col("x"), col("y"))
+
+    assert expr.typeof(schema={"x": bool, "y": int}) == List[bool]
+
+    # can be evaluated with a dataframe
+    df = pd.DataFrame({"x": [True, False, True], "y": [1, 2, 3]})
+    assert expr.eval(df, schema={"x": bool, "y": int}).tolist() == [
+        [True],
+        [False, False],
+        [True, True, True],
+    ]
+    # /docsnip
+
+
+def test_zip():
+    # docsnip zip
+    from fennel.lib.schema import struct
+    from fennel.expr import col
+
+    @struct
+    class MyStruct:
+        a: int
+        b: float
+
+    # docsnip-highlight next-line
+    expr = MyStruct.zip(a=col("x"), b=col("y"))
+
+    expected = List[MyStruct]
+    schema = {"x": List[int], "y": List[float]}
+    assert expr.matches_type(expected, schema)
+
+    # note that output is truncated to the length of the shortest list
+    df = pd.DataFrame(
+        {"x": [[1, 2], [3, 4], []], "y": [[1.0, 2.0], [3.0], [4.0]]}
+    )
+    assert expr.eval(
+        df, schema={"x": List[int], "y": List[float]}
+    ).tolist() == [
+        [MyStruct(a=1, b=1.0), MyStruct(a=2, b=2.0)],
+        [MyStruct(a=3, b=3.0)],
+        [],
     ]
     # /docsnip

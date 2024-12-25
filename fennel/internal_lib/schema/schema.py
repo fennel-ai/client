@@ -241,6 +241,8 @@ def get_datatype(type_: Any) -> schema_proto.DataType:
                 fields=fields, name=type_.__name__
             )
         )
+    elif type_ is None:
+        return schema_proto.DataType(null_type=schema_proto.NullType())
     raise ValueError(f"Cannot serialize type {type_}.")
 
 

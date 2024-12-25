@@ -108,8 +108,10 @@ sidebar:
       - "api-reference/expressions/lit"
       - "api-reference/expressions/not"
       - "api-reference/expressions/now"
+      - "api-reference/expressions/repeat"
       - "api-reference/expressions/typeof"
       - "api-reference/expressions/when"
+      - "api-reference/expressions/zip"
 
   - slug: "api-reference/expressions/dt"
     title: "Datetime Expressions"
@@ -146,7 +148,10 @@ sidebar:
       - "api-reference/expressions/num/abs"
       - "api-reference/expressions/num/ceil"
       - "api-reference/expressions/num/floor"
+      - "api-reference/expressions/num/log"
+      - "api-reference/expressions/num/pow"
       - "api-reference/expressions/num/round"
+      - "api-reference/expressions/num/sqrt"
       - "api-reference/expressions/num/to_string"
 
   - slug: "api-reference/expressions/str"

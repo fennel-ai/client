@@ -779,48 +779,48 @@ devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benc
 
 [[package]]
 name = "fennel-data-lib"
-version = "0.1.24"
+version = "0.1.25"
 description = ""
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:810537b17cc9cf253c984d48d95b22438c4734b7a3035d2144f7b024f4521b58"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f3e1814938da9f6f82b9bce04bd95b3ba4b8f49ec4097054d46609e58c57b390"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:dc9fbd4a6fdb71980569a82439ae7e0072981ca7454be5f5ef0834acd4cc8420"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ab45451797311a94d2dbeff21cd7ad10bc925087f192c0e4a6a13aa96354e377"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:80258a4b0189d0bdf4a271b15a4358dc031b76593732d4b4d2df6dfd72428d06"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2a6810b1a1ba217a9a1b284122fff47ef21764e20de41e1d8e0fb8174e227a86"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-manylinux_2_34_x86_64.whl", hash = "sha256:bdfb2a863b84b9238abdf5ae469bf1bbd87b5d6e3bea8defe24c83a13a7daf68"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:d5d4c36eef520af2309ef07b328b6c72bf40bea6d481ce7a6bbb5d68edaef30b"},
-    {file = "fennel_data_lib-0.1.24-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:b8497f904144d86a62b3cb65f2e74799ca529ff25d30914490d71d8fa46abb46"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:54b0dda37d9e70c0de1f09cca3fd864ac622da35beef91bae81f7b8eaf1d3fa5"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:1ce9e776991550b911954209d021efb36444f7c81344c0ccc8b2303d2db115ed"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:139f213cc2b4c655860d9367f3ff00ac941cd16865dbb4e274d0b165b6809155"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:4a8573aa1e6604281cd86c26274973c93c2a559e6b67215328c55081411decd2"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:f966cfa25e8a1430390b593c0cebcf38f64d4f88ca856fd680837564cf33b963"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:6d8e10fbe416723e120078d1c42ecf9f415cb0adfecbc5c1679f3f7db2b833fc"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-manylinux_2_34_x86_64.whl", hash = "sha256:c54a8841ce202a2f9c1d823a1988a654e31bf1ee8ec994d9120a15e05be8aac6"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:47cac3a552969d36f69544c87e16727af868024acee895934da0d5250a4008fc"},
-    {file = "fennel_data_lib-0.1.24-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:850e1a9e16f0a769610289a3f16020be81429b1d6a9e34062e800aace5a88122"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:47b19869c1338f51fd4cd749ced952cda3b6596c5777eb66eaff5a068fd82acd"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:077df1687e89caec85ce1f395cb786e48a9edc601fd24bf4c12ccab3485087a8"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:0374562846d4e90f7844c8a28ed2f986594a92dfe9cfb6d8298656ef94dc76e2"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:db9a6f14ff4a934c9834ba3d3e8c1aa999c16ca11acbd9cbc1a42932c25075c6"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:be9d674efb45d6b8d94f7b7452135622048a67df5265d95dab35979476d3ca49"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1393db53e323097ce7d4f044de64cac94fba44b457131815a15a992d195127cc"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:c9a3715913b42a1b4130b44d45e292630907cb4564acfc09a3dc8453bce45431"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:4b993af888b29e074cddbac59f8a207a26c2acaabd5fc9ee16c68abf95879c81"},
-    {file = "fennel_data_lib-0.1.24-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:ad5bec6bf17e0465cc3e0507700ec03869d848ab237d06175c0462aacdb74085"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:3a927a88262ee0c93909969851a9c958ecea8e0d2757cdfe73276b5f90652c3a"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f3dcd9a6bae8984714b87926c90552505f4442c70175734595c1c3582384194d"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:ad468415a888b5695cf186655819de2973c1744d0839f24a389e192d3c525f5a"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:54a597752ee872dd4c1523511d8933d4880a7eab9528c1c2b896059c6aa6bf3e"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:1ec997610b43af6eb570c9e8f13c5a1de45f7454dca26f6a9ce80a88a3728d6b"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0cebdc9e295b2382e32b413129d2480da22f72b98c6253619e4a21c4173fa7f1"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-manylinux_2_34_x86_64.whl", hash = "sha256:498c3bbef1ec8f7e760ab1ba20074f256c2b37f90f2faa5e6360b30112535255"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:f66a6c2d7f20d4ba4d47c13adcbeefe8897ad6579b0d1817c4928e2e57627531"},
-    {file = "fennel_data_lib-0.1.24-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:2a5ca35ca16994ede332419331fc524704432afc1c5ef66afd84fa2c57da6bb3"},
-    {file = "fennel_data_lib-0.1.24.tar.gz", hash = "sha256:0fe65710e04be1399c106ff593eaa9f4b57f5f511579ff82fec97b320d85f4d1"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:1400b5f3f3d525d883779d26aac4702378db5b4a8acc6096f2abbf03675af4c6"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a2eb6ebf78093e95f9e6fbc183dc37b068659a2737c0a1eab3104cbc3d7a57f7"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:0b1e3e647ad7e52cc76375fc1a6e16a90be9e4e6d4af1f188ddfe08d6b06f376"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:ca5f08611deed275ca4f7bf11a657a28ecc4eac6b28909a43261f9f076ab7318"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:33beaed0bafa19a7ff9d2e238e208c787f9cad58f772e974c0b3964974d7c0df"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2ebc93b10b63d87cecb14bb9adc2ed887989f2b505b11f72ebfe36136cb68ad2"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-manylinux_2_34_x86_64.whl", hash = "sha256:8fdd358dee6a1151bd0e1a2c8ea3658b8fd0c2c09f90decfc98d2032cddc1d75"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-musllinux_1_2_aarch64.whl", hash = "sha256:67feb21127dcb175d75ef257f35d6646e8fb220aa08bfb6d6d5ea7dd42fc3fa9"},
+    {file = "fennel_data_lib-0.1.25-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:2faf3ef2cb180681f36359f680fb7df4759412ae10f6bf533a68a375cf49ad18"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:e4acb6e7070e52694d27329ca0e30394e5a2d1adf8f270c8f96b5e9c11cd8bb4"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:88cf52f24d91edc3a04aaddd0e79dd3aad35f8121d40719ff19a1a3b3c9774c1"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:f26555f437a2c64807e101c55b3d6c60e4b1558a774a6792ad27643a2b6305dc"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c75c0ef4a91a2ca2fd6482aeb8bd951ac2aa034f0ed4a95e1237dbda3ad4c3d2"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:871484118f6a851f9a1a7a1487a490ee53a2990eff37665bdf3b49c13d2eb218"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0915d044846f4b8671cd06b26a043cc04aa11d7201275c11bf6cd3b61ed8e670"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-manylinux_2_34_x86_64.whl", hash = "sha256:eaa7641d27f56cfbf39e20e340e72ef424bb43c645cad7c5c9146b63695ea022"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-musllinux_1_2_aarch64.whl", hash = "sha256:d96c184432bec2659f370e01f0b9b40fd100adbc446f58032bc5984933206c84"},
+    {file = "fennel_data_lib-0.1.25-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:a4176b1f5982bef56f73c5ff87952755f6ac9e323f1a183b6333dc6cb5d102c6"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:fe99900e98f8e2f3fbe5514ed0c469fd284b7333e34c7d0e71c4dd580d3445fa"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:13e2d698086214c6acd91b524bbfbcd674c73a2f9f765a348878738bcbcfe2fd"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:bf699de573eaec451d8772e7f78a4790b1f2f622ab3f09470ff048d6ce98717c"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:03aadebe7f5ff49a5528daf44409641a88148822ea4102420fe2db1e6428fb34"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:6ff6efa8c4381bedc40e0acc2200ad795601ac4c491bc509eb9e177e3db8bf78"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b74f63236c1a7d15260a5146099c679ffca725ba4c68d297bfcf4ffc8271ecd1"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-manylinux_2_34_x86_64.whl", hash = "sha256:832f87853c0f741c7f22beede8805c67dfe198d585f31aa028fab516bec73a17"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-musllinux_1_2_aarch64.whl", hash = "sha256:bb2ca03345f56be681ff9cfe655fa452042fb7daec73e0222a7aa504451c5167"},
+    {file = "fennel_data_lib-0.1.25-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:d1aa9a6579e3522eeede64677badcf00c7b3c365df3a15bf5a8be2138ddfabf1"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:bd2a9dd606acd96fe861e28a3080b41f8cd1ca05c132662f284c074172962b0c"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3874ecc64585b2b993a9b5f4c72549e9f8d42490f6186a36cf7a82ce34012b02"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:777043aa1f0360b080352903c54c9d6e63ec779ea0ddbec3d457e6983dd24336"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:0e80106bc7e9821ca28c24a074d7361fd848e6326644e4b891af35b0d7ed15f7"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:2af0e8d18d5295c973e9d61959d4d07bca49848e6b6c96e684dd37ae737ed54e"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:74d4f3bbab20534b227db6b2c15fd8ea72ca3541d715168b6b8c34320aa9cf88"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-manylinux_2_34_x86_64.whl", hash = "sha256:eba4ec03e2d8a4e1244bebc5cf7f9554ebea3d17e9547fa212f525ca0c133ad5"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-musllinux_1_2_aarch64.whl", hash = "sha256:dda353e838b6ef04adeeb1a0116aba623eab4b3dddacd7a38dea9cfb444c7e28"},
+    {file = "fennel_data_lib-0.1.25-cp39-cp39-musllinux_1_2_x86_64.whl", hash = "sha256:9656746be7355876252fb4b8d808cadf14741d316878bd0d8da2149ef4ecd98f"},
+    {file = "fennel_data_lib-0.1.25.tar.gz", hash = "sha256:9194b244928ba7c07acefb052ed75425fbe63a9803f0e5580702ff902f42af15"},
 ]
 
 [[package]]
@@ -3771,4 +3771,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "8b8f85fde3aaeb25f9dc5cda7264e90e32645fd7221f770bb90a9c8e1bbb6768"
+content-hash = "a2fc7a796b70119c03404c978ca01393b6fd63cf84076be12826cc8ff35920c8"

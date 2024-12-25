@@ -86,6 +86,28 @@ def make_struct_expr(cls, **kwargs):
     return make_struct(fields, cls)
 
 
+def eq(cls):
+    names = [field.name for field in dataclasses.fields(cls)]
+
+    def eq_impl(self, other):
+        print("inside dataclass eq")
+        # verify that the other is a struct of the same type
+        for name in names:
+            if not hasattr(other, name):
+                return False
+            if getattr(self, name) != getattr(other, name):
+                return False
+        return True
+
+    return eq_impl
+
+
+def zip_expr(cls, **kwargs):
+    from fennel.expr.expr import zip
+
+    return zip(cls, kwargs)
+
+
 def struct(cls):
     for name, member in inspect.getmembers(cls):
         if inspect.isfunction(member) and name in cls.__dict__:
@@ -143,7 +165,11 @@ def struct(cls):
     setattr(cls, FENNEL_STRUCT_DEPENDENCIES_SRC_CODE, dependency_code)
     cls.as_json = as_json
     cls.expr = partial(make_struct_expr, cls)
-    return dataclasses.dataclass(cls)
+    cls.zip = partial(zip_expr, cls)
+    decorator = dataclasses.dataclass(eq=False)
+    cls = decorator(cls)
+    cls.__eq__ = eq(cls)
+    return cls
 
 
 # ---------------------------------------------------------------------

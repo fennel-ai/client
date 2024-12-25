@@ -3,6 +3,7 @@ from __future__ import annotations
 from enum import Enum
 import copy
 import json
+import math
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Type, Optional
 import pandas as pd
@@ -486,6 +487,20 @@ class NumToStr(MathOp):
     pass
 
 
+class Sqrt(MathOp):
+    pass
+
+
+@dataclass
+class Pow(MathOp):
+    exponent: Expr
+
+
+@dataclass
+class Log(MathOp):
+    base: float
+
+
 class MathNoop(MathOp):
     pass
 
@@ -510,6 +525,15 @@ class _Number(Expr):
 
     def to_string(self) -> _String:
         return _String(_Number(self, NumToStr()), StringNoop())
+
+    def sqrt(self) -> _Number:
+        return _Number(self, Sqrt())
+
+    def pow(self, exponent: Expr) -> _Number:
+        return _Number(self, Pow(exponent))
+
+    def log(self, base: float = math.e) -> _Number:
+        return _Number(self, Log(base))
 
 
 #########################################################
@@ -1063,6 +1087,37 @@ class Binary(Expr):
             return f"{self.left} {self.op} {self.right}"
 
 
+class Repeat(Expr):
+    def __init__(self, value: Expr, by: Expr):
+        self.value = make_expr(value)
+        self.by = make_expr(by)
+        if not isinstance(self.value, Expr):
+            raise InvalidExprException(
+                "`value` in repeat can only be an expression but got %s instead"
+                % self.value
+            )
+        if not isinstance(self.by, Expr):
+            raise InvalidExprException(
+                "`by` in repeat expected to be an expression but got %s instead"
+                % self.by
+            )
+        super(Repeat, self).__init__()
+
+    def __str__(self) -> str:
+        return f"repeat({self.value}, {self.by})"
+
+
+class Zip(Expr):
+    def __init__(self, struct_type: Type, fields: Dict[str, Expr]):
+        self.struct_type = struct_type
+        self.fields = {k: make_expr(v) for k, v in fields.items()}
+        super(Zip, self).__init__()
+
+    def __str__(self) -> str:
+        kwargs = [f"{k}={v}" for k, v in self.fields.items()]
+        return f"{self.struct_type}.zip({', '.join(kwargs)})"
+
+
 class When(Expr):
     def __init__(self, expr: Expr, root: Optional[Expr] = None):
         self.expr = make_expr(expr)
@@ -1085,7 +1140,7 @@ class Then(Expr):
         self._chained_when = When(expr, self.root)  # type: ignore
         return self._chained_when  # type: ignore
 
-    def otherwise(self, expr: Expr) -> Otherwise:
+    def otherwise(self, expr: Expr) -> When:
         self._otherwise = Otherwise(make_expr(expr), self.root)  # type: ignore
         return self._otherwise  # type: ignore
 
@@ -1200,6 +1255,15 @@ def when(expr: Expr) -> When:
 def make_struct(fields: Dict[str, Expr], type: Type) -> Expr:
     fields = {k: make_expr(v) for k, v in fields.items()}
     return MakeStruct(fields, type)
+
+
+def zip(struct_type: Type, fields: Dict[str, Expr]) -> Expr:
+    fields = {k: make_expr(v) for k, v in fields.items()}
+    return Zip(struct_type, fields)
+
+
+def repeat(value: Expr, by: Expr) -> Expr:
+    return Repeat(value, by)
 
 
 def from_epoch(duration: Expr, unit: str | TimeUnit) -> _DateTime:
