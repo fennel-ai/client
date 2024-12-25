@@ -20,7 +20,7 @@ from fennel.lib import (
     expectations,
     expect_column_values_to_be_between,
 )
-from fennel.expr import col, lit, when
+from fennel.expr import col, lit, when, repeat
 from fennel.testing import mock, log
 
 ################################################################################
@@ -1326,11 +1326,19 @@ def test_list_lookup(client):
         country: List[Optional[str]] = F(UserInfoDataset.country)
         name: List[str] = F(UserInfoDataset.name, default="Unknown")
 
+    @featureset
+    class UserInfoListLookup2:
+        user_id_request: int = F(Request.user_id)
+        user_id: List[int] = F(repeat(col("user_id_request"), 5))
+        country: List[Optional[str]] = F(UserInfoDataset.country)
+        name: List[str] = F(UserInfoDataset.name, default="Unknown")
+
     client.commit(
         datasets=[UserInfoDataset],
-        featuresets=[UserInfoListLookup],
+        featuresets=[UserInfoListLookup, UserInfoListLookup2, Request],
         message="Initial commit",
     )
+    client.sleep()
 
     now = datetime.now(timezone.utc)
     data = [
@@ -1368,6 +1376,18 @@ def test_list_lookup(client):
         ["John", "Monica", "Rahul", "Unknown"],
         ["John", "Monica"],
         ["Monica", "Rahul", "Unknown"],
+    ]
+
+    feature_df2 = client.query(
+        outputs=[UserInfoListLookup2],
+        inputs=[Request.user_id],
+        input_dataframe=pd.DataFrame({"Request.user_id": [18232, 12345]}),
+    )
+
+    assert feature_df2.shape == (2, 4)
+    assert feature_df2["UserInfoListLookup2.country"].tolist() == [
+        ["USA", "USA", "USA", "USA", "USA"],
+        [pd.NA, pd.NA, pd.NA, pd.NA, pd.NA],
     ]
 
 
@@ -1465,7 +1485,7 @@ def test_multiple_keyed_list_lookup(client):
     client.commit(
         datasets=[KeyedDataset], featuresets=[KeyedFeatureset], message="msg"
     )
-
+    client.sleep()
     # Log data
     now = datetime.now(timezone.utc)
     data = [

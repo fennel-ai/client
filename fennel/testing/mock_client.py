@@ -527,6 +527,7 @@ class MockClient(Client):
                     input_dataframe[input_col], col_type
                 )
             except Exception as e:
+                print(input_dataframe)
                 raise Exception(
                     f"Error casting input dataframe column `{input_col}` for feature `{feature.fqn_}`, "
                     f"dtype: `{feature.dtype}`: {e}"
