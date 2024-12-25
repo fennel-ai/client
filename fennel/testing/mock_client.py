@@ -522,9 +522,16 @@ class MockClient(Client):
             if isinstance(feature, str):
                 continue
             col_type = get_datatype(feature.dtype)  # type: ignore
-            input_dataframe[input_col] = cast_col_to_arrow_dtype(
-                input_dataframe[input_col], col_type
-            )
+            try:
+                input_dataframe[input_col] = cast_col_to_arrow_dtype(
+                    input_dataframe[input_col], col_type
+                )
+            except Exception as e:
+                print(input_dataframe)
+                raise Exception(
+                    f"Error casting input dataframe column `{input_col}` for feature `{feature.fqn_}`, "
+                    f"dtype: `{feature.dtype}`: {e}"
+                )
         return input_dataframe
 
     def _get_secret(self, secret_name: str) -> Optional[str]:

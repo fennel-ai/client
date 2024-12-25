@@ -13,6 +13,7 @@ from typing import (
     Optional,
     List,
     Union,
+    get_origin,
 )
 
 import pandas as pd
@@ -697,6 +698,14 @@ class Featureset:
                 feature.ref_env,
             )
             extractor.set_inputs_from_featureset(self, feature)
+            # If feature is a list, then we need to use the list lookup extractor
+            if get_origin(feature.dtype) == list:
+                # Check that reference feature is also a list
+                inputs = extractor.inputs
+                # Check that all inputs are of type list
+                if all(get_origin(i.dtype) == list for i in inputs):
+                    extractor.extractor_type = ExtractorType.LIST_LOOKUP
+
             extractor.featureset = self._name
             extractor.outputs = [feature]
             feature_meta = get_meta(feature)
@@ -803,6 +812,7 @@ class Featureset:
                 # Check that the types match
                 field = extractor.derived_extractor_info.field
                 default = extractor.derived_extractor_info.default
+
                 if default is not None:
                     if field.is_optional():
                         field_dtype = fennel_get_optional_inner(field.dtype)
@@ -826,6 +836,45 @@ class Featureset:
                         raise TypeError(
                             f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
                             f"but expectected type `{expected_field_type}`"
+                        )
+
+                # Check that the default value has the right type
+                if default is not None:
+                    try:
+                        validate_val_with_dtype(
+                            field.dtype,
+                            default,
+                        )
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Default value `{default}` for feature `{feature.fqn()}` has incorrect default value: {e}"
+                        )
+            if extractor.extractor_type == ExtractorType.LIST_LOOKUP:
+                feature = extractor.outputs[0]
+                # Check that the types match
+                field = extractor.derived_extractor_info.field
+                default = extractor.derived_extractor_info.default
+                if default is not None:
+                    if field.is_optional():
+                        field_dtype = fennel_get_optional_inner(field.dtype)
+                    else:
+                        field_dtype = field.dtype
+                    if feature.dtype != List[field_dtype]:
+                        raise TypeError(
+                            f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                            f"but expected type `List[{field_dtype}]`."
+                        )
+                else:
+                    if field.is_optional():
+                        # keeping with optional because default is not defined
+                        expected_field_type = field.dtype
+                    else:
+                        # Adding optional because default is not defined
+                        expected_field_type = Optional[field.dtype]
+                    if feature.dtype != List[expected_field_type]:
+                        raise TypeError(
+                            f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                            f"but expectected type `List[{expected_field_type}]`"
                         )
 
                 # Check that the default value has the right type
@@ -969,7 +1018,10 @@ class Extractor:
     ):
         if self.inputs and len(self.inputs) > 0:
             return
-        if self.extractor_type != ExtractorType.LOOKUP:
+        if not (
+            self.extractor_type == ExtractorType.LOOKUP
+            or self.extractor_type == ExtractorType.LIST_LOOKUP
+        ):
             return
         if not self.derived_extractor_info or not hasattr(
             self.derived_extractor_info, "field"

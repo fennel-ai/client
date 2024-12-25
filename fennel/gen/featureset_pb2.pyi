@@ -33,6 +33,7 @@ class _ExtractorTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._
     LOOKUP: _ExtractorType.ValueType  # 1
     ALIAS: _ExtractorType.ValueType  # 2
     EXPR: _ExtractorType.ValueType  # 3
+    LIST_LOOKUP: _ExtractorType.ValueType  # 4
 
 class ExtractorType(_ExtractorType, metaclass=_ExtractorTypeEnumTypeWrapper): ...
 
@@ -41,6 +42,7 @@ PY_FUNC: ExtractorType.ValueType  # 0
 LOOKUP: ExtractorType.ValueType  # 1
 ALIAS: ExtractorType.ValueType  # 2
 EXPR: ExtractorType.ValueType  # 3
+LIST_LOOKUP: ExtractorType.ValueType  # 4
 global___ExtractorType = ExtractorType
 
 @typing_extensions.final
@@ -158,7 +160,7 @@ class Extractor(google.protobuf.message.Message):
     @property
     def field_info(self) -> global___FieldLookupInfo:
         """pycode excluded from the oneof for better bwd compatibility in Rust
-        required iff extractor_type == LOOKUP
+        required iff extractor_type == LOOKUP or LIST_LOOKUP
         """
     @property
     def expr(self) -> expression_pb2.Expr:
