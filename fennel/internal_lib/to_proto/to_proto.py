@@ -723,7 +723,10 @@ def _extractor_to_proto(
             )
 
     extractor_field_info = None
-    if extractor.extractor_type == ExtractorType.LOOKUP:
+    if (
+        extractor.extractor_type == ExtractorType.LOOKUP
+        or extractor.extractor_type == ExtractorType.LIST_LOOKUP
+    ):
         if not extractor.derived_extractor_info:
             raise TypeError(
                 f"Lookup extractor `{extractor.name}` must have DatasetLookupInfo"

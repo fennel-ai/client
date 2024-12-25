@@ -171,6 +171,17 @@ class QueryEngine:
                 self._check_schema_exceptions(output, dsschema, extractor.name)
                 continue
 
+            if extractor.extractor_type == ProtoExtractorType.LIST_LOOKUP:
+                output = self._compute_list_lookup_extractor(
+                    data_engine,
+                    extractor,
+                    timestamps.copy(),
+                    intermediate_data,
+                    use_as_of,
+                )
+                self._check_schema_exceptions(output, dsschema, extractor.name)
+                continue
+
             if extractor.extractor_type == ProtoExtractorType.EXPR:
                 output = self._compute_expr_extractor(
                     extractor, timestamps.copy(), intermediate_data
@@ -386,6 +397,114 @@ class QueryEngine:
         intermediate_data[extractor.fqn_output_features()[0]] = res
         return res
 
+    def _get_default_value(self, extractor: Extractor):
+        default_value = extractor.derived_extractor_info.default  # type: ignore
+        proto_dtype = get_datatype(extractor.derived_extractor_info.field.dtype)  # type: ignore
+        # Custom operations on default value for datetime and decimal type
+        if proto_dtype.HasField("decimal_type"):
+            if pd.notna(default_value) and not isinstance(
+                default_value, Decimal
+            ):
+                default_value = Decimal(
+                    "%0.{}f".format(proto_dtype.decimal_type.scale)
+                    % float(default_value)  # type: ignore
+                )
+        if isinstance(default_value, datetime):
+            default_value = parse_datetime(default_value)
+        return default_value
+
+    def _compute_list_lookup_extractor(
+        self,
+        data_engine: DataEngine,
+        extractor: Extractor,
+        timestamps: pd.Series,
+        intermediate_data: Dict[str, pd.Series],
+        use_as_of: bool,
+    ) -> pd.Series:
+        if len(extractor.outputs) != 1:
+            raise ValueError(
+                f"Lookup extractor {extractor.name} must have exactly one output feature, found {len(extractor.outputs)}"
+            )
+        if len(extractor.depends_on) != 1:
+            raise ValueError(
+                f"Lookup extractor {extractor.name} must have exactly one dependent dataset, found {len(extractor.depends_on)}"
+            )
+
+        input_features = {
+            k.name: intermediate_data[k.fqn()] for k in extractor.inputs  # type: ignore
+        }
+        allowed_datasets = self._get_allowed_datasets(extractor)
+        arg_list_lengths = []
+        # Assert all input features are of type list
+        for idx, input_feature in enumerate(extractor.inputs):
+            for row_idx, row in enumerate(input_features[input_feature.name]):
+                if not isinstance(row, list):
+                    raise ValueError(
+                        f"Input feature `{input_feature.name}` is not of type list,"
+                        f"found `{row}` of type `{type(row)}`"
+                    )
+                if idx == 0:
+                    arg_list_lengths.append(len(row))
+                else:
+                    if len(row) != arg_list_lengths[row_idx]:
+                        raise ValueError(
+                            f"All input features must have the same length, found {len(row)} for feature {input_feature.name} and {len(arg_list_lengths[0])} for feature {extractor.inputs[0].name}"  # type: ignore
+                        )
+
+        repeated_timestamps = []
+        # Repeat each timestamp for the number of times in arg_list_lengths
+        for idx, timestamp in enumerate(timestamps):
+            repeated_timestamps.extend([timestamp] * arg_list_lengths[idx])
+
+        repeated_timestamps = pd.Series(repeated_timestamps)
+        # Flatten the input features
+        flattened_input_features = {}
+        for input_feature in extractor.inputs:
+            flattened_input_features[input_feature.name] = input_features[
+                input_feature.name
+            ].explode()
+
+        fennel.datasets.datasets.dataset_lookup = (
+            data_engine.get_dataset_lookup_impl(
+                extractor.name, allowed_datasets, use_as_of
+            )
+        )
+        results, _ = extractor.depends_on[0].lookup(
+            repeated_timestamps, **flattened_input_features
+        )
+        if (
+            not extractor.derived_extractor_info
+            or not extractor.derived_extractor_info.field
+            or not extractor.derived_extractor_info.field.name
+        ):
+            raise TypeError(
+                f"Field for lookup extractor {extractor.name} must have a named field"
+            )
+        results = results[extractor.derived_extractor_info.field.name]
+        default_value = self._get_default_value(extractor)
+        if default_value is not None:
+            if results.dtype != object:
+                results = results.fillna(default_value)
+            else:
+                # fillna doesn't work for list type or dict type :cols
+                for row in results.loc[results.isnull()].index:
+                    results[row] = default_value
+
+        fennel.datasets.datasets.dataset_lookup = (
+            data_engine.get_dataset_lookup_impl(None, None, False)
+        )
+        # Pack the results into a list of lists, using the arg_list_lengths
+        packed_results = []
+        start_idx = 0
+        results_list = results.tolist()
+        for length in arg_list_lengths:
+            packed_results.append(results_list[start_idx : start_idx + length])
+            start_idx += length
+        packed_results: pd.Series = pd.Series(packed_results)  # type: ignore
+        packed_results.name = extractor.fqn_output_features()[0]  # type: ignore
+        intermediate_data[extractor.fqn_output_features()[0]] = packed_results
+        return packed_results
+
     def _compute_lookup_extractor(
         self,
         data_engine: DataEngine,
@@ -424,19 +543,7 @@ class QueryEngine:
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        default_value = extractor.derived_extractor_info.default
-        proto_dtype = get_datatype(extractor.derived_extractor_info.field.dtype)
-        # Custom operations on default value for datetime and decimal type
-        if proto_dtype.HasField("decimal_type"):
-            if pd.notna(default_value) and not isinstance(
-                default_value, Decimal
-            ):
-                default_value = Decimal(
-                    "%0.{}f".format(proto_dtype.decimal_type.scale)
-                    % float(default_value)  # type: ignore
-                )
-        if isinstance(default_value, datetime):
-            default_value = parse_datetime(default_value)
+        default_value = self._get_default_value(extractor)
         if default_value is not None:
             if results.dtype != object:
                 results = results.fillna(default_value)

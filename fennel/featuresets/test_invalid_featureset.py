@@ -29,6 +29,7 @@ class UserInfoDataset:
     dob: str
     age: int
     ids: List[int]
+    hobbies: List[Optional[str]]
     account_creation_date: datetime
     country: Optional[str]
     timestamp: datetime = field(timestamp=True)
@@ -455,4 +456,43 @@ def test_invalid_expr_feature(client):
     assert (
         str(e.value)
         == "extractor for 'age_squared' refers to feature col('UserInfoDataset.age') not present in 'UserInfo6'; 'col' can only reference features from the same featureset"
+    )
+
+
+@mock
+def test_invalid_list_lookup(client):
+    @source(webhook.endpoint("HobbyDataset"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class HobbyDataset:
+        hobby: str = field(key=True)
+        category: str
+        ts: datetime
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserHobbies:
+            user_id: int
+            hobby: List[Optional[str]] = F(UserInfoDataset.hobbies, default=[])
+            # This is incorrect as the type is List[str] not List[Optional[str]]
+            categories: List[Optional[str]] = F(
+                HobbyDataset.category, default="Unk"
+            )
+
+    assert (
+        str(e.value)
+        == "Feature `UserHobbies.categories` has type `typing.List[typing.Optional[str]]` but expected type `List[<class 'str'>]`."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class UserHobbies2:
+            hobby: str
+            # This is incorrect as hobby should be List[str]
+            categories: List[str] = F(HobbyDataset.category, default="Unk")
+
+    assert (
+        str(e.value)
+        == "Feature `UserHobbies2.categories` has type `typing.List[str]` but expected type `<class 'str'>`."
     )
