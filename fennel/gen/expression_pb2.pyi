@@ -115,14 +115,20 @@ class EvalContext(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
     NOW_COL_NAME_FIELD_NUMBER: builtins.int
+    INDEX_COL_NAME_FIELD_NUMBER: builtins.int
     now_col_name: builtins.str
+    index_col_name: builtins.str
     def __init__(
         self,
         *,
         now_col_name: builtins.str | None = ...,
+        index_col_name: builtins.str | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["_now_col_name", b"_now_col_name", "now_col_name", b"now_col_name"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["_now_col_name", b"_now_col_name", "now_col_name", b"now_col_name"]) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["_index_col_name", b"_index_col_name", "_now_col_name", b"_now_col_name", "index_col_name", b"index_col_name", "now_col_name", b"now_col_name"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["_index_col_name", b"_index_col_name", "_now_col_name", b"_now_col_name", "index_col_name", b"index_col_name", "now_col_name", b"now_col_name"]) -> None: ...
+    @typing.overload
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["_index_col_name", b"_index_col_name"]) -> typing_extensions.Literal["index_col_name"] | None: ...
+    @typing.overload
     def WhichOneof(self, oneof_group: typing_extensions.Literal["_now_col_name", b"_now_col_name"]) -> typing_extensions.Literal["now_col_name"] | None: ...
 
 global___EvalContext = EvalContext
@@ -149,6 +155,8 @@ class Expr(google.protobuf.message.Message):
     FROM_EPOCH_FIELD_NUMBER: builtins.int
     VAR_FIELD_NUMBER: builtins.int
     NOW_FIELD_NUMBER: builtins.int
+    ZIP_FIELD_NUMBER: builtins.int
+    REPEAT_FIELD_NUMBER: builtins.int
     @property
     def ref(self) -> global___Ref: ...
     @property
@@ -186,6 +194,10 @@ class Expr(google.protobuf.message.Message):
     def var(self) -> global___Var: ...
     @property
     def now(self) -> global___Now: ...
+    @property
+    def zip(self) -> global___Zip: ...
+    @property
+    def repeat(self) -> global___Repeat: ...
     def __init__(
         self,
         *,
@@ -207,12 +219,35 @@ class Expr(google.protobuf.message.Message):
         from_epoch: global___FromEpoch | None = ...,
         var: global___Var | None = ...,
         now: global___Now | None = ...,
+        zip: global___Zip | None = ...,
+        repeat: global___Repeat | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "now", b"now", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "now", b"now", "ref", b"ref", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch", "var", "now"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "now", b"now", "ref", b"ref", "repeat", b"repeat", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var", "zip", b"zip"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["binary", b"binary", "case", b"case", "datetime_fn", b"datetime_fn", "datetime_literal", b"datetime_literal", "dict_fn", b"dict_fn", "fillnull", b"fillnull", "from_epoch", b"from_epoch", "isnull", b"isnull", "json_literal", b"json_literal", "list_fn", b"list_fn", "make_struct", b"make_struct", "math_fn", b"math_fn", "node", b"node", "now", b"now", "ref", b"ref", "repeat", b"repeat", "string_fn", b"string_fn", "struct_fn", b"struct_fn", "unary", b"unary", "var", b"var", "zip", b"zip"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["node", b"node"]) -> typing_extensions.Literal["ref", "json_literal", "unary", "case", "binary", "isnull", "fillnull", "list_fn", "math_fn", "struct_fn", "dict_fn", "string_fn", "datetime_fn", "datetime_literal", "make_struct", "from_epoch", "var", "now", "zip", "repeat"] | None: ...
 
 global___Expr = Expr
+
+@typing_extensions.final
+class Repeat(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    EXPR_FIELD_NUMBER: builtins.int
+    COUNT_FIELD_NUMBER: builtins.int
+    @property
+    def expr(self) -> global___Expr: ...
+    @property
+    def count(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        expr: global___Expr | None = ...,
+        count: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["count", b"count", "expr", b"expr"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["count", b"count", "expr", b"expr"]) -> None: ...
+
+global___Repeat = Repeat
 
 @typing_extensions.final
 class Now(google.protobuf.message.Message):
@@ -335,6 +370,45 @@ class MakeStruct(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "struct_type", b"struct_type"]) -> None: ...
 
 global___MakeStruct = MakeStruct
+
+@typing_extensions.final
+class Zip(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    @typing_extensions.final
+    class FieldsEntry(google.protobuf.message.Message):
+        DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+        KEY_FIELD_NUMBER: builtins.int
+        VALUE_FIELD_NUMBER: builtins.int
+        key: builtins.str
+        @property
+        def value(self) -> global___Expr: ...
+        def __init__(
+            self,
+            *,
+            key: builtins.str = ...,
+            value: global___Expr | None = ...,
+        ) -> None: ...
+        def HasField(self, field_name: typing_extensions.Literal["value", b"value"]) -> builtins.bool: ...
+        def ClearField(self, field_name: typing_extensions.Literal["key", b"key", "value", b"value"]) -> None: ...
+
+    STRUCT_TYPE_FIELD_NUMBER: builtins.int
+    FIELDS_FIELD_NUMBER: builtins.int
+    @property
+    def struct_type(self) -> schema_pb2.StructType: ...
+    @property
+    def fields(self) -> google.protobuf.internal.containers.MessageMap[builtins.str, global___Expr]: ...
+    def __init__(
+        self,
+        *,
+        struct_type: schema_pb2.StructType | None = ...,
+        fields: collections.abc.Mapping[builtins.str, global___Expr] | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["struct_type", b"struct_type"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["fields", b"fields", "struct_type", b"struct_type"]) -> None: ...
+
+global___Zip = Zip
 
 @typing_extensions.final
 class JsonLiteral(google.protobuf.message.Message):
@@ -727,6 +801,9 @@ class MathOp(google.protobuf.message.Message):
     CEIL_FIELD_NUMBER: builtins.int
     FLOOR_FIELD_NUMBER: builtins.int
     TO_STRING_FIELD_NUMBER: builtins.int
+    POW_FIELD_NUMBER: builtins.int
+    LOG_FIELD_NUMBER: builtins.int
+    SQRT_FIELD_NUMBER: builtins.int
     @property
     def round(self) -> global___Round: ...
     @property
@@ -737,6 +814,12 @@ class MathOp(google.protobuf.message.Message):
     def floor(self) -> global___Floor: ...
     @property
     def to_string(self) -> global___ToString: ...
+    @property
+    def pow(self) -> global___Pow: ...
+    @property
+    def log(self) -> global___Log: ...
+    @property
+    def sqrt(self) -> global___Sqrt: ...
     def __init__(
         self,
         *,
@@ -745,10 +828,13 @@ class MathOp(google.protobuf.message.Message):
         ceil: global___Ceil | None = ...,
         floor: global___Floor | None = ...,
         to_string: global___ToString | None = ...,
+        pow: global___Pow | None = ...,
+        log: global___Log | None = ...,
+        sqrt: global___Sqrt | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "round", b"round", "to_string", b"to_string"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "round", b"round", "to_string", b"to_string"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["round", "abs", "ceil", "floor", "to_string"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "log", b"log", "pow", b"pow", "round", b"round", "sqrt", b"sqrt", "to_string", b"to_string"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "log", b"log", "pow", b"pow", "round", b"round", "sqrt", b"sqrt", "to_string", b"to_string"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["round", "abs", "ceil", "floor", "to_string", "pow", "log", "sqrt"] | None: ...
 
 global___MathOp = MathOp
 
@@ -766,6 +852,48 @@ class Round(google.protobuf.message.Message):
     def ClearField(self, field_name: typing_extensions.Literal["precision", b"precision"]) -> None: ...
 
 global___Round = Round
+
+@typing_extensions.final
+class Pow(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    EXPONENT_FIELD_NUMBER: builtins.int
+    @property
+    def exponent(self) -> global___Expr: ...
+    def __init__(
+        self,
+        *,
+        exponent: global___Expr | None = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["exponent", b"exponent"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["exponent", b"exponent"]) -> None: ...
+
+global___Pow = Pow
+
+@typing_extensions.final
+class Log(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    BASE_FIELD_NUMBER: builtins.int
+    base: builtins.float
+    def __init__(
+        self,
+        *,
+        base: builtins.float = ...,
+    ) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["base", b"base"]) -> None: ...
+
+global___Log = Log
+
+@typing_extensions.final
+class Sqrt(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Sqrt = Sqrt
 
 @typing_extensions.final
 class Abs(google.protobuf.message.Message):

@@ -97,7 +97,6 @@ def test_invalid_parse():
         expr = col("a").str.parse(int)
         df = pd.DataFrame({"a": ['"A"', '"B"', '"C"']})
         expr.eval(df, {"a": str})
-    assert (
-        str(e.value)
-        == "failed to evaluate expression: failed to convert polars array to fennel array for type 'Int'"
+    assert str(e.value).startswith(
+        "failed to evaluate expression: failed to convert polars array of type Int64 to fennel array for type 'Int' due to error"
     )

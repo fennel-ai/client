@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.63] - 2024-12-24
+- Add support for zip, repeat, pow, log, and sqrt expressions
+
 ## [1.5.62] - 2024-12-16
 - Fix casting for empty dataframes.
 
