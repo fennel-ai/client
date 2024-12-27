@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 from functools import partial
-from typing import Dict, List, Union, Optional, Tuple
+from typing import Dict, List, Union, Optional, Tuple, Any
 
 import pandas as pd
 from frozendict import frozendict
@@ -151,9 +151,22 @@ class QueryEngine:
 
             if extractor.extractor_type == ProtoExtractorType.ALIAS:
                 feature_name = extractor.fqn_output_features()[0]
-                intermediate_data[feature_name] = intermediate_data[
-                    extractor.inputs[0].fqn()
-                ]
+                assert isinstance(
+                    extractor.derived_extractor_info, Extractor.AliasInfo
+                )
+                default_value = self._get_default_value(
+                    extractor.derived_extractor_info.default,
+                    get_datatype(extractor.derived_extractor_info.dtype),
+                )
+                results = intermediate_data[extractor.inputs[0].fqn()]
+                if default_value is not None:
+                    if results.dtype != object:
+                        results = results.fillna(default_value)
+                    else:
+                        # fillna doesn't work for list type or dict type :cols
+                        for row in results.loc[results.isnull()].index:
+                            results[row] = default_value
+                intermediate_data[feature_name] = results
                 intermediate_data[feature_name].name = feature_name
                 self._check_schema_exceptions(
                     intermediate_data[feature_name], dsschema, extractor.name
@@ -397,9 +410,9 @@ class QueryEngine:
         intermediate_data[extractor.fqn_output_features()[0]] = res
         return res
 
-    def _get_default_value(self, extractor: Extractor):
-        default_value = extractor.derived_extractor_info.default  # type: ignore
-        proto_dtype = get_datatype(extractor.derived_extractor_info.field.dtype)  # type: ignore
+    def _get_default_value(
+        self, default_value: Any, proto_dtype: schema_proto.DataType
+    ):
         # Custom operations on default value for datetime and decimal type
         if proto_dtype.HasField("decimal_type"):
             if pd.notna(default_value) and not isinstance(
@@ -474,6 +487,9 @@ class QueryEngine:
         )
         if (
             not extractor.derived_extractor_info
+            or not isinstance(
+                extractor.derived_extractor_info, Extractor.DatasetLookupInfo
+            )
             or not extractor.derived_extractor_info.field
             or not extractor.derived_extractor_info.field.name
         ):
@@ -481,7 +497,10 @@ class QueryEngine:
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        default_value = self._get_default_value(extractor)
+        default_value = self._get_default_value(
+            extractor.derived_extractor_info.default,
+            get_datatype(extractor.derived_extractor_info.field.dtype),
+        )
         if default_value is not None:
             if results.dtype != object:
                 results = results.fillna(default_value)
@@ -536,6 +555,9 @@ class QueryEngine:
         )
         if (
             not extractor.derived_extractor_info
+            or not isinstance(
+                extractor.derived_extractor_info, Extractor.DatasetLookupInfo
+            )
             or not extractor.derived_extractor_info.field
             or not extractor.derived_extractor_info.field.name
         ):
@@ -543,7 +565,10 @@ class QueryEngine:
                 f"Field for lookup extractor {extractor.name} must have a named field"
             )
         results = results[extractor.derived_extractor_info.field.name]
-        default_value = self._get_default_value(extractor)
+        default_value = self._get_default_value(
+            extractor.derived_extractor_info.default,
+            get_datatype(extractor.derived_extractor_info.field.dtype),
+        )
         if default_value is not None:
             if results.dtype != object:
                 results = results.fillna(default_value)

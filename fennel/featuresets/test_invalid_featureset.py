@@ -368,28 +368,6 @@ def test_invalid_extractors(client):
 
 
 @mock
-def test_invalid_alias_feature(client):
-    @featureset
-    class A:
-        user_id: Optional[int]
-        home_geoid: int
-        credit_score: int
-
-    with pytest.raises(TypeError) as e:
-
-        @featureset
-        class B:
-            user_id: int = F(A.user_id, default=0)
-            home_geoid: int
-            credit_score: int
-
-    assert (
-        str(e.value)
-        == "'Please specify a reference to a field of a dataset to use \"default\" param', found arg: `user_id` and default: `0`"
-    )
-
-
-@mock
 def test_invalid_expr_feature(client):
 
     # Using a feature that is not defined in the featureset
@@ -495,4 +473,43 @@ def test_invalid_list_lookup(client):
     assert (
         str(e.value)
         == "Feature `UserHobbies2.categories` has type `typing.List[str]` but expected type `<class 'str'>`."
+    )
+
+
+def test_invalid_default_alias_extractor():
+    @source(webhook.endpoint("DS"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class DS:
+        key: str = field(key=True)
+        value1: str
+        value2: str
+        ts: datetime
+
+    @featureset
+    class FS:
+        key: str
+        value1: Optional[str] = F(DS.value1)
+        value2: str = F(DS.value2, default="default_value")
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class FSDerived1:
+            value1: Optional[str] = F(FS.value1, default="Unk")
+
+    assert (
+        str(e.value)
+        == "Feature `FSDerived1.value1 with default value has type `typing.Optional[str]`but the extractor aliasing "
+        "`FS.value1` has input type `typing.Optional[str]`."
+    )
+
+    with pytest.raises(TypeError) as e:
+
+        @featureset
+        class FSDerived2:
+            value2: str = F(FS.value2, default="Unk")
+
+    assert (
+        str(e.value)
+        == "Feature `FSDerived2.value2` has default defined but the extractor aliasing `FS.value2` has input type `<class 'str'>`."
     )

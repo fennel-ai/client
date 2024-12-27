@@ -1515,3 +1515,70 @@ def test_multiple_keyed_list_lookup(client):
         ["a", pd.NA, "b"],
         ["d", pd.NA, pd.NA],
     ]
+
+
+@pytest.mark.integration
+@mock
+def test_alias_extractor_with_default_value(client):
+    @source(webhook.endpoint("KeyedDataset"), disorder="14d", cdc="upsert")
+    @dataset(index=True)
+    class KeyedDataset:
+        key: int = field(key=True)
+        value1: str
+        value2: str
+        ts: datetime = field(timestamp=True)
+
+    @featureset
+    class KeyedFS:
+        key: int
+        value1: Optional[str] = F(KeyedDataset.value1)
+        value2: Optional[str] = F(KeyedDataset.value2)
+
+    @featureset
+    class KeyedFSWithDefault:
+        value1: str = F(KeyedFS.value1, default="default_value")
+        value2: Optional[str] = F(KeyedFS.value2)
+
+    client.commit(
+        datasets=[KeyedDataset],
+        featuresets=[KeyedFS, KeyedFSWithDefault],
+        message="msg",
+    )
+    client.sleep()
+
+    now = datetime.now(timezone.utc)
+    input_df = pd.DataFrame(
+        {
+            "key": [1, 2, 3, 4],
+            "value1": ["a", "b", "c", "d"],
+            "value2": ["aa", "bb", "cc", "dd"],
+            "ts": [now, now, now, now],
+        }
+    )
+    client.log("fennel_webhook", "KeyedDataset", input_df)
+    client.sleep()
+
+    feature_df = client.query(
+        inputs=[KeyedFS.key],
+        outputs=[KeyedFSWithDefault],
+        input_dataframe=pd.DataFrame(
+            {
+                "KeyedFS.key": [1, 2, 3, 4, 5],
+            }
+        ),
+    )
+    assert feature_df.shape == (5, 2)
+    assert feature_df["KeyedFSWithDefault.value1"].tolist() == [
+        "a",
+        "b",
+        "c",
+        "d",
+        "default_value",
+    ]
+    assert feature_df["KeyedFSWithDefault.value2"].tolist() == [
+        "aa",
+        "bb",
+        "cc",
+        "dd",
+        pd.NA,
+    ]
