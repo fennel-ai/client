@@ -1712,3 +1712,41 @@ def test_invalid_exponential_aggregation():
         str(e.value)
         == "Cannot take exponential decay sum of field page_id of type str"
     )
+
+
+@mock
+def test_deleted_dataset(client):
+    @meta(owner="test@test.com", deleted=True)
+    @dataset
+    class UserInfoDataset:
+        user_id: int
+        name: str
+        age: Optional[int]
+        timestamp: datetime = field(timestamp=True)
+        country: str
+
+    client.commit(datasets=[UserInfoDataset], message="first_commit")
+
+    @meta(owner="test@test.com")
+    @dataset
+    class UserInfoDatasetTransformed:
+        user_id: int = field(key=True)
+        name: str
+        age: Optional[int]
+        timestamp: datetime = field(timestamp=True)
+        country: str
+
+        @pipeline
+        @inputs(UserInfoDataset)
+        def pipeline1(cls, event: Dataset):
+            return event.groupby("user_id").latest()
+
+    with pytest.raises(Exception) as e:
+        client.commit(
+            datasets=[UserInfoDatasetTransformed], message="first_commit"
+        )
+
+    assert (
+        str(e.value)
+        == "Dataset `UserInfoDataset` is an input to the pipelines: `['UserInfoDatasetTransformed.pipeline1']` but is not synced. Please add it to the sync call."
+    )
