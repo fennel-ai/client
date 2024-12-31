@@ -12,7 +12,7 @@ webhook = Webhook(name="fennel_webhook")
 
 @meta(owner="aditya@fennel.ai")
 @source(webhook.endpoint("Activity"), disorder="14d", cdc="append")
-@dataset(history="4m")
+@dataset(retention="4m")
 class Activity:
     user_id: int
     action_type: str

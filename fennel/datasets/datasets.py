@@ -104,6 +104,7 @@ T = TypeVar("T")
 PIPELINE_ATTR = "__fennel_pipeline__"
 ON_DEMAND_ATTR = "__fennel_on_demand__"
 
+DEFAULT_HISTORY = True
 DEFAULT_RETENTION = Duration("2y")
 DEFAULT_EXPIRATION = Duration("30d")
 DEFAULT_VERSION = 1
@@ -1252,7 +1253,8 @@ class Summary:
 def dataset(  # noqa: E704
     *,
     version: Optional[int] = DEFAULT_VERSION,
-    history: Optional[Duration] = DEFAULT_RETENTION,
+    history: Optional[bool] = DEFAULT_HISTORY,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
     index: Optional[bool] = DEFAULT_INDEX,
     offline: Optional[bool] = None,
     online: Optional[bool] = None,
@@ -1266,7 +1268,8 @@ def dataset(cls: Type[T]) -> Dataset: ...  # noqa: E704
 def dataset(
     cls: Optional[Type[T]] = None,
     version: Optional[int] = DEFAULT_VERSION,
-    history: Optional[Duration] = DEFAULT_RETENTION,
+    history: Optional[bool] = DEFAULT_HISTORY,
+    retention: Optional[Duration] = DEFAULT_RETENTION,
     index: Optional[bool] = DEFAULT_INDEX,
     offline: Optional[bool] = None,
     online: Optional[bool] = None,
@@ -1280,7 +1283,9 @@ def dataset(
     ----------
     version : int ( Optional )
         Version of the dataset
-    history : Duration ( Optional )
+    history : bool ( Optional )
+        Whether to maintain the history of the dataset or not.
+    retention : Duration ( Optional )
         The amount of time to keep data in the dataset.
     index : bool ( Optional )
         Whether we want to server the dataset for both online and offline.
@@ -1454,7 +1459,8 @@ def dataset(
     def _create_dataset(
         dataset_cls: Type[T],
         version: int,
-        history: Duration,
+        history: bool,
+        retention: Duration,
         index: Optional[Index],
     ) -> Dataset:
         cls_annotations = dataset_cls.__dict__.get("__annotations__", {})
@@ -1516,7 +1522,8 @@ def dataset(
             dataset_cls,
             fields,
             version=version,
-            history=duration_to_timedelta(history),
+            history=history,
+            retention=duration_to_timedelta(retention),
             lookup_fn=_create_lookup_function(
                 dataset_cls.__name__, key_fields, struct_types  # type: ignore
             ),
@@ -1524,7 +1531,7 @@ def dataset(
         )
 
     def wrap(c: Type[T]) -> Dataset:
-        return _create_dataset(c, version, cast(Duration, history), index_obj)  # type: ignore
+        return _create_dataset(c, version, history, cast(Duration, retention), index_obj)  # type: ignore
 
     if cls is None:
         # We're being called as @dataset(arguments)
@@ -1750,7 +1757,8 @@ class Dataset(_Node[T]):
     # the original attributes defined by the user.
     _name: str
     _on_demand: Optional[OnDemand]
-    _history: datetime.timedelta
+    _history: bool
+    _retention: datetime.timedelta
     _fields: List[Field]
     _key_fields: List[str]
     _erase_key_fields: List[str]
@@ -1766,7 +1774,8 @@ class Dataset(_Node[T]):
         cls: T,
         fields: List[Field],
         version: int,
-        history: datetime.timedelta,
+        history: bool,
+        retention: datetime.timedelta,
         lookup_fn: Optional[Callable] = None,
         owner: Optional[str] = None,
     ):
@@ -1782,6 +1791,7 @@ class Dataset(_Node[T]):
         self._version = version
         self._set_erase_key_fields()
         self._history = history
+        self._retention = retention
         self.__fennel_original_cls__ = cls
         propogate_fennel_attributes(cls, self)
         self._pipelines = self._get_pipelines()
@@ -1849,6 +1859,7 @@ class Dataset(_Node[T]):
         return fhash(
             self._name,
             self._history,
+            self._retention,
             self._on_demand.func if self._on_demand else None,
             self._on_demand.expires_after if self._on_demand else None,
             [f.signature() for f in self._fields],

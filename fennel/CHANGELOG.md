@@ -1,5 +1,7 @@
 # Changelog
 
+## [1.6.0] - 2024-12-31
+- Change history parameter to retention in Dataset.
 
 ## [1.5.66] - 2025-01-01
 - Add support for deleted datasets in mock client.

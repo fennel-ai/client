@@ -287,7 +287,7 @@ def test_add_key():
 
 
 @meta(owner="me@fennel.ai")
-@dataset(history="4m")
+@dataset(retention="4m")
 class Activity:
     user_id: int
     action_type: str
@@ -297,7 +297,7 @@ class Activity:
 
 
 @meta(owner="me@fennel.ai")
-@dataset(index=True, history="4m")
+@dataset(index=True, retention="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
     category: str

@@ -121,6 +121,7 @@ def test_simple_source():
         },
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "name": {},
@@ -272,6 +273,7 @@ def test_simple_source_with_pre_proc():
         },
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "name": {},
@@ -4057,6 +4059,7 @@ def test_bounded_source_with_idleness():
         },
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "name": {},
