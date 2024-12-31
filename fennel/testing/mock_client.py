@@ -174,6 +174,10 @@ class MockClient(Client):
             else:
                 return dataset_old.signature() == dataset_new.signature()
 
+        if datasets is not None:
+            datasets = [
+                dataset for dataset in datasets if not dataset.is_deleted()
+            ]
         if incremental:
             cur_datasets = self.get_datasets()
             cur_featuresets = self.get_featuresets()

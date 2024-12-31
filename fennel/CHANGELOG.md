@@ -1,5 +1,9 @@
 # Changelog
 
+
+## [1.5.66] - 2025-01-01
+- Add support for deleted datasets in mock client.
+
 ## [1.5.65] - 2024-12-27
 - Support default in alias extractors.
 

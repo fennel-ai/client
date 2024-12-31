@@ -1419,6 +1419,7 @@ def test_chainedlist_lookup_with_default(client):
         message="Initial commit",
     )
 
+    client.sleep()
     now = datetime.now(timezone.utc)
     data = [
         [18232, "John", 32, "USA", now, ["Reading", "Writing"]],
