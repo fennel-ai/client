@@ -219,11 +219,11 @@ def to_sync_request_proto(
 def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
     _check_owner_exists(ds)
     history = duration_proto.Duration()
-    history.FromTimedelta(ds._history)
+    history.FromTimedelta(ds._retention)
 
     # TODO(mohit, aditya): add support for `retention` in Dataset
     retention = duration_proto.Duration()
-    retention.FromTimedelta(ds._history)
+    retention.FromTimedelta(ds._retention)
     imports = dedent(
         """
         from datetime import datetime
@@ -246,6 +246,7 @@ def dataset_to_proto(ds: Dataset) -> ds_proto.CoreDataset:
         dsschema=fields_to_dsschema(ds.fields),
         history=history,
         retention=retention,
+        disable_history=not ds._history,
         field_metadata=_field_metadata(ds._fields),
         pycode=pycode_proto.PyCode(
             source_code=fennel_get_source(ds.__fennel_original_cls__),

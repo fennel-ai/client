@@ -38,7 +38,7 @@ class UserInfoDataset:
 
 
 def test_simple_dataset():
-    assert UserInfoDataset._history == timedelta(days=730)
+    assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient()
     view.add(UserInfoDataset)
     sync_request = view._get_sync_request_proto()
@@ -74,6 +74,7 @@ def test_simple_dataset():
         },
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "fieldMetadata": {
             "age": {},
             "name": {},
@@ -96,7 +97,7 @@ def test_simple_dataset():
 
 
 def test_complex_dataset_with_fields():
-    @dataset(history="1y")
+    @dataset(retention="1y")
     @source(
         webhook.endpoint("YextUserInfoDataset"), disorder="14d", cdc="upsert"
     )
@@ -114,7 +115,7 @@ def test_complex_dataset_with_fields():
         country: Optional[Dict[str, List[Dict[str, float]]]] = field()
         timestamp: datetime = field(timestamp=True)
 
-    assert YextUserInfoDataset._history == timedelta(days=365)
+    assert YextUserInfoDataset._retention == timedelta(days=365)
     view = InternalTestClient()
     view.add(YextUserInfoDataset)
     sync_request = view._get_sync_request_proto()
@@ -173,6 +174,7 @@ def test_complex_dataset_with_fields():
                 },
                 "history": "31536000s",
                 "retention": "31536000s",
+                "disable_history": False,
                 "fieldMetadata": {
                     "age": {},
                     "name": {},

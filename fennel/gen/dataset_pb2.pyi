@@ -72,6 +72,7 @@ class CoreDataset(google.protobuf.message.Message):
     IS_SOURCE_DATASET_FIELD_NUMBER: builtins.int
     VERSION_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
+    DISABLE_HISTORY_FIELD_NUMBER: builtins.int
     name: builtins.str
     @property
     def metadata(self) -> metadata_pb2.Metadata: ...
@@ -90,6 +91,7 @@ class CoreDataset(google.protobuf.message.Message):
     @property
     def tags(self) -> google.protobuf.internal.containers.RepeatedScalarFieldContainer[builtins.str]:
         """Union of all tags based on ownership and dataflow semantics."""
+    disable_history: builtins.bool
     def __init__(
         self,
         *,
@@ -103,9 +105,10 @@ class CoreDataset(google.protobuf.message.Message):
         is_source_dataset: builtins.bool = ...,
         version: builtins.int = ...,
         tags: collections.abc.Iterable[builtins.str] | None = ...,
+        disable_history: builtins.bool = ...,
     ) -> None: ...
     def HasField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "history", b"history", "metadata", b"metadata", "pycode", b"pycode", "retention", b"retention"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "is_source_dataset", b"is_source_dataset", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention", "tags", b"tags", "version", b"version"]) -> None: ...
+    def ClearField(self, field_name: typing_extensions.Literal["disable_history", b"disable_history", "dsschema", b"dsschema", "field_metadata", b"field_metadata", "history", b"history", "is_source_dataset", b"is_source_dataset", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "retention", b"retention", "tags", b"tags", "version", b"version"]) -> None: ...
 
 global___CoreDataset = CoreDataset
 

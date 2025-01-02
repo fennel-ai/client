@@ -55,7 +55,7 @@ def test_multiple_date_time():
 def test_invalid_retention_window():
     with pytest.raises(TypeError) as e:
 
-        @dataset(history=324)
+        @dataset(retention=324)
         class Activity:
             user_id: int
             action_type: float
@@ -1141,7 +1141,7 @@ def test_dataset_optional_key():
 def test_protected_fields():
     with pytest.raises(Exception) as e:
 
-        @dataset(history="324d")
+        @dataset(retention="324d")
         class Activity:
             fields: List[int]
             key_fields: float

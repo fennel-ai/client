@@ -2888,7 +2888,7 @@ class TestNestedStructType(unittest.TestCase):
 
 @meta(owner="me@fennel.ai")
 @source(webhook.endpoint("Activity"), disorder="14d", cdc="append")
-@dataset(history="4m")
+@dataset(retention="4m")
 class Activity:
     user_id: int
     action_type: str
@@ -2899,7 +2899,7 @@ class Activity:
 
 @meta(owner="me@fenne.ai")
 @source(webhook.endpoint("MerchantInfo"), disorder="14d", cdc="upsert")
-@dataset(index=True, history="4m")
+@dataset(index=True, retention="4m")
 class MerchantInfo:
     merchant_id: int = field(key=True)
     category: str

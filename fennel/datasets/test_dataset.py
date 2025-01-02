@@ -48,7 +48,7 @@ class UserInfoDataset:
 
 
 def test_simple_dataset():
-    assert UserInfoDataset._history == timedelta(days=730)
+    assert UserInfoDataset._retention == timedelta(days=730)
     view = InternalTestClient()
     view.add(UserInfoDataset)
     assert desc(UserInfoDataset.age) == "Users age lol"
@@ -90,6 +90,7 @@ def test_simple_dataset():
                 },
                 "history": "63072000s",
                 "retention": "63072000s",
+                "disable_history": False,
                 "fieldMetadata": {
                     "version": {},
                     "name": {},
@@ -166,7 +167,7 @@ def test_dataset_with_webhook_retention():
         name: str
         timestamp: datetime = field(timestamp=True)
 
-    assert Test._history == timedelta(days=730)
+    assert Test._retention == timedelta(days=730)
     view = InternalTestClient()
     view.add(Test)
     sync_request = view._get_sync_request_proto()
@@ -192,6 +193,7 @@ def test_dataset_with_webhook_retention():
                 },
                 "history": "63072000s",
                 "retention": "63072000s",
+                "disable_history": False,
                 "fieldMetadata": {
                     "name": {},
                     "user_id": {},
@@ -328,6 +330,7 @@ def test_dataset_with_aggregates():
         },
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "fieldMetadata": {
             "avg_age": {},
             "count": {},
@@ -348,7 +351,7 @@ def test_dataset_with_aggregates():
 
 
 @source(webhook.endpoint("Activity"), disorder="14d", cdc="append")
-@dataset(history="120d")
+@dataset(retention="120d")
 class Activity:
     user_id: int
     action_type: float
@@ -357,7 +360,7 @@ class Activity:
 
 
 def test_dataset_with_retention():
-    assert Activity._history == timedelta(days=120)
+    assert Activity._retention == timedelta(days=120)
     view = InternalTestClient()
     view.add(Activity)
     sync_request = view._get_sync_request_proto()
@@ -389,6 +392,7 @@ def test_dataset_with_retention():
                 },
                 "history": "10368000s",
                 "retention": "10368000s",
+                "disable_history": False,
                 "fieldMetadata": {
                     "action_type": {},
                     "user_id": {},
@@ -541,6 +545,7 @@ def test_nested_dataset():
                 },
                 "history": "63072000s",
                 "retention": "63072000s",
+                "disable_history": False,
                 "fieldMetadata": {
                     "address": {},
                     "cars": {},
@@ -636,6 +641,7 @@ def test_dataset_with_pipes():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {"a1": {}, "t": {}},
         "pycode": {},
     }
@@ -828,6 +834,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {"a1": {}, "t": {}},
         "pycode": {},
     }
@@ -925,6 +932,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {"a1": {}, "t": {}},
         "pycode": {},
     }
@@ -1022,6 +1030,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {"a1": {}, "t": {}},
         "pycode": {},
     }
@@ -1120,6 +1129,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {"a1": {}, "t": {}},
         "pycode": {},
     }
@@ -1218,6 +1228,7 @@ def test_dataset_with_pipes_bounds():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {"a1": {}, "t": {}},
         "pycode": {},
     }
@@ -1416,6 +1427,7 @@ def test_dataset_with_complex_pipe():
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "merchant_id": {},
             "num_merchant_fraudulent_transactions": {},
@@ -1645,6 +1657,7 @@ def test_assign_column():
         "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "a1": {},
             "a2": {},
@@ -1741,6 +1754,7 @@ def test_dropnull():
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "a1": {},
             "a2": {},
@@ -1789,7 +1803,7 @@ def test_dropnull():
     )
 
     o = {
-        "id": "be210d6a1d0ed8ab544d737b629a1c8d",
+        "id": "4a484d6e7069c2a7f7953f53ae32afb6",
         "isRoot": True,
         "pipelineName": "from_a",
         "datasetName": "B",
@@ -1857,6 +1871,7 @@ def test_select_and_rename_column():
         "metadata": {"owner": "thaqib@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "b1": {},
             "a2": {},
@@ -1903,7 +1918,7 @@ def test_select_and_rename_column():
 
     o = {
         "datasetName": "B",
-        "id": "10340ca369826992acc29dc84b073c18",
+        "id": "6955c0cf98953ebe7265726d948dfea7",
         "pipelineName": "from_a",
         "rename": {"columnMap": {"a1": "b1"}, "operandId": "A"},
         "ds_version": 1,
@@ -1920,9 +1935,9 @@ def test_select_and_rename_column():
         "datasetName": "B",
         "drop": {
             "dropcols": ["a3", "a4"],
-            "operandId": "10340ca369826992acc29dc84b073c18",
+            "operandId": "6955c0cf98953ebe7265726d948dfea7",
         },
-        "id": "0d52839b6fb94cde94dea24334ad9bce",
+        "id": "063cf129d9e933e7b400438eabff5442",
         "isRoot": True,
         "pipelineName": "from_a",
         "ds_version": 1,
@@ -1984,6 +1999,7 @@ def test_union_datasets():
         "metadata": {"owner": "test@test.com"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "a1": {},
             "t": {},
@@ -2185,6 +2201,7 @@ def test_first_operator():
         "metadata": {"owner": "abhay@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "userid": {},
             "movie": {},
@@ -2306,6 +2323,7 @@ def test_last_operator():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "userid": {},
             "movie": {},
@@ -2480,6 +2498,7 @@ def test_search_dataset():
         "metadata": {"owner": "aditya@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "doc_id": {},
             "bert_embedding": {},
@@ -2892,6 +2911,7 @@ def test_dataset_with_str_window_aggregate():
         "version": 1,
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "fieldMetadata": {
             "sum_age": {},
             "stddev_age": {},
@@ -2973,6 +2993,7 @@ def test_window_operator():
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "window": {},
@@ -3106,6 +3127,7 @@ def test_window_operator_with_aggregation():
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "avg_session_secs": {},
@@ -3260,6 +3282,7 @@ def test_erase_key():
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "avg_session_secs": {},
@@ -3329,6 +3352,7 @@ def test_emit_strategy():
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "page_id": {},
@@ -3397,6 +3421,7 @@ def test_aggregation_emit_final():
         "metadata": {"owner": "nitin@fennel.ai"},
         "history": "63072000s",
         "retention": "63072000s",
+        "disable_history": False,
         "field_metadata": {
             "user_id": {},
             "count": {},
@@ -3494,7 +3519,7 @@ def test_select_all_columns():
         operators[1], expected_operator_request
     )
     drop = {
-        "id": "69fa3b1907d6753bce7b409eb822632b",
+        "id": "82f568b4f10de5569bcec110a15db10a",
         "isRoot": True,
         "pipelineName": "from_a_to_c",
         "datasetName": "C",
@@ -3517,7 +3542,7 @@ def test_select_all_columns():
         operators[3], expected_operator_request
     )
     drop = {
-        "id": "98ba3bf35c472883e9e3530b49b7c38e",
+        "id": "87d423537c3736fe5ce5669f2879d7a5",
         "isRoot": True,
         "pipelineName": "from_a_to_d",
         "datasetName": "D",
