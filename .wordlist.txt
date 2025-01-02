@@ -3,6 +3,9 @@ AES
 APIs
 ARNs
 aren
+arcsin
+arccos
+arctan
 AST
 AdministratorAccess
 AllowKinesisAccess
