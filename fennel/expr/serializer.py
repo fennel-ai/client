@@ -53,6 +53,12 @@ from fennel.expr.expr import (
     NumToStr,
     Abs,
     Floor,
+    Sin,
+    Cos,
+    Tan,
+    ArcSin,
+    ArcCos,
+    ArcTan,
     StringNoop,
     StrLen,
     StringStrpTime,
@@ -251,6 +257,18 @@ class ExprSerializer(Visitor):
             expr.math_fn.fn.CopyFrom(
                 proto.MathOp(log=proto.Log(base=obj.op.base))
             )
+        elif isinstance(obj.op, Sin):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(sin=proto.Sin()))
+        elif isinstance(obj.op, Cos):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(cos=proto.Cos()))
+        elif isinstance(obj.op, Tan):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(tan=proto.Tan()))
+        elif isinstance(obj.op, ArcSin):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(asin=proto.Asin()))
+        elif isinstance(obj.op, ArcCos):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(acos=proto.Acos()))
+        elif isinstance(obj.op, ArcTan):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(atan=proto.Atan()))
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
         expr.math_fn.operand.CopyFrom(self.visit(obj.operand))

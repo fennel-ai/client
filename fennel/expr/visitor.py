@@ -45,6 +45,12 @@ from fennel.expr.expr import (
     Sqrt,
     Pow,
     Log,
+    Sin,
+    Cos,
+    Tan,
+    ArcSin,
+    ArcCos,
+    ArcTan,
     StringNoop,
     StringParse,
     StringJsonExtract,
@@ -300,6 +306,18 @@ class ExprPrinter(Visitor):
             )
         elif isinstance(obj.op, Log):
             return f"LOG({self.visit(obj.operand)}, base={obj.op.base})"
+        elif isinstance(obj.op, Sin):
+            return f"SIN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, Cos):
+            return f"COS({self.visit(obj.operand)})"
+        elif isinstance(obj.op, Tan):
+            return f"TAN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, ArcSin):
+            return f"ASIN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, ArcCos):
+            return f"ACOS({self.visit(obj.operand)})"
+        elif isinstance(obj.op, ArcTan):
+            return f"ATAN({self.visit(obj.operand)})"
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
 
@@ -494,6 +512,18 @@ class FetchReferences(Visitor):
         elif isinstance(obj.op, Abs):
             pass
         elif isinstance(obj.op, MathNoop):
+            pass
+        elif (
+            isinstance(obj.op, Sin)
+            or isinstance(obj.op, Cos)
+            or isinstance(obj.op, Tan)
+        ):
+            pass
+        elif (
+            isinstance(obj.op, ArcSin)
+            or isinstance(obj.op, ArcCos)
+            or isinstance(obj.op, ArcTan)
+        ):
             pass
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)

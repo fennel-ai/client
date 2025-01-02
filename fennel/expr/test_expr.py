@@ -1,4 +1,4 @@
-import inspect
+import numpy as np
 import pytest
 import random
 import pandas as pd
@@ -1232,6 +1232,89 @@ def test_repeat():
     expr = repeat(col("a"), lit(-1))
     with pytest.raises(BaseException):
         expr.eval(pd.DataFrame({"a": [1, 2, 3]}), {"a": int})
+
+
+def test_trig():
+    cases = [
+        ExprTestCase(
+            expr=col("a").num.sin(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='SIN(col("a"))',
+            refs={"a"},
+            eval_result=[
+                0.0,
+                pytest.approx(0.8414709848078965),
+                pytest.approx(0.9092974268256817),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.cos(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='COS(col("a"))',
+            refs={"a"},
+            eval_result=[
+                1.0,
+                pytest.approx(0.5403023058681398),
+                pytest.approx(-0.4161468365471424),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.tan(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='TAN(col("a"))',
+            refs={"a"},
+            eval_result=[
+                0.0,
+                pytest.approx(1.5574077246549023),
+                pytest.approx(-2.185039863261519),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.arcsin(),
+            df=pd.DataFrame({"a": [0, 1]}),
+            schema={"a": int},
+            display='ASIN(col("a"))',
+            refs={"a"},
+            eval_result=[0.0, pytest.approx(1.5707963267948966)],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.arccos(),
+            df=pd.DataFrame({"a": [0, 1]}),
+            schema={"a": int},
+            display='ACOS(col("a"))',
+            refs={"a"},
+            eval_result=[pytest.approx(1.5707963267948966), 0.0],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.arctan(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='ATAN(col("a"))',
+            refs={"a"},
+            eval_result=[
+                0.0,
+                pytest.approx(0.7853981633974483),
+                pytest.approx(1.1071487177940904),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+    ]
+    for case in cases:
+        check_test_case(case)
 
 
 def test_sqrt():

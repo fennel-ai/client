@@ -804,6 +804,12 @@ class MathOp(google.protobuf.message.Message):
     POW_FIELD_NUMBER: builtins.int
     LOG_FIELD_NUMBER: builtins.int
     SQRT_FIELD_NUMBER: builtins.int
+    SIN_FIELD_NUMBER: builtins.int
+    COS_FIELD_NUMBER: builtins.int
+    TAN_FIELD_NUMBER: builtins.int
+    ASIN_FIELD_NUMBER: builtins.int
+    ACOS_FIELD_NUMBER: builtins.int
+    ATAN_FIELD_NUMBER: builtins.int
     @property
     def round(self) -> global___Round: ...
     @property
@@ -820,6 +826,18 @@ class MathOp(google.protobuf.message.Message):
     def log(self) -> global___Log: ...
     @property
     def sqrt(self) -> global___Sqrt: ...
+    @property
+    def sin(self) -> global___Sin: ...
+    @property
+    def cos(self) -> global___Cos: ...
+    @property
+    def tan(self) -> global___Tan: ...
+    @property
+    def asin(self) -> global___Asin: ...
+    @property
+    def acos(self) -> global___Acos: ...
+    @property
+    def atan(self) -> global___Atan: ...
     def __init__(
         self,
         *,
@@ -831,10 +849,16 @@ class MathOp(google.protobuf.message.Message):
         pow: global___Pow | None = ...,
         log: global___Log | None = ...,
         sqrt: global___Sqrt | None = ...,
+        sin: global___Sin | None = ...,
+        cos: global___Cos | None = ...,
+        tan: global___Tan | None = ...,
+        asin: global___Asin | None = ...,
+        acos: global___Acos | None = ...,
+        atan: global___Atan | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "log", b"log", "pow", b"pow", "round", b"round", "sqrt", b"sqrt", "to_string", b"to_string"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "ceil", b"ceil", "floor", b"floor", "fn_type", b"fn_type", "log", b"log", "pow", b"pow", "round", b"round", "sqrt", b"sqrt", "to_string", b"to_string"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["round", "abs", "ceil", "floor", "to_string", "pow", "log", "sqrt"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["abs", b"abs", "acos", b"acos", "asin", b"asin", "atan", b"atan", "ceil", b"ceil", "cos", b"cos", "floor", b"floor", "fn_type", b"fn_type", "log", b"log", "pow", b"pow", "round", b"round", "sin", b"sin", "sqrt", b"sqrt", "tan", b"tan", "to_string", b"to_string"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["abs", b"abs", "acos", b"acos", "asin", b"asin", "atan", b"atan", "ceil", b"ceil", "cos", b"cos", "floor", b"floor", "fn_type", b"fn_type", "log", b"log", "pow", b"pow", "round", b"round", "sin", b"sin", "sqrt", b"sqrt", "tan", b"tan", "to_string", b"to_string"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["fn_type", b"fn_type"]) -> typing_extensions.Literal["round", "abs", "ceil", "floor", "to_string", "pow", "log", "sqrt", "sin", "cos", "tan", "asin", "acos", "atan"] | None: ...
 
 global___MathOp = MathOp
 
@@ -934,6 +958,66 @@ class ToString(google.protobuf.message.Message):
     ) -> None: ...
 
 global___ToString = ToString
+
+@typing_extensions.final
+class Sin(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Sin = Sin
+
+@typing_extensions.final
+class Cos(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Cos = Cos
+
+@typing_extensions.final
+class Tan(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Tan = Tan
+
+@typing_extensions.final
+class Asin(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Asin = Asin
+
+@typing_extensions.final
+class Acos(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Acos = Acos
+
+@typing_extensions.final
+class Atan(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    def __init__(
+        self,
+    ) -> None: ...
+
+global___Atan = Atan
 
 @typing_extensions.final
 class MathFn(google.protobuf.message.Message):

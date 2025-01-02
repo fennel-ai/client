@@ -501,6 +501,30 @@ class Log(MathOp):
     base: float
 
 
+class Sin(MathOp):
+    pass
+
+
+class Cos(MathOp):
+    pass
+
+
+class Tan(MathOp):
+    pass
+
+
+class ArcSin(MathOp):
+    pass
+
+
+class ArcCos(MathOp):
+    pass
+
+
+class ArcTan(MathOp):
+    pass
+
+
 class MathNoop(MathOp):
     pass
 
@@ -534,6 +558,24 @@ class _Number(Expr):
 
     def log(self, base: float = math.e) -> _Number:
         return _Number(self, Log(base))
+
+    def sin(self) -> _Number:
+        return _Number(self, Sin())
+
+    def cos(self) -> _Number:
+        return _Number(self, Cos())
+
+    def tan(self) -> _Number:
+        return _Number(self, Tan())
+
+    def arcsin(self) -> _Number:
+        return _Number(self, ArcSin())
+
+    def arccos(self) -> _Number:
+        return _Number(self, ArcCos())
+
+    def arctan(self) -> _Number:
+        return _Number(self, ArcTan())
 
 
 #########################################################

@@ -223,3 +223,131 @@ def test_pow():
         0.25,
     ]
     # /docsnip
+
+
+def test_sin():
+    # docsnip sin
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.sin()
+
+    assert expr.typeof(schema={"x": int}) == float
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[float]
+    assert expr.typeof(schema={"x": float}) == float
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
+
+    df = pd.DataFrame({"x": pd.Series([0, np.pi / 2, np.pi])})
+    assert expr.eval(df, schema={"x": float}).tolist() == [
+        pytest.approx(0.0),
+        pytest.approx(1.0),
+        pytest.approx(0.0),
+    ]
+    # /docsnip
+
+
+def test_cos():
+    # docsnip cos
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.cos()
+
+    assert expr.typeof(schema={"x": int}) == float
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[float]
+    assert expr.typeof(schema={"x": float}) == float
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
+
+    df = pd.DataFrame({"x": pd.Series([0, np.pi / 2, np.pi])})
+    assert expr.eval(df, schema={"x": float}).tolist() == [
+        pytest.approx(1.0),
+        pytest.approx(0.0),
+        pytest.approx(-1.0),
+    ]
+    # /docsnip
+
+
+def test_tan():
+    # docsnip tan
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.tan()
+
+    assert expr.typeof(schema={"x": int}) == float
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[float]
+    assert expr.typeof(schema={"x": float}) == float
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
+
+    df = pd.DataFrame({"x": pd.Series([0, np.pi / 4, np.pi])})
+    assert expr.eval(df, schema={"x": float}).tolist() == [
+        pytest.approx(0.0),
+        pytest.approx(1.0),
+        pytest.approx(0.0),
+    ]
+    # /docsnip
+
+
+def test_arcsin():
+    # docsnip arcsin
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.arcsin()
+
+    assert expr.typeof(schema={"x": int}) == float
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[float]
+    assert expr.typeof(schema={"x": float}) == float
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
+
+    df = pd.DataFrame({"x": pd.Series([0, 1, -1, 2])})
+    assert expr.eval(df, schema={"x": float}).tolist() == [
+        0.0,
+        pytest.approx(np.pi / 2),
+        pytest.approx(-np.pi / 2),
+        pd.NA,  # nan in pandas, arcsin of number greater than 1
+    ]
+    # /docsnip
+
+
+def test_arccos():
+    # docsnip arccos
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.arccos()
+
+    assert expr.typeof(schema={"x": int}) == float
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[float]
+    assert expr.typeof(schema={"x": float}) == float
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
+
+    df = pd.DataFrame({"x": pd.Series([0, 1, -1, 2])})
+    assert expr.eval(df, schema={"x": float}).tolist() == [
+        pytest.approx(np.pi / 2),
+        pytest.approx(0.0),
+        pytest.approx(np.pi),
+        pd.NA,  # nan in pandas, arccos of number greater than 1
+    ]
+    # /docsnip
+
+
+def test_arctan():
+    # docsnip arctan
+    from fennel.expr import col
+
+    # docsnip-highlight next-line
+    expr = col("x").num.arctan()
+
+    assert expr.typeof(schema={"x": int}) == float
+    assert expr.typeof(schema={"x": Optional[int]}) == Optional[float]
+    assert expr.typeof(schema={"x": float}) == float
+    assert expr.typeof(schema={"x": Optional[float]}) == Optional[float]
+
+    df = pd.DataFrame({"x": pd.Series([0, 1, -1])})
+    assert expr.eval(df, schema={"x": float}).tolist() == [
+        0.0,
+        pytest.approx(np.pi / 4),
+        pytest.approx(-np.pi / 4),
+    ]
+    # /docsnip

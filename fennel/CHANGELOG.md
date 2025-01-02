@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.67] - 2025-01-01
+- Add support for trigonometric functions in expressions - `sin`, `cos`, `tan`, 
+ `arcsin`, `arccos`, `arctan`
 
 ## [1.5.66] - 2025-01-01
 - Add support for deleted datasets in mock client.
