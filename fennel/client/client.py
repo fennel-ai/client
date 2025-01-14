@@ -3,10 +3,11 @@ import gzip
 import json
 import math
 import re
+import io
 from datetime import datetime
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
-
+import pycurl  # type: ignore
 import numpy as np
 import pandas as pd
 
@@ -147,8 +148,8 @@ class Client:
             False,
             300,
         )
-        if response.headers.get("Content-Type") == "application/json":
-            res_json = response.json()
+        if response["headers"].get("content-type") == "application/json":
+            res_json = response["body"]
         else:
             res_json = {}
         if "summary" in res_json:
@@ -303,15 +304,7 @@ class Client:
             ),
             req,
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        if isinstance(response.json(), str):
-            # Assuming the issue is double-encoding
-            decoded_once = json.loads(response.text)
-            actual_data = json.loads(decoded_once)
-            # Now, `actual_data` should be a dictionary
-        else:
-            actual_data = response.json()
+        actual_data = response["body"]
         df = self._parse_dataframe(
             pd.DataFrame(actual_data), output_feature_name_to_type
         )
@@ -423,7 +416,7 @@ class Client:
 
         """
         resp = self._get(f"{V1_API}/branch/list")
-        resp = resp.json()
+        resp = resp["body"]
         if "branches" not in resp:
             raise Exception(
                 "Server returned invalid response for list branches."
@@ -626,9 +619,9 @@ class Client:
             ),
             req,
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        return response.json()
+        if response["status_code"] != requests.codes.OK:
+            raise Exception(response["body"])
+        return response["body"]
 
     def track_offline_query(self, request_id):
         """Get the progress of query offline run.
@@ -648,9 +641,9 @@ class Client:
         response = self._get(
             f"{V1_API}/query_offline/status?request_id={request_id}"
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        return response.json()
+        if response["status_code"] != requests.codes.OK:
+            raise Exception(response["body"])
+        return response["body"]
 
     def cancel_offline_query(self, request_id):
         """Cancel the query offline run.
@@ -671,9 +664,9 @@ class Client:
             f"{V1_API}/query_offline/cancel?request_id={request_id}",
             {},
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        return response.json()
+        if response["status_code"] != requests.codes.OK:
+            raise Exception(response["body"])
+        return response["body"]
 
     # ----------------------- Debug API's --------------------------------------
 
@@ -720,9 +713,7 @@ class Client:
             "{}/dataset/{}/lookup".format(V1_API, dataset_name),
             req,
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        resp_json = response.json()
+        resp_json = response["body"]
         found = pd.Series(resp_json["found"])
         if len(fields) == 1:
             return (
@@ -767,10 +758,10 @@ class Client:
         response = self._get(
             "{}/dataset/{}/inspect?n={}".format(V1_API, dataset_name, n)
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
+        if response["status_code"] != requests.codes.OK:
+            raise Exception(response["body"])
 
-        result = pd.DataFrame(response.json())
+        result = pd.DataFrame(response["body"])
 
         # Get the schema
         output_dtypes = {}
@@ -788,9 +779,9 @@ class Client:
 
     def get_secret(self, secret_name: str) -> Optional[str]:
         response = self._get("{}/secret/{}".format(V1_API, secret_name))
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        return response.json().get("value")
+        if response["status_code"] != 200:
+            raise Exception(response["body"])
+        return response["body"].get("value")
 
     def add_secret(self, secret_name: str, secret_value: str):
         data = {"value": secret_value}
@@ -798,8 +789,8 @@ class Client:
             "{}/secret/{}".format(V1_API, secret_name),
             data,
         )
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
+        if response["status_code"] != 200:
+            raise Exception(response["body"])
         return response
 
     def update_secret(self, secret_name: str, secret_value: str):
@@ -854,13 +845,11 @@ class Client:
 
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
-        response = self.http.request(
-            "GET",
-            self._url(path),
-            headers=self._add_branch_name_header(headers),
-            timeout=_DEFAULT_TIMEOUT,
+        response = self._curl_request(
+            "GET", self._url(path), headers=headers, timeout=_DEFAULT_TIMEOUT
         )
         check_response(response)
+        response["body"] = json.loads(response["body"])
         return response
 
     def _patch_json(
@@ -921,14 +910,11 @@ class Client:
             headers["Content-Encoding"] = "gzip"
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
-        response = self.http.request(
-            "POST",
-            self._url(path),
-            data=data,
-            headers=self._add_branch_name_header(headers),
-            timeout=timeout,
+        response = self._curl_request(
+            "POST", self._url(path), data=data, headers=headers, timeout=timeout
         )
         check_response(response)
+        response["body"] = json.loads(response["body"])
         return response
 
     def _patch(
@@ -1005,6 +991,67 @@ class Client:
             if df[column].dtype == "object":
                 df[column] = df[column].apply(lambda x: parse_json(dtype, x))
         return df
+
+    def _curl_request(
+        self,
+        method: str,
+        path: str,
+        data: Optional[bytes] = None,
+        headers: Optional[Dict[str, str]] = None,
+        timeout: float = _DEFAULT_TIMEOUT,
+    ) -> Dict[str, Any]:
+        """
+        Low-level function that makes an HTTP request using pycurl and returns
+        a dictionary containing keys: status_code, headers, body.
+        """
+        url = self._url(path)
+        buf = io.BytesIO()
+        header_buf = io.BytesIO()
+        c = pycurl.Curl()
+        c.setopt(c.URL, url.encode("utf-8"))
+        c.setopt(c.CONNECTTIMEOUT, _DEFAULT_CONNECT_TIMEOUT)
+        c.setopt(c.TIMEOUT, int(timeout))
+        c.setopt(c.WRITEDATA, buf)
+        c.setopt(c.HEADERFUNCTION, header_buf.write)
+        if method == "POST":
+            c.setopt(c.POSTFIELDS, data)
+        # Method
+        c.setopt(c.CUSTOMREQUEST, method.upper())
+
+        # Prepare headers
+        if headers is None:
+            headers = {}
+        # Insert the branch name header
+        headers = self._add_branch_name_header(headers)
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        curl_headers = [f"{k}: {v}" for k, v in headers.items()]
+        c.setopt(c.HTTPHEADER, curl_headers)
+
+        try:
+            c.perform()
+        except pycurl.error as e:
+            c.close()
+            raise Exception(f"pycurl error: {e}")
+
+        status_code = c.getinfo(pycurl.RESPONSE_CODE)
+        c.close()
+
+        # Extract headers from header_buf
+        raw_header = header_buf.getvalue().decode("utf-8", errors="ignore")
+        parsed_headers = {}
+        for line in raw_header.splitlines():
+            if ":" in line:
+                # e.g. Content-Type: application/json
+                key, val = line.split(":", 1)
+                parsed_headers[key.strip()] = val.strip()
+
+        # Build return
+        return {
+            "status_code": status_code,
+            "headers": parsed_headers,
+            "body": buf.getvalue().decode("utf-8", errors="ignore"),
+        }
 
 
 def _s3_connector_dict(s3: S3Connector) -> Dict[str, Any]:
