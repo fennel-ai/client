@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fennel-ai"
-version = "1.5.67"
+version = "1.5.68"
 description = "The modern realtime feature engineering platform"
 authors = ["Fennel AI <developers@fennel.ai>"]
 packages = [{ include = "fennel" }]
@@ -24,6 +24,7 @@ fennel-data-lib = "0.1.26"
 pyarrow = "^14.0.2"
 attrs = "^24.3.0"
 twine = "^6.0.1"
+pycurl = "^7.45.4"
 
 [tool.poetry.dev-dependencies]
 flake8 = "^4.0.1"

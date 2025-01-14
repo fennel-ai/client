@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.68] - 2025-01-14
+- Use pycurl instead of requests for client.
+
 ## [1.5.67] - 2025-01-01
 - Add support for trigonometric functions in expressions - `sin`, `cos`, `tan`, 
  `arcsin`, `arccos`, `arctan`
