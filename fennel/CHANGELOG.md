@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.69] - 2025-01-15
+- Fix backward compatibility for alias extractor type
+
 ## [1.5.68] - 2025-01-14
 - Use pycurl instead of requests for client.
 
