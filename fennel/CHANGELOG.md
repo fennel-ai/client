@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.70] - 2025-01-16
+- Add import for now in expressions
+
 ## [1.5.69] - 2025-01-15
 - Fix backward compatibility for alias extractor type
 
