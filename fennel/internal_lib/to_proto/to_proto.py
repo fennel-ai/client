@@ -808,11 +808,10 @@ def _to_field_lookup_proto(
 
 def _to_alias_info_proto(
     info: Extractor.AliasInfo,
-) -> fs_proto.AliasInfo:
+) -> Optional[fs_proto.AliasInfo]:
+    # Backward compatibility cases
     if info.default is None:
-        return fs_proto.AliasInfo(
-            dtype=get_datatype(info.dtype), default_value=json.dumps(None)
-        )
+        return None
     default_val = val_as_json(info.default)
     return fs_proto.AliasInfo(
         dtype=get_datatype(info.dtype),

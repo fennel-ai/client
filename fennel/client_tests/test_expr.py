@@ -89,7 +89,7 @@ def test_now(client):
         "Rachel",
         pd.NA,
     ]
-    assert df["UserInfoFeatures.age"].tolist() == [55, 44, 34, 27, 23, pd.NA]
+    assert df["UserInfoFeatures.age"].tolist() == [55, 44, 34, 27, 24, pd.NA]
     assert df["UserInfoFeatures.country"].tolist() == [
         "India",
         "USA",
@@ -136,7 +136,7 @@ def test_now(client):
             43,
             33,
             26,
-            22,
+            23,
             pd.NA,
         ]
         assert df["UserInfoFeatures.country"].tolist() == [
