@@ -177,7 +177,7 @@ def test_now():
     )
     assert expr.eval(df, schema={"birthdate": Optional[datetime]}).tolist() == [
         27,
-        23,
+        24,
         pd.NA,
     ]
     # /docsnip

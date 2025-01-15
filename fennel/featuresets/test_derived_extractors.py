@@ -240,10 +240,7 @@ def test_valid_derived_extractors():
             "feature_set_name": "UserInfo",
             "extractor_type": fs_proto.ALIAS,
             "field_info": None,
-            "alias_info": {
-                "defaultValue": "null",
-                "dtype": {"int_type": {}},
-            },
+            "alias_info": None,
         },
         {
             "name": "_fennel_lookup_UserInfoDataset.gender",
@@ -384,10 +381,7 @@ def test_valid_derived_extractors():
             "feature_set_name": "AgeInfo",
             "extractor_type": fs_proto.ALIAS,
             "field_info": None,
-            "alias_info": {
-                "defaultValue": "null",
-                "dtype": {"struct_type": age_group_struct_type},
-            },
+            "alias_info": None,
         },
         {
             "name": "_fennel_alias_UserInfo.age_years",
@@ -410,10 +404,7 @@ def test_valid_derived_extractors():
             "feature_set_name": "AgeInfo",
             "extractor_type": fs_proto.ALIAS,
             "field_info": None,
-            "alias_info": {
-                "defaultValue": "null",
-                "dtype": {"int_type": {}},
-            },
+            "alias_info": None,
         },
     ]
     for i, e in enumerate(sync_request.extractors):
