@@ -291,6 +291,8 @@ lifecycle
 lookback
 lookup
 lookups
+LLM
+LLMs
 metaflags
 mongo
 msgs
