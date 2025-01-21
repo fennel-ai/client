@@ -78,6 +78,8 @@ from fennel.expr.expr import (
     DateTimeNoop,
     Zip,
     Repeat,
+    IsNan,
+    IsInfinite,
 )
 
 
@@ -269,6 +271,12 @@ class ExprSerializer(Visitor):
             expr.math_fn.fn.CopyFrom(proto.MathOp(acos=proto.Acos()))
         elif isinstance(obj.op, ArcTan):
             expr.math_fn.fn.CopyFrom(proto.MathOp(atan=proto.Atan()))
+        elif isinstance(obj.op, IsNan):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(is_nan=proto.IsNan()))
+        elif isinstance(obj.op, IsInfinite):
+            expr.math_fn.fn.CopyFrom(
+                proto.MathOp(is_infinite=proto.IsInfinite())
+            )
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
         expr.math_fn.operand.CopyFrom(self.visit(obj.operand))

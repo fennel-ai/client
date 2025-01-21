@@ -1755,3 +1755,31 @@ def test_now():
 
     for case in cases:
         check_test_case(case)
+
+
+def test_is_infinite():
+    cases = [
+        ExprTestCase(
+            expr=(col("a").num.is_infinite()),
+            df=pd.DataFrame({"a": [1.0, None, 4.0, np.PINF, np.NINF]}),
+            schema={"a": Optional[float]},
+            display='IS_INFINITE(col("a"))',
+            refs={"a"},
+            eval_result=[False, pd.NA, False, True, True],
+            expected_dtype=Optional[bool],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=(col("a").num.is_infinite()),
+            df=pd.DataFrame({"a": [1.0, 4.0, np.PINF, np.NINF]}),
+            schema={"a": float},
+            display='IS_INFINITE(col("a"))',
+            refs={"a"},
+            eval_result=[False, False, True, True],
+            expected_dtype=bool,
+            proto_json=None,
+        ),
+    ]
+
+    for case in cases:
+        check_test_case(case)

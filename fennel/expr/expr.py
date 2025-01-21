@@ -529,6 +529,14 @@ class MathNoop(MathOp):
     pass
 
 
+class IsNan(MathOp):
+    pass
+
+
+class IsInfinite(MathOp):
+    pass
+
+
 class _Number(Expr):
     def __init__(self, expr: Expr, op: MathOp):
         self.op = op
@@ -576,6 +584,12 @@ class _Number(Expr):
 
     def arctan(self) -> _Number:
         return _Number(self, ArcTan())
+
+    def is_nan(self) -> _Bool:
+        return _Bool(_Number(self, IsNan()))
+
+    def is_infinite(self) -> _Bool:
+        return _Bool(_Number(self, IsInfinite()))
 
 
 #########################################################
