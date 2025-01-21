@@ -72,6 +72,8 @@ from fennel.expr.expr import (
     Now,
     Repeat,
     Zip,
+    IsNan,
+    IsInfinite,
 )
 
 
@@ -318,6 +320,10 @@ class ExprPrinter(Visitor):
             return f"ACOS({self.visit(obj.operand)})"
         elif isinstance(obj.op, ArcTan):
             return f"ATAN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, IsNan):
+            return f"IS_NAN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, IsInfinite):
+            return f"IS_INFINITE({self.visit(obj.operand)})"
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
 
@@ -524,6 +530,10 @@ class FetchReferences(Visitor):
             or isinstance(obj.op, ArcCos)
             or isinstance(obj.op, ArcTan)
         ):
+            pass
+        elif isinstance(obj.op, IsNan):
+            pass
+        elif isinstance(obj.op, IsInfinite):
             pass
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)

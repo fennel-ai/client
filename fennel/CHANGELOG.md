@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.71] - 2025-01-21
+- Add import for is_nan and is_infinite in expressions
+
 ## [1.5.70] - 2025-01-16
 - Add import for now in expressions
 
