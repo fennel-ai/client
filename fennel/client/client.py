@@ -738,7 +738,6 @@ class Client:
                 output_dtypes[column] = Any
 
         return self._parse_dataframe(result, output_dtypes), found
-    
 
     def lineage(
         self,
@@ -755,14 +754,11 @@ class Client:
         Exception: If the request to retrieve lineage information fails.
         """
 
-        response = self._get(
-            "{}/lineage".format(V1_API)
-        )
+        response = self._get("{}/lineage".format(V1_API))
         if response.status_code != requests.codes.OK:
             raise Exception(response.json())
         return response.json()
-  
-    
+
     def entities(
         self,
         datasets: Optional[Union[str, List[str]]] = None,
@@ -786,7 +782,7 @@ class Client:
         ----------
         Exception: If the request to retrieve entities fails.
         """
-        
+
         dataset_str = None
         if datasets is not None:
             if isinstance(datasets, list):
@@ -800,14 +796,13 @@ class Client:
                 featureset_str = ",".join(featuresets)
             else:
                 featureset_str = featuresets
-        
+
         fields_str = None
         if fields is not None:
             if isinstance(fields, list):
                 fields_str = ",".join(fields)
             else:
                 fields_str = fields
-
 
         query_parts = []
         if dataset_str:
@@ -828,16 +823,13 @@ class Client:
             raise Exception(response.json())
         return response.json()
 
-
     def _get(self, url: str) -> requests.Response:
         """
-        Example internal GET method. 
+        Example internal GET method.
         In reality you might do something like:
            return requests.get(url, headers=...)
         """
         return requests.get(url)
-
-        
 
     def inspect(
         self, dataset: Union[str, Dataset], n: int = 10
