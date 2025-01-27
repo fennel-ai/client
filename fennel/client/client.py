@@ -823,14 +823,6 @@ class Client:
             raise Exception(response.json())
         return response.json()
 
-    def _get(self, url: str) -> requests.Response:
-        """
-        Example internal GET method.
-        In reality you might do something like:
-           return requests.get(url, headers=...)
-        """
-        return requests.get(url)
-
     def inspect(
         self, dataset: Union[str, Dataset], n: int = 10
     ) -> pd.DataFrame:
