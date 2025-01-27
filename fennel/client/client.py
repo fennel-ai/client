@@ -767,6 +767,7 @@ class Client:
         self,
         datasets: Optional[Union[str, List[str]]] = None,
         featuresets: Optional[Union[str, List[str]]] = None,
+        fields: Optional[Union[str, List[str]]] = None,
     ):
         """
         Retrieve a list of entities. This can be filtered by providing a list or a single name of datasets and/or featuresets.
@@ -775,6 +776,7 @@ class Client:
         ----------
         datasets (Optional[Union[str, List[str]]]): A list or a single name of the datasets you want to retrieve.
         featuresets (Optional[Union[str, List[str]]]): A list or a single name of the featuresets you want to retrieve.
+        fields Optional[Union[str, List[str]]] : A list or a single name of the fields you want to select for featuresets/datasets (example: name, rows_ingested, etc.)
 
         Returns:
         ----------
@@ -798,12 +800,22 @@ class Client:
                 featureset_str = ",".join(featuresets)
             else:
                 featureset_str = featuresets
+        
+        fields_str = None
+        if fields is not None:
+            if isinstance(fields, list):
+                fields_str = ",".join(fields)
+            else:
+                fields_str = fields
+
 
         query_parts = []
         if dataset_str:
             query_parts.append(f"dataset_names={dataset_str}")
         if featureset_str:
             query_parts.append(f"featureset_names={featureset_str}")
+        if fields_str:
+            query_parts.append(f"fields={fields_str}")
 
         base_url = f"{V1_API}/entities"
         if query_parts:
