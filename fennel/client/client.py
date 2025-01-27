@@ -819,7 +819,7 @@ class Client:
             url = base_url
 
         response = self._get(url)
-        if response.status_code != requests.codes.ok:
+        if response.status_code != requests.codes.OK:
             raise Exception(response.json())
         return response.json()
 
