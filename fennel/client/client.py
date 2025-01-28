@@ -7,10 +7,13 @@ import io
 from datetime import datetime
 from typing import Dict, Optional, Any, Set, List, Union, Tuple
 from urllib.parse import urljoin
-import pycurl  # type: ignore
 import numpy as np
 import pandas as pd
 
+try:
+    import pycurl
+except ImportError:
+    pycurl = None
 import fennel._vendor.requests as requests  # type: ignore
 from fennel.connectors import S3Connector, CSV
 from fennel.datasets import Dataset
