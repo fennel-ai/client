@@ -58,7 +58,6 @@ def test_basic(client):
         response = client.query_offline(
             inputs=[Numbers.num],
             outputs=[Numbers.is_even, Numbers.is_odd],
-            format="pandas",
             input_dataframe=pd.DataFrame(
                 {"Numbers.num": [1, 2, 3, 4]},
                 {
@@ -109,7 +108,6 @@ def test_basic(client):
         response = client.query_offline(
             inputs=[Numbers.num],
             outputs=[Numbers.is_even, Numbers.is_odd],
-            format="csv",
             timestamp_column="timestamp",
             input_s3=s3_input_connection,
             output_s3=s3_output_connection,
