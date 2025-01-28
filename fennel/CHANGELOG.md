@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.72] - 2025-01-28
+- Add APIs for xray(getting information of entities in the graph) and lineage(showing interdependency in graph) in client
+
 ## [1.5.71] - 2025-01-21
 - Add import for is_nan and is_infinite in expressions
 
