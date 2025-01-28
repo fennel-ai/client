@@ -759,7 +759,7 @@ class Client:
             raise Exception(response.json())
         return response.json()
 
-    def entities(
+    def xray(
         self,
         datasets: Optional[Union[str, List[str]]] = None,
         featuresets: Optional[Union[str, List[str]]] = None,
@@ -772,7 +772,7 @@ class Client:
         ----------
         datasets (Optional[Union[str, List[str]]]): A list or a single name of the datasets you want to retrieve.
         featuresets (Optional[Union[str, List[str]]]): A list or a single name of the featuresets you want to retrieve.
-        fields Optional[Union[str, List[str]]] : A list or a single name of the fields you want to select for featuresets/datasets (example: name, rows_ingested, etc.)
+        properties Optional[Union[str, List[str]]]: A list or a single name of the properties you want to select for featuresets/datasets
 
         Returns:
         ----------
@@ -781,6 +781,36 @@ class Client:
         Raises:
         ----------
         Exception: If the request to retrieve entities fails.
+
+            Notes
+        ----------
+        **Available properties**:
+        ***Datasets***
+
+        - name,
+        - dsschema,
+        - field_metadata,
+        - retention,
+        - history,
+        - metaflags,
+        - version,
+        - fullname,
+        - pycode,
+        - is_source_dataset,
+        - tags,
+        - rows_ingested,
+        - last_processed,
+        - last_updated,
+        - backlog,
+        - sink_destination,
+        - lineage_tags,
+
+        ***Featuresets***
+        - name,
+        - metaflags,
+        - pycode,
+        - tags,
+        - lineage_tags,
         """
 
         dataset_str = None
@@ -806,13 +836,13 @@ class Client:
 
         query_parts = []
         if dataset_str:
-            query_parts.append(f"dataset_names={dataset_str}")
+            query_parts.append(f"datasets={dataset_str}")
         if featureset_str:
-            query_parts.append(f"featureset_names={featureset_str}")
+            query_parts.append(f"featuresets={featureset_str}")
         if fields_str:
-            query_parts.append(f"fields={fields_str}")
+            query_parts.append(f"properties={fields_str}")
 
-        base_url = f"{V1_API}/entities"
+        base_url = f"{V1_API}/xray"
         if query_parts:
             url = f"{base_url}?{'&'.join(query_parts)}"
         else:
