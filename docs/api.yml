@@ -15,6 +15,7 @@ sidebar:
       - "api-reference/client/checkout"
       - "api-reference/client/branch"
       - "api-reference/client/erase"
+      - "api-reference/client/xray"
 
   - slug: "api-reference/rest-api"
     title: "REST API"
