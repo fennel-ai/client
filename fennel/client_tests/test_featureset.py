@@ -1583,3 +1583,26 @@ def test_alias_extractor_with_default_value(client):
         "dd",
         pd.NA,
     ]
+
+
+@pytest.mark.integration
+@mock
+def test_deleted_ents(client):
+
+    @source(webhook.endpoint("KeyedDataset"), disorder="14d", cdc="upsert")
+    @meta(deleted=True)
+    @dataset(index=True)
+    class KeyedDataset:
+        key1: int = field(key=True)
+        value: str
+        ts: datetime = field(timestamp=True)
+
+    @meta(deleted=True)
+    @featureset
+    class KeyedFeatureset:
+        key1: int
+        value: Optional[str] = F(KeyedDataset.value)
+
+    client.commit(
+        datasets=[KeyedDataset], featuresets=[KeyedFeatureset], message="msg"
+    )
