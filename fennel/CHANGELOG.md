@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.72] - 2025-01-21
+- Fix deleted entities during commit in mock client
+
 ## [1.5.71] - 2025-01-21
 - Add import for is_nan and is_infinite in expressions
 
