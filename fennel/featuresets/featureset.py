@@ -23,6 +23,7 @@ from fennel.datasets.datasets import get_index, IndexDuration
 from fennel.expr.expr import Expr
 from fennel.expr.visitor import FetchReferences
 from fennel.gen.featureset_pb2 import ExtractorType
+from fennel.internal_lib import META_FIELD
 from fennel.internal_lib.schema import (
     validate_val_with_dtype,
     fennel_get_optional_inner,
@@ -518,6 +519,12 @@ class Featureset:
         self._expectation = self._get_expectations()
         setattr(self, OWNER, owner)
         propogate_fennel_attributes(featureset_cls, self)
+
+    def is_deleted(self):
+        if hasattr(self, META_FIELD):
+            metadata = getattr(self, META_FIELD)
+            return metadata.deleted
+        return False
 
     def get_dataset_dependencies(self) -> List[Dataset]:
         """

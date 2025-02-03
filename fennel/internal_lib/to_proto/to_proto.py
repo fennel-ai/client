@@ -1391,7 +1391,7 @@ def _sample_to_proto(
 
 
 def _how_to_proto(
-    how: Optional[Literal["incremental", "recreate"] | SnapshotData]
+    how: Optional[Literal["incremental", "recreate"] | SnapshotData],
 ) -> Optional[connector_proto.Style]:
     if how is None:
         return None
