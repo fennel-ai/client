@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.73] - 2025-02-04
+- Fix issue in type name in assigns
+
 ## [1.5.72] - 2025-01-21
 - Fix deleted entities during commit in mock client
 
