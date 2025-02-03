@@ -787,30 +787,30 @@ class Client:
         **Available properties**:
         ***Datasets***
 
-        - name,
-        - dsschema,
-        - field_metadata,
-        - retention,
-        - history,
-        - metaflags,
-        - version,
-        - fullname,
-        - pycode,
-        - is_source_dataset,
-        - tags,
-        - rows_ingested,
-        - last_processed,
-        - last_updated,
-        - backlog,
-        - sink_destination,
-        - lineage_tags,
+        - name
+        - dsschema
+        - field_metadata
+        - retention
+        - history
+        - metaflags
+        - version
+        - fullname
+        - pycode
+        - is_source_dataset
+        - tags
+        - rows_ingested
+        - last_processed
+        - last_updated
+        - backlog
+        - sink_destination
+        - lineage_tags
 
         ***Featuresets***
-        - name,
-        - metaflags,
-        - pycode,
-        - tags,
-        - lineage_tags,
+        - name
+        - metaflags
+        - pycode
+        - tags
+        - lineage_tags
         """
 
         dataset_str = None
