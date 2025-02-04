@@ -4,27 +4,39 @@ from typing import Optional
 
 import pandas as pd
 
-from fennel.connectors import source, Postgres, Kafka, Webhook
-from fennel.datasets import dataset, pipeline, field, Dataset, Count
+from fennel.connectors import source, Postgres, Kafka, Webhook, sink
+from fennel.datasets import dataset, pipeline, field, Dataset, Count, Sum
 from fennel.dtypes import Continuous
-from fennel.featuresets import featureset, extractor
+from fennel.featuresets import featureset, extractor, feature as F
 from fennel.lib import expectations, expect_column_values_to_be_between
 from fennel.lib import inputs, outputs
 from fennel.testing import MockClient, log
+from fennel.expr import col
 
 __owner__ = "nikhil@fennel.ai"
 
 # /docsnip
+
 
 # docsnip connectors
 postgres = Postgres.get(name="my_rdbms")
 kafka = Kafka.get(name="my_kafka")
 webhook = Webhook(name="fennel_webhook")
 
+
 # /docsnip
 
 
 # docsnip datasets
+@source(kafka.topic("orders"), disorder="1h", cdc="append")
+@dataset
+class Order:
+    uid: int
+    product_id: int
+    timestamp: datetime
+
+
+# ingesting data from postgres works exactly the same way
 table = postgres.table("product", cursor="last_modified")
 
 
@@ -47,25 +59,17 @@ class Product:
         ]
 
 
-# ingesting realtime data from Kafka works exactly the same way
-@source(kafka.topic("orders"), disorder="1h", cdc="append")
-@dataset
-class Order:
-    uid: int
-    product_id: int
-    timestamp: datetime
-
-
 # /docsnip
 
 
 # docsnip pipelines
-@dataset(index=True, version=1)
+@sink(kafka.topic("user_seller_orders"), cdc="debezium")
+@dataset(index=True, version=2)
 class UserSellerOrders:
     uid: int = field(key=True)
     seller_id: int = field(key=True)
     num_orders_1d: int
-    num_orders_1w: int
+    total_cents: int
     timestamp: datetime
 
     @pipeline
@@ -73,11 +77,12 @@ class UserSellerOrders:
     def my_pipeline(cls, orders: Dataset, products: Dataset):
         orders = orders.join(products, how="left", on=["product_id"])
         orders = orders.transform(lambda df: df.fillna(0))
-        orders = orders.drop("product_id", "desc", "price")
         orders = orders.dropnull()
+        orders = orders.assign(cents=(col("price") * 100).round().astype(int))
+        orders = orders.drop("product_id", "desc", "price")
         return orders.groupby("uid", "seller_id").aggregate(
             num_orders_1d=Count(window=Continuous("1d")),
-            num_orders_1w=Count(window=Continuous("1w")),
+            total_cents=Sum(of="cents", window=Continuous("forever")),
         )
 
 
@@ -89,18 +94,9 @@ class UserSellerOrders:
 class UserSellerFeatures:
     uid: int
     seller_id: int
-    num_orders_1d: int
-    num_orders_1w: int
-
-    @extractor(deps=[UserSellerOrders])
-    @inputs("uid", "seller_id")
-    @outputs("num_orders_1d", "num_orders_1w")
-    def myextractor(cls, ts: pd.Series, uids: pd.Series, sellers: pd.Series):
-        df, found = UserSellerOrders.lookup(ts, seller_id=sellers, uid=uids)
-        df = df.fillna(0)
-        df["num_orders_1d"] = df["num_orders_1d"].astype(int)
-        df["num_orders_1w"] = df["num_orders_1w"].astype(int)
-        return df[["num_orders_1d", "num_orders_1w"]]
+    num_orders_1d: int = F(UserSellerOrders.num_orders_1d, default=0)
+    total_cents: int = F(UserSellerOrders.total_cents, default=0)
+    total: float = F(col("total_cents") / 100)
 
 
 # /docsnip
@@ -140,7 +136,7 @@ log(Order, df)
 feature_df = client.query(
     outputs=[
         UserSellerFeatures.num_orders_1d,
-        UserSellerFeatures.num_orders_1w,
+        UserSellerFeatures.total,
     ],
     inputs=[
         UserSellerFeatures.uid,
@@ -154,10 +150,10 @@ feature_df = client.query(
 
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
-    "UserSellerFeatures.num_orders_1w",
+    "UserSellerFeatures.total",
 ]
 assert feature_df["UserSellerFeatures.num_orders_1d"].tolist() == [2, 1]
-assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1]
+assert feature_df["UserSellerFeatures.total"].tolist() == [40.0, 20.0]
 # /docsnip
 
 # docsnip historical
@@ -166,7 +162,7 @@ day = timedelta(days=1)
 feature_df = client.query_offline(
     outputs=[
         UserSellerFeatures.num_orders_1d,
-        UserSellerFeatures.num_orders_1w,
+        UserSellerFeatures.total,
     ],
     inputs=[
         UserSellerFeatures.uid,
@@ -185,9 +181,9 @@ feature_df = client.query_offline(
 
 assert feature_df.columns.tolist() == [
     "UserSellerFeatures.num_orders_1d",
-    "UserSellerFeatures.num_orders_1w",
+    "UserSellerFeatures.total",
     "timestamps",
 ]
 assert feature_df["UserSellerFeatures.num_orders_1d"].tolist() == [2, 1, 0, 0]
-assert feature_df["UserSellerFeatures.num_orders_1w"].tolist() == [2, 1, 0, 0]
+assert feature_df["UserSellerFeatures.total"].tolist() == [40.0, 20.0, 0.0, 0.0]
 # /docsnip
