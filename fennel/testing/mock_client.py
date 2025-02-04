@@ -174,6 +174,16 @@ class MockClient(Client):
             else:
                 return dataset_old.signature() == dataset_new.signature()
 
+        if datasets is not None:
+            datasets = [
+                dataset for dataset in datasets if not dataset.is_deleted()
+            ]
+        if featuresets is not None:
+            featuresets = [
+                featureset
+                for featureset in featuresets
+                if not featureset.is_deleted()
+            ]
         if incremental:
             cur_datasets = self.get_datasets()
             cur_featuresets = self.get_featuresets()
@@ -522,9 +532,16 @@ class MockClient(Client):
             if isinstance(feature, str):
                 continue
             col_type = get_datatype(feature.dtype)  # type: ignore
-            input_dataframe[input_col] = cast_col_to_arrow_dtype(
-                input_dataframe[input_col], col_type
-            )
+            try:
+                input_dataframe[input_col] = cast_col_to_arrow_dtype(
+                    input_dataframe[input_col], col_type
+                )
+            except Exception as e:
+                print(input_dataframe)
+                raise Exception(
+                    f"Error casting input dataframe column `{input_col}` for feature `{feature.fqn_}`, "
+                    f"dtype: `{feature.dtype}`: {e}"
+                )
         return input_dataframe
 
     def _get_secret(self, secret_name: str) -> Optional[str]:

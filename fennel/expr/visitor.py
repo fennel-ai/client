@@ -12,6 +12,10 @@ from fennel.expr.expr import (
     ListHasNull,
     ListLen,
     ListNoop,
+    ListMap,
+    ListFilter,
+    ListAll,
+    ListAny,
     Literal,
     MakeStruct,
     Ref,
@@ -38,6 +42,15 @@ from fennel.expr.expr import (
     NumToStr,
     Abs,
     Floor,
+    Sqrt,
+    Pow,
+    Log,
+    Sin,
+    Cos,
+    Tan,
+    ArcSin,
+    ArcCos,
+    ArcTan,
     StringNoop,
     StringParse,
     StringJsonExtract,
@@ -57,11 +70,16 @@ from fennel.expr.expr import (
     _DateTime,
     DateTimeNoop,
     Now,
+    Repeat,
+    Zip,
+    IsNan,
+    IsInfinite,
 )
 
 
 class Visitor(object):
     def visit(self, obj):
+        obj = obj.root if hasattr(obj, "root") else obj
         if isinstance(obj, Literal):
             ret = self.visitLiteral(obj)
 
@@ -125,6 +143,12 @@ class Visitor(object):
         elif isinstance(obj, Now):
             ret = self.visitNow(obj)
 
+        elif isinstance(obj, Zip):
+            ret = self.visitZip(obj)
+
+        elif isinstance(obj, Repeat):
+            ret = self.visitRepeat(obj)
+
         else:
             raise InvalidExprException("invalid expression type: %s" % obj)
 
@@ -150,6 +174,12 @@ class Visitor(object):
 
     def visitFillNull(self, obj):
         raise NotImplementedError
+
+    def visitRepeat(self, obj):
+        raise NotImplementedError()
+
+    def visitZip(self, obj):
+        raise NotImplementedError()
 
     def visitThen(self, obj):
         raise NotImplementedError
@@ -206,7 +236,7 @@ class ExprPrinter(Visitor):
         return str(obj)
 
     def visitVar(self, obj):
-        return str(obj)
+        return f'var("{obj.var}")'
 
     def visitUnary(self, obj):
         return "%s(%s)" % (obj.op, self.visit(obj.operand))
@@ -270,6 +300,30 @@ class ExprPrinter(Visitor):
             return "ABS(%s)" % self.visit(obj.operand)
         elif isinstance(obj.op, NumToStr):
             return f"TO_STRING({self.visit(obj.operand)})"
+        elif isinstance(obj.op, Sqrt):
+            return f"SQRT({self.visit(obj.operand)})"
+        elif isinstance(obj.op, Pow):
+            return (
+                f"POW({self.visit(obj.operand)}, {self.visit(obj.op.exponent)})"
+            )
+        elif isinstance(obj.op, Log):
+            return f"LOG({self.visit(obj.operand)}, base={obj.op.base})"
+        elif isinstance(obj.op, Sin):
+            return f"SIN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, Cos):
+            return f"COS({self.visit(obj.operand)})"
+        elif isinstance(obj.op, Tan):
+            return f"TAN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, ArcSin):
+            return f"ASIN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, ArcCos):
+            return f"ACOS({self.visit(obj.operand)})"
+        elif isinstance(obj.op, ArcTan):
+            return f"ATAN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, IsNan):
+            return f"IS_NAN({self.visit(obj.operand)})"
+        elif isinstance(obj.op, IsInfinite):
+            return f"IS_INFINITE({self.visit(obj.operand)})"
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
 
@@ -349,6 +403,20 @@ class ExprPrinter(Visitor):
             return f"LEN({self.visit(obj.expr)})"
         elif isinstance(obj.op, ListHasNull):
             return f"HAS_NULL({self.visit(obj.expr)})"
+        elif isinstance(obj.op, ListMap):
+            return f'LIST_MAP({self.visit(obj.expr)}, "{obj.op.var}", {self.visit(obj.op.expr)})'
+        elif isinstance(obj.op, ListFilter):
+            return f"LIST_FILTER({self.visit(obj.expr)}, {self.visit(obj.op.func)})"
+        elif isinstance(obj.op, ListAll):
+            return (
+                f"LIST_ALL({self.visit(obj.expr)}, {self.visit(obj.op.func)})"
+            )
+        elif isinstance(obj.op, ListAny):
+            return (
+                f"LIST_ANY({self.visit(obj.expr)}, {self.visit(obj.op.func)})"
+            )
+        else:
+            raise InvalidExprException("invalid list operation: %s" % obj.op)
 
     def visitStruct(self, obj):
         if isinstance(obj.op, StructNoop):
@@ -369,6 +437,15 @@ class ExprPrinter(Visitor):
 
     def visitNow(self, obj):
         return "NOW()"
+
+    def visitZip(self, obj):
+        kwargs = ", ".join(
+            [f"{k}={self.visit(v)}" for k, v in obj.fields.items()]
+        )
+        return f"ZIP({obj.struct_type.__name__}, {kwargs})"
+
+    def visitRepeat(self, obj):
+        return f"REPEAT({self.visit(obj.value)}, {self.visit(obj.by)})"
 
 
 class FetchReferences(Visitor):
@@ -424,6 +501,43 @@ class FetchReferences(Visitor):
     def visitNumber(self, obj):
         self.visit(obj.operand)
 
+        if isinstance(obj.op, Sqrt):
+            pass
+        elif isinstance(obj.op, Pow):
+            self.visit(obj.op.exponent)
+        elif isinstance(obj.op, Log):
+            pass
+        elif isinstance(obj.op, Floor):
+            pass
+        elif isinstance(obj.op, Round):
+            pass
+        elif isinstance(obj.op, Ceil):
+            pass
+        elif isinstance(obj.op, NumToStr):
+            pass
+        elif isinstance(obj.op, Abs):
+            pass
+        elif isinstance(obj.op, MathNoop):
+            pass
+        elif (
+            isinstance(obj.op, Sin)
+            or isinstance(obj.op, Cos)
+            or isinstance(obj.op, Tan)
+        ):
+            pass
+        elif (
+            isinstance(obj.op, ArcSin)
+            or isinstance(obj.op, ArcCos)
+            or isinstance(obj.op, ArcTan)
+        ):
+            pass
+        elif isinstance(obj.op, IsNan):
+            pass
+        elif isinstance(obj.op, IsInfinite):
+            pass
+        else:
+            raise InvalidExprException("invalid number operation: %s" % obj.op)
+
     def visitString(self, obj):
         self.visit(obj.operand)
         if isinstance(obj.op, StrContains):
@@ -473,3 +587,11 @@ class FetchReferences(Visitor):
 
     def visitNow(self, obj):
         pass
+
+    def visitRepeat(self, obj):
+        self.visit(obj.value)
+        self.visit(obj.by)
+
+    def visitZip(self, obj):
+        for k, v in obj.fields.items():
+            self.visit(v)

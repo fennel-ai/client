@@ -13,6 +13,7 @@ from typing import (
     Optional,
     List,
     Union,
+    get_origin,
 )
 
 import pandas as pd
@@ -22,9 +23,11 @@ from fennel.datasets.datasets import get_index, IndexDuration
 from fennel.expr.expr import Expr
 from fennel.expr.visitor import FetchReferences
 from fennel.gen.featureset_pb2 import ExtractorType
+from fennel.internal_lib import META_FIELD
 from fennel.internal_lib.schema import (
     validate_val_with_dtype,
     fennel_get_optional_inner,
+    fennel_is_optional,
 )
 from fennel.internal_lib.utils.utils import dtype_to_string
 from fennel.lib import FENNEL_GEN_CODE_MARKER
@@ -88,7 +91,7 @@ def feature(
             raise ValueError(
                 f"error in expression based extractor '{args[0]}'; can not set default value for expressions, maybe use fillnull instead?"
             )
-        if not isinstance(args[0], Field):
+        if not isinstance(args[0], (Field, Feature)):
             raise TypeError(
                 f"'Please specify a reference to a field of a dataset to use \"default\" param', found arg: `{args[0]}` and default: `{default}`"
             )
@@ -517,6 +520,12 @@ class Featureset:
         setattr(self, OWNER, owner)
         propogate_fennel_attributes(featureset_cls, self)
 
+    def is_deleted(self):
+        if hasattr(self, META_FIELD):
+            metadata = getattr(self, META_FIELD)
+            return metadata.deleted
+        return False
+
     def get_dataset_dependencies(self) -> List[Dataset]:
         """
         This function gets the list of datasets the Featureset depends upon.
@@ -532,7 +541,11 @@ class Featureset:
             if extractor.extractor_type == ExtractorType.LOOKUP:
                 if extractor.derived_extractor_info is not None:
                     assert (
-                        extractor.derived_extractor_info.field.dataset
+                        isinstance(
+                            extractor.derived_extractor_info,
+                            Extractor.DatasetLookupInfo,
+                        )
+                        and extractor.derived_extractor_info.field.dataset
                         is not None
                     )
                     depended_datasets.append(
@@ -653,7 +666,7 @@ class Featureset:
                     user_defined_outputs=[feature],
                     version=feature.ref_version,
                     func=None,
-                    derived_extractor_info=None,
+                    derived_extractor_info=Extractor.AliasInfo(feature.dtype, feature.ref_default),  # type: ignore
                     depends_on=None,
                     env=feature.ref_env,
                 )
@@ -697,6 +710,14 @@ class Featureset:
                 feature.ref_env,
             )
             extractor.set_inputs_from_featureset(self, feature)
+            # If feature is a list, then we need to use the list lookup extractor
+            if get_origin(feature.dtype) == list:
+                # Check that reference feature is also a list
+                inputs = extractor.inputs
+                # Check that all inputs are of type list
+                if all(get_origin(i.dtype) == list for i in inputs):
+                    extractor.extractor_type = ExtractorType.LIST_LOOKUP
+
             extractor.featureset = self._name
             extractor.outputs = [feature]
             feature_meta = get_meta(feature)
@@ -790,19 +811,41 @@ class Featureset:
         # Validate all auto generated extractors.
         for extractor in self._extractors:
             if extractor.extractor_type == ExtractorType.ALIAS:
+                assert isinstance(
+                    extractor.derived_extractor_info, Extractor.AliasInfo
+                )
                 feature = extractor.outputs[0]
                 # Check that the types match
-                if feature.dtype != extractor.inputs[0].dtype:
+                if (
+                    extractor.derived_extractor_info.default is None
+                    and feature.dtype != extractor.inputs[0].dtype
+                ):
                     raise TypeError(
                         f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
                         f"but the extractor aliasing `{extractor.inputs[0].fqn()}` has input type "
                         f"`{extractor.inputs[0].dtype}`."
                     )
+                if extractor.derived_extractor_info.default is not None:
+                    if not fennel_is_optional(extractor.inputs[0].dtype):
+                        raise TypeError(
+                            f"Feature `{feature.fqn()}` has default defined but the extractor "
+                            f"aliasing `{extractor.inputs[0].fqn()}` has input type `{extractor.inputs[0].dtype}`."
+                        )
+                    if feature.dtype != fennel_get_optional_inner(
+                        extractor.inputs[0].dtype
+                    ):
+                        raise TypeError(
+                            f"Feature `{feature.fqn()} with default value has type `{feature.dtype}`"
+                            f"but the extractor aliasing `{extractor.inputs[0].fqn()}` has input type "
+                            f"`{extractor.inputs[0].dtype}`."
+                        )
+
             if extractor.extractor_type == ExtractorType.LOOKUP:
                 feature = extractor.outputs[0]
                 # Check that the types match
                 field = extractor.derived_extractor_info.field
                 default = extractor.derived_extractor_info.default
+
                 if default is not None:
                     if field.is_optional():
                         field_dtype = fennel_get_optional_inner(field.dtype)
@@ -826,6 +869,45 @@ class Featureset:
                         raise TypeError(
                             f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
                             f"but expectected type `{expected_field_type}`"
+                        )
+
+                # Check that the default value has the right type
+                if default is not None:
+                    try:
+                        validate_val_with_dtype(
+                            field.dtype,
+                            default,
+                        )
+                    except ValueError as e:
+                        raise ValueError(
+                            f"Default value `{default}` for feature `{feature.fqn()}` has incorrect default value: {e}"
+                        )
+            if extractor.extractor_type == ExtractorType.LIST_LOOKUP:
+                feature = extractor.outputs[0]
+                # Check that the types match
+                field = extractor.derived_extractor_info.field
+                default = extractor.derived_extractor_info.default
+                if default is not None:
+                    if field.is_optional():
+                        field_dtype = fennel_get_optional_inner(field.dtype)
+                    else:
+                        field_dtype = field.dtype
+                    if feature.dtype != List[field_dtype]:
+                        raise TypeError(
+                            f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                            f"but expected type `List[{field_dtype}]`."
+                        )
+                else:
+                    if field.is_optional():
+                        # keeping with optional because default is not defined
+                        expected_field_type = field.dtype
+                    else:
+                        # Adding optional because default is not defined
+                        expected_field_type = Optional[field.dtype]
+                    if feature.dtype != List[expected_field_type]:
+                        raise TypeError(
+                            f"Feature `{feature.fqn()}` has type `{feature.dtype}` "
+                            f"but expectected type `List[{expected_field_type}]`"
                         )
 
                 # Check that the default value has the right type
@@ -908,7 +990,7 @@ class Extractor:
     outputs: List[Feature]
     user_defined_outputs: List[Union[Feature, str]]
     func: Optional[Callable]
-    derived_extractor_info: Optional[DatasetLookupInfo]
+    derived_extractor_info: Optional[Union[DatasetLookupInfo, AliasInfo]]
     featureset: str
     # Expression based extractors
     expr: Optional[Expr]
@@ -925,7 +1007,9 @@ class Extractor:
         user_defined_outputs: List[Union[Feature, str]],
         version: int,
         func: Optional[Callable] = None,
-        derived_extractor_info: Optional[DatasetLookupInfo] = None,
+        derived_extractor_info: Optional[
+            Union[DatasetLookupInfo, AliasInfo]
+        ] = None,
         depends_on: List[Dataset] = None,
         env: Optional[Union[str, List[str]]] = None,
     ):
@@ -969,14 +1053,19 @@ class Extractor:
     ):
         if self.inputs and len(self.inputs) > 0:
             return
-        if self.extractor_type != ExtractorType.LOOKUP:
+        if not (
+            self.extractor_type == ExtractorType.LOOKUP
+            or self.extractor_type == ExtractorType.LIST_LOOKUP
+        ):
             return
         if not self.derived_extractor_info or not hasattr(
             self.derived_extractor_info, "field"
         ):
             raise ValueError("A lookup extractor must have a field to lookup")
         self.inputs = []
-
+        assert isinstance(
+            self.derived_extractor_info, Extractor.DatasetLookupInfo
+        )
         field = self.derived_extractor_info.field
         ds = None
         if hasattr(field, "dataset"):
@@ -1000,4 +1089,12 @@ class Extractor:
 
         def __init__(self, field: Field, default_val: Optional[Any] = None):
             self.field = field
+            self.default = default_val
+
+    class AliasInfo:
+        dtype: Type
+        default: Optional[Any] = None
+
+        def __init__(self, dtype: Type, default_val: Optional[Any] = None):
+            self.dtype = dtype
             self.default = default_val

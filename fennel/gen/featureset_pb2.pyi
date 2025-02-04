@@ -33,6 +33,7 @@ class _ExtractorTypeEnumTypeWrapper(google.protobuf.internal.enum_type_wrapper._
     LOOKUP: _ExtractorType.ValueType  # 1
     ALIAS: _ExtractorType.ValueType  # 2
     EXPR: _ExtractorType.ValueType  # 3
+    LIST_LOOKUP: _ExtractorType.ValueType  # 4
 
 class ExtractorType(_ExtractorType, metaclass=_ExtractorTypeEnumTypeWrapper): ...
 
@@ -41,6 +42,7 @@ PY_FUNC: ExtractorType.ValueType  # 0
 LOOKUP: ExtractorType.ValueType  # 1
 ALIAS: ExtractorType.ValueType  # 2
 EXPR: ExtractorType.ValueType  # 3
+LIST_LOOKUP: ExtractorType.ValueType  # 4
 global___ExtractorType = ExtractorType
 
 @typing_extensions.final
@@ -124,6 +126,27 @@ class FieldLookupInfo(google.protobuf.message.Message):
 global___FieldLookupInfo = FieldLookupInfo
 
 @typing_extensions.final
+class AliasInfo(google.protobuf.message.Message):
+    DESCRIPTOR: google.protobuf.descriptor.Descriptor
+
+    DTYPE_FIELD_NUMBER: builtins.int
+    DEFAULT_VALUE_FIELD_NUMBER: builtins.int
+    @property
+    def dtype(self) -> schema_pb2.DataType: ...
+    default_value: builtins.str
+    """expected to be sent as json"""
+    def __init__(
+        self,
+        *,
+        dtype: schema_pb2.DataType | None = ...,
+        default_value: builtins.str = ...,
+    ) -> None: ...
+    def HasField(self, field_name: typing_extensions.Literal["dtype", b"dtype"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["default_value", b"default_value", "dtype", b"dtype"]) -> None: ...
+
+global___AliasInfo = AliasInfo
+
+@typing_extensions.final
 class Extractor(google.protobuf.message.Message):
     DESCRIPTOR: google.protobuf.descriptor.Descriptor
 
@@ -137,6 +160,7 @@ class Extractor(google.protobuf.message.Message):
     FEATURE_SET_NAME_FIELD_NUMBER: builtins.int
     EXTRACTOR_TYPE_FIELD_NUMBER: builtins.int
     FIELD_INFO_FIELD_NUMBER: builtins.int
+    ALIAS_INFO_FIELD_NUMBER: builtins.int
     EXPR_FIELD_NUMBER: builtins.int
     TAGS_FIELD_NUMBER: builtins.int
     name: builtins.str
@@ -158,8 +182,11 @@ class Extractor(google.protobuf.message.Message):
     @property
     def field_info(self) -> global___FieldLookupInfo:
         """pycode excluded from the oneof for better bwd compatibility in Rust
-        required iff extractor_type == LOOKUP
+        required iff extractor_type == LOOKUP or LIST_LOOKUP
         """
+    @property
+    def alias_info(self) -> global___AliasInfo:
+        """required iff extractor_type == ALIAS"""
     @property
     def expr(self) -> expression_pb2.Expr:
         """required iff extractor_type == EXPR"""
@@ -178,12 +205,13 @@ class Extractor(google.protobuf.message.Message):
         feature_set_name: builtins.str = ...,
         extractor_type: global___ExtractorType.ValueType = ...,
         field_info: global___FieldLookupInfo | None = ...,
+        alias_info: global___AliasInfo | None = ...,
         expr: expression_pb2.Expr | None = ...,
         tags: collections.abc.Iterable[builtins.str] | None = ...,
     ) -> None: ...
-    def HasField(self, field_name: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info", "expr", b"expr", "field_info", b"field_info", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
-    def ClearField(self, field_name: typing_extensions.Literal["datasets", b"datasets", "derived_extractor_info", b"derived_extractor_info", "expr", b"expr", "extractor_type", b"extractor_type", "feature_set_name", b"feature_set_name", "features", b"features", "field_info", b"field_info", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "tags", b"tags", "version", b"version"]) -> None: ...
-    def WhichOneof(self, oneof_group: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info"]) -> typing_extensions.Literal["field_info"] | None: ...
+    def HasField(self, field_name: typing_extensions.Literal["alias_info", b"alias_info", "derived_extractor_info", b"derived_extractor_info", "expr", b"expr", "field_info", b"field_info", "metadata", b"metadata", "pycode", b"pycode"]) -> builtins.bool: ...
+    def ClearField(self, field_name: typing_extensions.Literal["alias_info", b"alias_info", "datasets", b"datasets", "derived_extractor_info", b"derived_extractor_info", "expr", b"expr", "extractor_type", b"extractor_type", "feature_set_name", b"feature_set_name", "features", b"features", "field_info", b"field_info", "inputs", b"inputs", "metadata", b"metadata", "name", b"name", "pycode", b"pycode", "tags", b"tags", "version", b"version"]) -> None: ...
+    def WhichOneof(self, oneof_group: typing_extensions.Literal["derived_extractor_info", b"derived_extractor_info"]) -> typing_extensions.Literal["field_info", "alias_info"] | None: ...
 
 global___Extractor = Extractor
 

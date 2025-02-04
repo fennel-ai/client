@@ -722,15 +722,27 @@ def _extractor_to_proto(
                 f"a dataframe of features, but of type {type(input)}"
             )
 
-    extractor_field_info = None
-    if extractor.extractor_type == ExtractorType.LOOKUP:
+    field_info: Optional[fs_proto.FieldLookupInfo] = None
+    alias_info: Optional[fs_proto.AliasInfo] = None
+    if (
+        extractor.extractor_type == ExtractorType.LOOKUP
+        or extractor.extractor_type == ExtractorType.LIST_LOOKUP
+    ):
         if not extractor.derived_extractor_info:
             raise TypeError(
                 f"Lookup extractor `{extractor.name}` must have DatasetLookupInfo"
             )
-        extractor_field_info = _to_field_lookup_proto(
-            extractor.derived_extractor_info
+        assert isinstance(
+            extractor.derived_extractor_info, Extractor.DatasetLookupInfo
         )
+        field_info = _to_field_lookup_proto(extractor.derived_extractor_info)
+    elif extractor.extractor_type == ExtractorType.ALIAS:
+        if not extractor.derived_extractor_info:
+            raise TypeError(
+                f"Alias extractor `{extractor.name}` must have AliasInfo"
+            )
+        assert isinstance(extractor.derived_extractor_info, Extractor.AliasInfo)
+        alias_info = _to_alias_info_proto(extractor.derived_extractor_info)
 
     proto_expr = None
     if extractor.extractor_type == ExtractorType.EXPR:
@@ -758,7 +770,8 @@ def _extractor_to_proto(
         pycode=to_extractor_pycode(extractor, fs, fs_obj_map),
         feature_set_name=extractor.featureset,
         extractor_type=extractor.extractor_type,
-        field_info=extractor_field_info,
+        field_info=field_info,
+        alias_info=alias_info,
         expr=proto_expr,
     )
 
@@ -789,6 +802,19 @@ def _to_field_lookup_proto(
 
     return fs_proto.FieldLookupInfo(
         field=_field_to_proto(info.field),
+        default_value=default_val,
+    )
+
+
+def _to_alias_info_proto(
+    info: Extractor.AliasInfo,
+) -> Optional[fs_proto.AliasInfo]:
+    # Backward compatibility cases
+    if info.default is None:
+        return None
+    default_val = val_as_json(info.default)
+    return fs_proto.AliasInfo(
+        dtype=get_datatype(info.dtype),
         default_value=default_val,
     )
 
@@ -1365,7 +1391,7 @@ def _sample_to_proto(
 
 
 def _how_to_proto(
-    how: Optional[Literal["incremental", "recreate"] | SnapshotData]
+    how: Optional[Literal["incremental", "recreate"] | SnapshotData],
 ) -> Optional[connector_proto.Style]:
     if how is None:
         return None

@@ -1,4 +1,4 @@
-import inspect
+import numpy as np
 import pytest
 import random
 import pandas as pd
@@ -8,11 +8,12 @@ from typing import Any, Dict, Optional, List
 from fennel.datasets import dataset
 
 from fennel.dtypes.dtypes import struct
-from fennel.expr import col, when, lit, now
+from fennel.expr import col, when, lit, now, var
 from fennel.expr.expr import (
     TimeUnit,
     from_epoch,
     make_struct,
+    repeat,
 )
 from fennel.expr.visitor import ExprPrinter, FetchReferences
 from fennel.expr.serializer import ExprSerializer
@@ -437,10 +438,13 @@ def compare_values(received, expected, dtype):
                     ), f"Expected {e}, got {r} for field {field.name} in struct {act}"
                 else:
                     compare_values([r], [e], field.type)
+    elif hasattr(dtype, "__origin__") and dtype.__origin__ is list:
+        for act, exp in zip(received, expected):
+            compare_values(act, exp, dtype.__args__[0])
     else:
         assert (
             list(received) == expected
-        ), f"Expected {expected}, got {received} for dtype {dtype}"
+        ), f"Expected {expected} of type {dtype}, got {received} of type {type(received)}"
 
 
 def check_test_case(test_case: ExprTestCase):
@@ -475,7 +479,10 @@ def check_test_case(test_case: ExprTestCase):
             )
     else:
         assert (
-            test_case.expr.typeof(test_case.schema) == test_case.expected_dtype
+            test_case.expr.matches_type(
+                test_case.expected_dtype, test_case.schema
+            )
+            # test_case.expr.typeof(test_case.schema) == test_case.expected_dtype
         )
 
     # Test eval
@@ -536,6 +543,25 @@ class A:
     x: int
     y: int
     z: str
+
+
+@struct
+class Point:
+    x: int
+    y: int
+
+
+@struct
+class PointF:
+    x: Optional[float]
+    y: Optional[float]
+
+
+@struct
+class Point3D:
+    x: int
+    y: int
+    z: int
 
 
 @struct
@@ -1138,16 +1164,360 @@ def test_parse_str_to_and_from_datetime():
     assert ret.tolist() == df["a"].tolist()
 
 
+def test_repeat():
+    cases = [
+        ExprTestCase(
+            expr=repeat(lit(1), 3),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display="REPEAT(1, 3)",
+            refs=set(),
+            eval_result=[[1, 1, 1], [1, 1, 1], [1, 1, 1]],
+            expected_dtype=List[int],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=repeat(col("a"), 3),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display='REPEAT(col("a"), 3)',
+            refs={"a"},
+            eval_result=[[1, 1, 1], [2, 2, 2], [3, 3, 3]],
+            expected_dtype=List[int],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=repeat(col("a"), lit(3)),
+            df=pd.DataFrame({"a": [True, False, True]}),
+            schema={"a": bool},
+            display='REPEAT(col("a"), 3)',
+            refs={"a"},
+            eval_result=[
+                [True, True, True],
+                [False, False, False],
+                [True, True, True],
+            ],
+            expected_dtype=List[bool],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=repeat(col("a"), lit(3)),
+            df=pd.DataFrame({"a": [1.0, None, 3.0]}),
+            schema={"a": Optional[float]},
+            display='REPEAT(col("a"), 3)',
+            refs={"a"},
+            eval_result=[
+                [1.0, 1.0, 1.0],
+                [pd.NA, pd.NA, pd.NA],
+                [3.0, 3.0, 3.0],
+            ],
+            expected_dtype=List[Optional[float]],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=repeat(col("a"), lit(0)),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display='REPEAT(col("a"), 0)',
+            refs={"a"},
+            eval_result=[[], [], []],
+            expected_dtype=List[int],
+            proto_json=None,
+        ),
+    ]
+    for case in cases:
+        check_test_case(case)
+
+    # repeat with negative count
+    expr = repeat(col("a"), lit(-1))
+    with pytest.raises(BaseException):
+        expr.eval(pd.DataFrame({"a": [1, 2, 3]}), {"a": int})
+
+
+def test_trig():
+    cases = [
+        ExprTestCase(
+            expr=col("a").num.sin(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='SIN(col("a"))',
+            refs={"a"},
+            eval_result=[
+                0.0,
+                pytest.approx(0.8414709848078965),
+                pytest.approx(0.9092974268256817),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.cos(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='COS(col("a"))',
+            refs={"a"},
+            eval_result=[
+                1.0,
+                pytest.approx(0.5403023058681398),
+                pytest.approx(-0.4161468365471424),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.tan(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='TAN(col("a"))',
+            refs={"a"},
+            eval_result=[
+                0.0,
+                pytest.approx(1.5574077246549023),
+                pytest.approx(-2.185039863261519),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.arcsin(),
+            df=pd.DataFrame({"a": [0, 1]}),
+            schema={"a": int},
+            display='ASIN(col("a"))',
+            refs={"a"},
+            eval_result=[0.0, pytest.approx(1.5707963267948966)],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.arccos(),
+            df=pd.DataFrame({"a": [0, 1]}),
+            schema={"a": int},
+            display='ACOS(col("a"))',
+            refs={"a"},
+            eval_result=[pytest.approx(1.5707963267948966), 0.0],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.arctan(),
+            df=pd.DataFrame({"a": [0, 1, 2]}),
+            schema={"a": int},
+            display='ATAN(col("a"))',
+            refs={"a"},
+            eval_result=[
+                0.0,
+                pytest.approx(0.7853981633974483),
+                pytest.approx(1.1071487177940904),
+            ],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+    ]
+    for case in cases:
+        check_test_case(case)
+
+
+def test_sqrt():
+    cases = [
+        ExprTestCase(
+            expr=lit(4).num.sqrt(),
+            df=pd.DataFrame({"a": [1, 4, 9]}),
+            schema={"a": int},
+            display="SQRT(4)",
+            refs=set(),
+            eval_result=[2.0, 2.0, 2.0],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.sqrt(),
+            df=pd.DataFrame({"a": [1, 4, 9]}),
+            schema={"a": int},
+            display='SQRT(col("a"))',
+            refs={"a"},
+            eval_result=[1.0, 2.0, 3.0],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+    ]
+
+    for case in cases:
+        check_test_case(case)
+
+
+def test_pow():
+    cases = [
+        ExprTestCase(
+            expr=lit(2).num.pow(lit(3)),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display="POW(2, 3)",
+            refs=set(),
+            eval_result=[8, 8, 8],
+            expected_dtype=int,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.pow(lit(3)),
+            df=pd.DataFrame({"a": [1.0, 2.0, 3.0]}),
+            schema={"a": float},
+            display='POW(col("a"), 3)',
+            refs={"a"},
+            eval_result=[1.0, 8.0, 27.0],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.pow(lit(-2.0)),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display='POW(col("a"), -2.0)',
+            refs={"a"},
+            eval_result=[1.0, 0.25, 0.1111111111111111],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+    ]
+    for case in cases:
+        check_test_case(case)
+
+    expr = col("a").num.pow(lit(-2))
+    with pytest.raises(Exception):
+        expr.eval(pd.DataFrame({"a": [1, 2, 3]}), {"a": int})
+
+
+def test_log():
+    cases = [
+        ExprTestCase(
+            expr=lit(100).num.log(10.0),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display="LOG(100, base=10.0)",
+            refs=set(),
+            eval_result=[2.0, 2.0, 2.0],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=col("a").num.log(),
+            df=pd.DataFrame({"a": [1, 2, 3]}),
+            schema={"a": int},
+            display='LOG(col("a"), base=2.718281828459045)',
+            refs={"a"},
+            eval_result=[0.0, 0.6931471805599453, 1.0986122886681098],
+            expected_dtype=float,
+            proto_json=None,
+        ),
+    ]
+    for case in cases:
+        check_test_case(case)
+
+
+def test_zip():
+    cases = [
+        # Make a struct
+        ExprTestCase(
+            expr=A.zip(
+                x=col("a"),
+                y=col("b"),
+                z=col("b").list.map("e", var("e").num.to_string()),
+            ),
+            df=pd.DataFrame({"a": [[1, 2], [3], []], "b": [[4, 5], [6], []]}),
+            schema={"a": List[int], "b": List[int]},
+            display="""ZIP(A, x=col("a"), y=col("b"), z=LIST_MAP(col("b"), "e", TO_STRING(var("e"))))""",
+            refs={"a", "b"},
+            eval_result=[
+                [A(1, 4, "4"), A(2, 5, "5")],
+                [A(3, 6, "6")],
+                [],
+            ],
+            expected_dtype=List[A],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=Point.zip(x=col("a"), y=col("b")).list.map(
+                "s",
+                var("s").struct.get("x") / (lit(1) + var("s").struct.get("y")),
+            ),
+            df=pd.DataFrame({"a": [[1, 2], [3], []], "b": [[4, 5], [6], []]}),
+            schema={"a": List[int], "b": List[int]},
+            display="""LIST_MAP(ZIP(Point, x=col("a"), y=col("b")), "s", (var("s").x / (1 + var("s").y)))""",
+            refs={"a", "b"},
+            eval_result=[
+                [0.2, 0.3333333333333333],
+                [3.0 / 7.0],
+                [],
+            ],
+            expected_dtype=List[float],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=PointF.zip(
+                x=col("a"),
+                y=col("b").list.map(
+                    "n",
+                    when(var("n") > lit(5))
+                    .then(var("n") * lit(2))
+                    .otherwise(lit(None)),
+                ),
+            ),
+            df=pd.DataFrame({"a": [[1, 2], [3], []], "b": [[4, 5], [6], []]}),
+            schema={"a": List[int], "b": List[int]},
+            display="""ZIP(PointF, x=col("a"), y=LIST_MAP(col("b"), "n", WHEN (var("n") > 5) THEN (var("n") * 2) ELSE null))""",
+            refs={"a", "b"},
+            eval_result=[
+                [PointF(1.0, None), PointF(2.0, None)],
+                [PointF(3.0, 12.0)],
+                [],
+            ],
+            expected_dtype=List[PointF],
+            proto_json=None,
+        ),
+        # zip works with the shortest list
+        ExprTestCase(
+            expr=Point.zip(x=col("a"), y=col("b")),
+            df=pd.DataFrame(
+                {"a": [[1, 2], [3], []], "b": [[4, 5, 6], [6], [7]]}
+            ),
+            schema={"a": List[int], "b": List[int]},
+            display="""ZIP(Point, x=col("a"), y=col("b"))""",
+            refs={"a", "b"},
+            eval_result=[
+                [Point(1, 4), Point(2, 5)],
+                [Point(3, 6)],
+                [],
+            ],
+            expected_dtype=List[Point],
+            proto_json=None,
+        ),
+        # same as before but with three lists
+        ExprTestCase(
+            expr=Point3D.zip(x=col("a"), y=col("b"), z=col("c")),
+            df=pd.DataFrame(
+                {
+                    "a": [[1, 2], [3], []],
+                    "b": [[4, 5, 6], [6, 8], [7, 9, 10]],
+                    "c": [[8, 9], [10], [11]],
+                }
+            ),
+            schema={"a": List[int], "b": List[int], "c": List[int]},
+            display="""ZIP(Point3D, x=col("a"), y=col("b"), z=col("c"))""",
+            refs={"a", "b", "c"},
+            eval_result=[[Point3D(1, 4, 8), A(2, 5, 9)], [A(3, 6, 10)], []],
+            expected_dtype=List[Point3D],
+            proto_json=None,
+        ),
+    ]
+
+    for case in cases:
+        check_test_case(case)
+
+
 def test_make_struct():
     cases = [
         # Make a struct
         ExprTestCase(
-            expr=(
-                make_struct(
-                    {"x": col("a"), "y": col("a") + col("b"), "z": "constant"},
-                    A,
-                )
-            ),
+            expr=A.expr(x=col("a"), y=col("a") + col("b"), z="constant"),
             df=pd.DataFrame({"a": [1, 2, 3], "b": [4, 5, 6]}),
             schema={"a": int, "b": int},
             display="""STRUCT(x=col("a"), y=(col("a") + col("b")), z="constant")""",
@@ -1162,17 +1532,10 @@ def test_make_struct():
         ),
         # Make a nested struct
         ExprTestCase(
-            expr=(
-                make_struct(
-                    {
-                        "a": make_struct(
-                            {"x": col("a"), "y": col("b"), "z": col("c")}, A
-                        ),
-                        "b": make_struct({"p": col("d"), "q": col("e")}, B),
-                        "c": col("f"),
-                    },
-                    Nested,
-                )
+            expr=Nested.expr(
+                a=A.expr(x=col("a"), y=col("b"), z=col("c")),
+                b=B.expr(p=col("d"), q=col("e")),
+                c=col("f"),
             ),
             df=pd.DataFrame(
                 {
@@ -1206,6 +1569,11 @@ def test_make_struct():
 
     for case in cases:
         check_test_case(case)
+
+    # construct a case that won't compile
+    expr = Point.zip(x=col("a"), y=col("b") * lit(2.2))
+    with pytest.raises(Exception):
+        expr.typeof({"a": int, "b": int})
 
 
 def test_from_epoch():
@@ -1381,6 +1749,34 @@ def test_now():
             refs={"birthdate"},
             eval_result=[0, 0, pd.NA, 0],
             expected_dtype=Optional[int],
+            proto_json=None,
+        ),
+    ]
+
+    for case in cases:
+        check_test_case(case)
+
+
+def test_is_infinite():
+    cases = [
+        ExprTestCase(
+            expr=(col("a").num.is_infinite()),
+            df=pd.DataFrame({"a": [1.0, None, 4.0, np.PINF, np.NINF]}),
+            schema={"a": Optional[float]},
+            display='IS_INFINITE(col("a"))',
+            refs={"a"},
+            eval_result=[False, pd.NA, False, True, True],
+            expected_dtype=Optional[bool],
+            proto_json=None,
+        ),
+        ExprTestCase(
+            expr=(col("a").num.is_infinite()),
+            df=pd.DataFrame({"a": [1.0, 4.0, np.PINF, np.NINF]}),
+            schema={"a": float},
+            display='IS_INFINITE(col("a"))',
+            refs={"a"},
+            eval_result=[False, False, True, True],
+            expected_dtype=bool,
             proto_json=None,
         ),
     ]

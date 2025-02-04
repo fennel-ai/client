@@ -47,9 +47,18 @@ from fennel.expr.expr import (
     MathNoop,
     Round,
     Ceil,
+    Sqrt,
+    Pow,
+    Log,
     NumToStr,
     Abs,
     Floor,
+    Sin,
+    Cos,
+    Tan,
+    ArcSin,
+    ArcCos,
+    ArcTan,
     StringNoop,
     StrLen,
     StringStrpTime,
@@ -67,6 +76,10 @@ from fennel.expr.expr import (
     DictLen,
     DictNoop,
     DateTimeNoop,
+    Zip,
+    Repeat,
+    IsNan,
+    IsInfinite,
 )
 
 
@@ -234,6 +247,36 @@ class ExprSerializer(Visitor):
             expr.math_fn.fn.CopyFrom(proto.MathOp(floor=proto.Floor()))
         elif isinstance(obj.op, NumToStr):
             expr.math_fn.fn.CopyFrom(proto.MathOp(to_string=proto.ToString()))
+        elif isinstance(obj.op, Sqrt):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(sqrt=proto.Sqrt()))
+        elif isinstance(obj.op, Pow):
+            expr.math_fn.fn.CopyFrom(
+                proto.MathOp(
+                    pow=proto.Pow(exponent=self.visit(obj.op.exponent))
+                )
+            )
+        elif isinstance(obj.op, Log):
+            expr.math_fn.fn.CopyFrom(
+                proto.MathOp(log=proto.Log(base=obj.op.base))
+            )
+        elif isinstance(obj.op, Sin):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(sin=proto.Sin()))
+        elif isinstance(obj.op, Cos):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(cos=proto.Cos()))
+        elif isinstance(obj.op, Tan):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(tan=proto.Tan()))
+        elif isinstance(obj.op, ArcSin):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(asin=proto.Asin()))
+        elif isinstance(obj.op, ArcCos):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(acos=proto.Acos()))
+        elif isinstance(obj.op, ArcTan):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(atan=proto.Atan()))
+        elif isinstance(obj.op, IsNan):
+            expr.math_fn.fn.CopyFrom(proto.MathOp(is_nan=proto.IsNan()))
+        elif isinstance(obj.op, IsInfinite):
+            expr.math_fn.fn.CopyFrom(
+                proto.MathOp(is_infinite=proto.IsInfinite())
+            )
         else:
             raise InvalidExprException("invalid number operation: %s" % obj.op)
         expr.math_fn.operand.CopyFrom(self.visit(obj.operand))
@@ -501,6 +544,30 @@ class ExprSerializer(Visitor):
     def visitNow(self, obj):
         expr = proto.Expr()
         expr.now.CopyFrom(proto.Now())
+        return expr
+
+    def visitZip(self, obj):
+        expr = proto.Expr()
+        for field, value in obj.fields.items():
+            field_expr = expr.zip.fields.get_or_create(field)
+            field_expr.CopyFrom(self.visit(value))
+
+        # Ensure get_datatype returns a correct protobuf message of type StructType
+        dtype = get_datatype(obj.struct_type)
+        if dtype.struct_type is None:
+            raise InvalidExprException(
+                "invalid zip: expected struct_type to be a StructType, found {}".format(
+                    dtype
+                )
+            )
+        expr.zip.struct_type.CopyFrom(dtype.struct_type)
+        return expr
+
+    def visitRepeat(self, obj):
+        expr = proto.Expr()
+        expr.repeat.CopyFrom(
+            proto.Repeat(expr=self.visit(obj.value), count=self.visit(obj.by))
+        )
         return expr
 
 

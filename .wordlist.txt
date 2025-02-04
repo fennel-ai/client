@@ -3,6 +3,9 @@ AES
 APIs
 ARNs
 aren
+arcsin
+arccos
+arctan
 AST
 AdministratorAccess
 AllowKinesisAccess
@@ -35,6 +38,7 @@ DescribeStreamSummary
 disambiguity
 Dockerfile
 expr
+exponentiate
 Eval
 eval
 endswith
@@ -127,6 +131,8 @@ Secret
 ShardIteratorType
 Signifier
 SnapshotData
+sqrt
+Sqrt
 Stddev
 Subprocessor
 SubscribeToShard
@@ -285,6 +291,8 @@ lifecycle
 lookback
 lookup
 lookups
+LLM
+LLMs
 metaflags
 mongo
 msgs

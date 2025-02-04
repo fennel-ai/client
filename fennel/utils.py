@@ -72,28 +72,33 @@ def fennel_get_source(obj: Any) -> str:
     return textwrap.dedent(code)
 
 
-def check_response(response: requests.Response):  # type: ignore
+def check_response(curl_response):  # type: ignore
     """Check the response from the server and raise an exception if the response is not OK"""
-    if response.status_code != 200:
-        if response.headers.get("content-type") == "application/json":
-            response_json = response.json()
+    if curl_response["status_code"] != 200:
+        if curl_response["headers"].get("content-type") == "application/json":
+            response_json = json.loads(curl_response["body"])
             if "err_msg" in response_json:
                 msg = response_json["err_msg"]
             else:
-                msg = response.text
+                msg = curl_response["body"]
             if "err_diff" in response_json:
                 print(response_json["err_diff"])
             raise Exception(
                 "Server returned: {}, {}: {}".format(
-                    response.status_code, response.reason, msg
+                    curl_response["status_code"],
+                    (
+                        curl_response["reason"]
+                        if "reason" in curl_response
+                        else ""
+                    ),
+                    msg,
                 )
             )
         else:
             raise Exception(
-                "Server returned: {}, {}, {}".format(
-                    response.status_code,
-                    response.reason,
-                    response.text,
+                "Server returned: {}, {}".format(
+                    curl_response["status_code"],
+                    curl_response["body"],
                 )
             )
 

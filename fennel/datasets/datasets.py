@@ -58,6 +58,7 @@ from fennel.dtypes.dtypes import (
 )
 from fennel.expr import Expr
 from fennel.gen import schema_pb2 as schema_proto
+from fennel.internal_lib import META_FIELD
 from fennel.internal_lib.duration import (
     Duration,
     duration_to_timedelta,
@@ -533,12 +534,19 @@ class Assign(_Node):
             else self.node.signature()
         )
         if self.assign_type == UDFType.python:
-            return fhash(
-                item,
-                self.func,
-                self.column,
-                self.output_type.__name__,
-            )
+            try:
+                return fhash(
+                    item,
+                    self.func,
+                    self.column,
+                    self.output_type.__name__,
+                )
+            except Exception:
+                return fhash(
+                    item,
+                    self.func,
+                    self.column,
+                )
         else:
             return fhash(
                 item,
@@ -2048,6 +2056,12 @@ class Dataset(_Node[T]):
         if hasattr(expectation.func, "__fennel_metadata__"):
             raise ValueError("Expectations cannot have metadata.")
         return expectation
+
+    def is_deleted(self):
+        if hasattr(self, META_FIELD):
+            metadata = getattr(self, META_FIELD)
+            return metadata.deleted
+        return False
 
     def num_pipelines(self):
         return len(self._pipelines)
