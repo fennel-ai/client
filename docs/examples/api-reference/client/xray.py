@@ -8,6 +8,6 @@ def test_basic(client):
         client.xray(
             datasets=["Dataset1", "Dataset2"],
             featuresets=[],
-            properties=["backlog", "sink_destination", "name"]
+            properties=["backlog", "sink_destination", "name"],
         )  # docsnip-highlight
         # /docsnip
