@@ -739,6 +739,120 @@ class Client:
 
         return self._parse_dataframe(result, output_dtypes), found
 
+    def lineage(
+        self,
+    ):
+        """
+        Retrieve the lineage information of all entities.
+
+        Returns:
+        ----------
+        dict: A dictionary containing the lineage data for all entities.
+
+        Raises:
+        ----------
+        Exception: If the request to retrieve lineage information fails.
+        """
+
+        response = self._get("{}/lineage".format(V1_API))
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response.json()
+
+    def xray(
+        self,
+        datasets: Optional[Union[str, List[str]]] = None,
+        featuresets: Optional[Union[str, List[str]]] = None,
+        fields: Optional[Union[str, List[str]]] = None,
+    ):
+        """
+        Retrieve a list of entities. This can be filtered by providing a list or a single name of datasets and/or featuresets.
+
+        Parameters:
+        ----------
+        datasets (Optional[Union[str, List[str]]]): A list or a single name of the datasets you want to retrieve.
+        featuresets (Optional[Union[str, List[str]]]): A list or a single name of the featuresets you want to retrieve.
+        properties Optional[Union[str, List[str]]]: A list or a single name of the properties you want to select for featuresets/datasets
+
+        Returns:
+        ----------
+        dict: A dictionary containing the list of entities.
+
+        Raises:
+        ----------
+        Exception: If the request to retrieve entities fails.
+
+            Notes
+        ----------
+        **Available properties**:
+        ***Datasets***
+
+        - name
+        - dsschema
+        - field_metadata
+        - retention
+        - history
+        - metaflags
+        - version
+        - fullname
+        - pycode
+        - is_source_dataset
+        - tags
+        - rows_ingested
+        - last_processed
+        - last_updated
+        - backlog
+        - sink_destination
+        - lineage_tags
+
+        ***Featuresets***
+        - name
+        - metaflags
+        - pycode
+        - tags
+        - lineage_tags
+        """
+
+        dataset_str = None
+        if datasets is not None:
+            if isinstance(datasets, list):
+                dataset_str = ",".join(datasets)
+            else:
+                dataset_str = datasets
+
+        featureset_str = None
+        if featuresets is not None:
+            if isinstance(featuresets, list):
+                featureset_str = ",".join(featuresets)
+            else:
+                featureset_str = featuresets
+
+        fields_str = None
+        if fields is not None:
+            if isinstance(fields, list):
+                fields_str = ",".join(fields)
+            else:
+                fields_str = fields
+
+        query_parts = []
+        if dataset_str:
+            query_parts.append(f"datasets={dataset_str}")
+        if featureset_str:
+            query_parts.append(f"featuresets={featureset_str}")
+        if fields_str:
+            query_parts.append(f"properties={fields_str}")
+
+        base_url = f"{V1_API}/xray"
+        if query_parts:
+            url = f"{base_url}?{'&'.join(query_parts)}"
+        else:
+            url = base_url
+
+        response = self._get(url)
+        if response.status_code != requests.codes.OK:
+            raise Exception(response.json())
+        return response.json()
+
     def inspect(
         self, dataset: Union[str, Dataset], n: int = 10
     ) -> pd.DataFrame:
