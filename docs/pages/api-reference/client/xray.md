@@ -28,6 +28,6 @@ Returns a detailed list for datasets and featuresets.
 </Expandable>
 
 
-<pre snippet="api-reference/client/xray#basic" status="success"
+<pre snippet="api-reference/client/xray#xray" status="success"
     message="A valid Xray example">
 </pre>

@@ -534,12 +534,19 @@ class Assign(_Node):
             else self.node.signature()
         )
         if self.assign_type == UDFType.python:
-            return fhash(
-                item,
-                self.func,
-                self.column,
-                self.output_type.__name__,
-            )
+            try:
+                return fhash(
+                    item,
+                    self.func,
+                    self.column,
+                    self.output_type.__name__,
+                )
+            except Exception:
+                return fhash(
+                    item,
+                    self.func,
+                    self.column,
+                )
         else:
             return fhash(
                 item,
