@@ -8,7 +8,7 @@ status: 'published'
 The following example tries to show how several concepts in Fennel come together 
 to solve a problem.
 
-### 0. Installation
+### Installation
 We only need to install Fennel's Python client to run this example, so let's install that first:
 ```bash
 pip install fennel-ai
@@ -20,13 +20,13 @@ rest of the tutorial:
 <pre snippet="getting-started/quickstart#imports"></pre>
 
 
-### 1. Data Connectors
+### 0. Data Connectors
 Fennel ships with data connectors that know how to talk to all common data
 sources. The connectors can be defined in code or in Fennel console (not shown
-here).
+here). For now, let's add the following dummy connectors:
 <pre snippet="getting-started/quickstart#connectors"></pre>
 
-### 2. Datasets
+### 1. Datasets
 Datasets are the tables that you want to use in your feature pipelines. These
 are constantly kept fresh as new data arrives from connectors.
 <pre snippet="getting-started/quickstart#datasets"></pre>
@@ -37,16 +37,14 @@ of abstraction.  These pipelines are highly declarative, completely Python nativ
 realtime, versioned, are auto backfilled on declaration, and can be unit tested.
 <pre snippet="getting-started/quickstart#pipelines"></pre>
 
-### 3. Featuresets
+### 2. Featuresets
 Featuresets are containers for the features that you want to extract from your
 datasets. Features, unlike datasets, have no state and are computed on the
 "read path" (i.e. when you query for them) via arbitrary Python code. Features
 are immutable to improve reliability.
 <pre snippet="getting-started/quickstart#features"></pre>
 
-
-
-### 4. Commit
+### 3. Commit
 Once datasets/featuresets have been written (or updated), you can commit those
 definitions by instantiating a client and using it to talk to the server. Since 
 we are not working with a real server, here we use the MockClient to run this 
@@ -57,7 +55,7 @@ Mock Client doesn't support data connectors so we will manually log some data
 to simulate data flows.
 <pre snippet="getting-started/quickstart#log_data"></pre>
 
-### 5. Query
+### 4. Query
 This is the read path of Fennel. You can query for live features (i.e. features
 using the latest value of all datasets) like this:
 <pre snippet="getting-started/quickstart#query"></pre>
