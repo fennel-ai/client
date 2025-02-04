@@ -1,5 +1,6 @@
 from fennel.testing import mock
 
+
 @mock
 def test_basic(client):
     def xray_client():
