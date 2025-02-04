@@ -4,7 +4,7 @@
 		"https://fennel.ai/docs"
 	],
     "stop_urls": [
-        "https://fennel.ai/docs/api-reference/(?!\\d+\\.\\d+\\.\\d+/?).*"
+        "^https://fennel\\.ai/docs/api-reference/(\\d+\\.\\d+\\.\\d+/.*|.*/[^/]+)$"
     ],
 	"sitemap_urls": [
 		"https://fennel.ai/docs/sitemap.xml"
