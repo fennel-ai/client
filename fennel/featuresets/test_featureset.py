@@ -559,3 +559,16 @@ def test_extractor_env_selector():
 
     extractor_req = sync_request.extractors[1]
     assert extractor_req.name == "_fennel_lookup_UserInfoDataset.avg_income"
+
+
+def test_feature_is_deleted():
+    @meta(owner="aditya@fennel.ai")
+    @featureset
+    class UserInfo:
+        user_id: int
+        age: int
+        virtual: bool = F().meta(deleted=True)
+
+    assert not UserInfo.age.is_deleted()
+    assert not UserInfo.user_id.is_deleted()
+    assert UserInfo.virtual.is_deleted()

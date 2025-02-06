@@ -588,6 +588,10 @@ class Client:
         output_feature_names = []
         for output_feature in outputs:
             if isinstance(output_feature, Feature):
+                if output_feature.is_deleted():
+                    raise Exception(
+                        f"Feature {output_feature.fqn()} is deleted. Please provide a valid feature for output_feature."
+                    )
                 output_feature_names.append(output_feature.fqn())
             elif isinstance(output_feature, str):
                 if is_valid_feature(output_feature):
@@ -599,8 +603,12 @@ class Client:
                         f"Please provide a valid string for output_feature, got : `{output_feature}`."
                     )
             elif isinstance(output_feature, Featureset):
+                if output_feature.is_deleted():
+                    raise Exception(
+                        f"Featureset {output_feature.fqn()} is deleted. Please provide a valid featureset for output_feature."
+                    )
                 output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features]
+                    [f.fqn() for f in output_feature.features if not f.is_deleted()]
                 )
 
         req = {
