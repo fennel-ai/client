@@ -42,6 +42,7 @@ pytest = "^7.1.3"
 pyspelling = "^2.8.2"
 # A pyyaml bug when using cython, https://github.com/yaml/pyyaml/issues/601
 pyyaml = "^6.0.1"
+faker = "^34.0.0"
 
 # For production, we use poetry to build the python package
 

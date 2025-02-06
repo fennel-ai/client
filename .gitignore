@@ -2,6 +2,7 @@
 fennel/proto/*.proto
 fennel/test_lib/
 output.txt
+data/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
