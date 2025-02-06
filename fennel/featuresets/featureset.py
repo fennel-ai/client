@@ -366,6 +366,12 @@ class Feature:
     dtype: Optional[Type] = None
     deprecated: bool = False
 
+    def is_deleted(self):
+        if hasattr(self, META_FIELD):
+            metadata = getattr(self, META_FIELD)
+            return metadata.deleted
+        return False
+
     def meta(self, **kwargs: Any) -> T:  # type: ignore
         return cast(T, meta(**kwargs)(self))
 
