@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.75] - 2025-02-06
+- Stop sending deleted features in query_offline request
+
 ## [1.5.74] - 2025-01-28
 - Add APIs for xray(getting information of entities in the graph) and lineage(showing interdependency in graph) in client
 
