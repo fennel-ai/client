@@ -17,7 +17,7 @@ from datetime import timedelta
 #   street: str
 #   state: str
 #   zip: str
-# 
+#
 # @dataset
 # class Users:
 #   uid: int
@@ -25,14 +25,14 @@ from datetime import timedelta
 #   name: str
 #   address: Optional[Address]
 #   created_at: datetime
-# 
+#
 # class TransactionsDS:
 #     transaction_id: str
 #     timestamp: datetime
 #     sender: int
 #     recipient: int
 #     amount: float
-# 
+#
 # class FraudMarkingsDS:
 #     transaction_id: str
 #     is_fraud: bool
@@ -40,8 +40,16 @@ from datetime import timedelta
 
 # ===============================
 
+
 class Generator:
-    def __init__(self, dir1: str, dir2: str, user_file: str, transaction_file: str, fraud_file: str):
+    def __init__(
+        self,
+        dir1: str,
+        dir2: str,
+        user_file: str,
+        transaction_file: str,
+        fraud_file: str,
+    ):
         self.faker = faker.Faker(seed=42)
         self.dir1 = dir1
         self.dir2 = dir2
@@ -86,27 +94,33 @@ class Generator:
         return ret
 
     def fraud_markings(self, frac: float, transactions: List[Dict[str, Any]]):
-        faker = self.faker
         ret = []
         for t in transactions:
             if random.random() < frac:
                 delay = random.randint(0, 3600 * 24 * 1)
-                ret.append({
-                    "transaction_id": t["transaction_id"],
-                    "is_fraud": random.random() < 0.5,
-                    "timestamp": t["timestamp"] + timedelta(seconds=delay),
-                })
+                ret.append(
+                    {
+                        "transaction_id": t["transaction_id"],
+                        "is_fraud": random.random() < 0.5,
+                        "timestamp": t["timestamp"] + timedelta(seconds=delay),
+                    }
+                )
         return ret
 
-    def write_json(self, users: List[Dict[str, Any]], transactions: List[Dict[str, Any]], fraud_markings: List[Dict[str, Any]]):
+    def write_json(
+        self,
+        users: List[Dict[str, Any]],
+        transactions: List[Dict[str, Any]],
+        fraud_markings: List[Dict[str, Any]],
+    ):
         users1, users2 = split(users, 0.5)
         transactions1, transactions2 = split(transactions, 0.5)
         fraud_markings1, fraud_markings2 = split(fraud_markings, 0.5)
         groups = [
-            (self.dir1, users1, transactions1, fraud_markings1), 
-            (self.dir2, users2, transactions2, fraud_markings2)
+            (self.dir1, users1, transactions1, fraud_markings1),
+            (self.dir2, users2, transactions2, fraud_markings2),
         ]
-        for (dir, users, transactions, fraud_markings) in groups:
+        for dir, users, transactions, fraud_markings in groups:
             os.makedirs(dir, exist_ok=True)
             with open(os.path.join(dir, self.user_file), "w") as f:
                 for u in users:
@@ -121,10 +135,12 @@ class Generator:
                     marking["timestamp"] = marking["timestamp"].isoformat()
                     f.write(json.dumps(marking) + "\n")
 
+
 def split(data: List[Any], frac: float):
     n = len(data)
     n1 = int(n * frac)
     return data[:n1], data[n1:]
+
 
 if __name__ == "__main__":
     start = time.time()
@@ -132,7 +148,13 @@ if __name__ == "__main__":
     num_transactions = 1000_000
     frac_fraud = 0.01
 
-    g = Generator(dir1="data/s3", dir2="data/kafka", user_file="users.json", transaction_file="transactions.json", fraud_file="fraud.json")
+    g = Generator(
+        dir1="data/s3",
+        dir2="data/kafka",
+        user_file="users.json",
+        transaction_file="transactions.json",
+        fraud_file="fraud.json",
+    )
     users = g.users(num_users)
     print(f"Generated users in {time.time() - start} seconds")
     start = time.time()

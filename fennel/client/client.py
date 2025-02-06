@@ -605,10 +605,14 @@ class Client:
             elif isinstance(output_feature, Featureset):
                 if output_feature.is_deleted():
                     raise Exception(
-                        f"Featureset {output_feature.fqn()} is deleted. Please provide a valid featureset for output_feature."
+                        f"Featureset {output_feature} is deleted. Please provide a valid featureset for output_feature."
                     )
                 output_feature_names.extend(
-                    [f.fqn() for f in output_feature.features if not f.is_deleted()]
+                    [
+                        f.fqn()
+                        for f in output_feature.features
+                        if not f.is_deleted()
+                    ]
                 )
 
         req = {
