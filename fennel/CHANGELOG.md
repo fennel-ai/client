@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.77] - 2025-02-13
+- Revert join on optional fields in LHS
+
 ## [1.5.76] - 2025-02-13
 - Bug fix: rename `is_deleted` to `__fennel_is_deleted__` in datasets, 
   featuresets and features to prevent collision with user defined fields

@@ -1077,9 +1077,6 @@ class Join(_Node):
 
         rhs_keys = set(self.dataset.dsschema().keys)
         join_keys = set(self.on) if self.on is not None else set(self.right_on)
-        final_join_cols = (
-            set(self.on) if self.on is not None else set(self.left_on)
-        )
         # Ensure on or right_on are the keys of the right dataset
         if join_keys != rhs_keys:
             raise ValueError(
@@ -1147,11 +1144,6 @@ class Join(_Node):
                 )
             else:
                 joined_dsschema.append_value_column(right_ts, datetime.datetime)
-
-        # Drop null on join keys if how is inner
-        if self.how == "inner":
-            for key in final_join_cols:
-                joined_dsschema.drop_null_column(key)
 
         return joined_dsschema
 
@@ -3046,9 +3038,13 @@ class SchemaValidator(Visitor):
                 )
             # Check the schemas of the keys
             for key in obj.on:
-                if fennel_get_optional_inner(
-                    left_schema.get_type(key)
-                ) != right_schema.get_type(key):
+                if fennel_is_optional(left_schema.get_type(key)):
+                    raise TypeError(
+                        f"Fields used in a join operator must not be optional in left schema, "
+                        f"found `{key}` of type `{dtype_to_string(left_schema.get_type(key))}` "
+                        f"in `{output_schema_name}`"
+                    )
+                if left_schema.get_type(key) != right_schema.get_type(key):
                     raise TypeError(
                         f"Key field `{key}` has type `{dtype_to_string(left_schema.get_type(key))}` "
                         f"in left schema but type "
@@ -3071,9 +3067,14 @@ class SchemaValidator(Visitor):
                 )
             # Check the schemas of the keys
             for lkey, rkey in zip(obj.left_on, obj.right_on):
-                if fennel_get_optional_inner(
-                    left_schema.get_type(lkey)
-                ) != right_schema.get_type(rkey):
+                if fennel_is_optional(left_schema.get_type(lkey)):
+                    raise TypeError(
+                        f"Fields used in a join operator must not be optional "
+                        f"in left schema, found `{lkey}` of type "
+                        f"`{dtype_to_string(left_schema.get_type(lkey))}` "
+                        f"in `{output_schema_name}`"
+                    )
+                if left_schema.get_type(lkey) != right_schema.get_type(rkey):
                     raise TypeError(
                         f"Key field `{lkey}` has type"
                         f" `{dtype_to_string(left_schema.get_type(lkey))}` "
