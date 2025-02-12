@@ -1803,6 +1803,12 @@ class Dataset(_Node[T]):
     def __class_getitem__(cls, item):
         return item
 
+    def __fennel_is_deleted__(self):
+        if hasattr(self, META_FIELD):
+            metadata = getattr(self, META_FIELD)
+            return metadata.deleted
+        return False
+
     # ------------------- Public Methods --------------------------
 
     def signature(self):
@@ -2056,12 +2062,6 @@ class Dataset(_Node[T]):
         if hasattr(expectation.func, "__fennel_metadata__"):
             raise ValueError("Expectations cannot have metadata.")
         return expectation
-
-    def is_deleted(self):
-        if hasattr(self, META_FIELD):
-            metadata = getattr(self, META_FIELD)
-            return metadata.deleted
-        return False
 
     def num_pipelines(self):
         return len(self._pipelines)

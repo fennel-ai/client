@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.76] - 2025-02-13
+- Bug fix: rename `is_deleted` to `__fennel_is_deleted__` in datasets, 
+  featuresets and features to prevent collision with user defined fields
+
 ## [1.5.75] - 2025-02-06
 - Stop sending deleted features in query_offline request
 

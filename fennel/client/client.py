@@ -588,7 +588,7 @@ class Client:
         output_feature_names = []
         for output_feature in outputs:
             if isinstance(output_feature, Feature):
-                if output_feature.is_deleted():
+                if output_feature.__fennel_is_deleted__():
                     raise Exception(
                         f"Feature {output_feature.fqn()} is deleted. Please provide a valid feature for output_feature."
                     )
@@ -603,7 +603,7 @@ class Client:
                         f"Please provide a valid string for output_feature, got : `{output_feature}`."
                     )
             elif isinstance(output_feature, Featureset):
-                if output_feature.is_deleted():
+                if output_feature.__fennel_is_deleted__():
                     raise Exception(
                         f"Featureset {output_feature} is deleted. Please provide a valid featureset for output_feature."
                     )
@@ -611,7 +611,7 @@ class Client:
                     [
                         f.fqn()
                         for f in output_feature.features
-                        if not f.is_deleted()
+                        if not f.__fennel_is_deleted__()
                     ]
                 )
 
