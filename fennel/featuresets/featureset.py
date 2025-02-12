@@ -366,7 +366,7 @@ class Feature:
     dtype: Optional[Type] = None
     deprecated: bool = False
 
-    def is_deleted(self):
+    def __fennel_is_deleted__(self):
         if hasattr(self, META_FIELD):
             metadata = getattr(self, META_FIELD)
             return metadata.deleted
@@ -526,7 +526,7 @@ class Featureset:
         setattr(self, OWNER, owner)
         propogate_fennel_attributes(featureset_cls, self)
 
-    def is_deleted(self):
+    def __fennel_is_deleted__(self):
         if hasattr(self, META_FIELD):
             metadata = getattr(self, META_FIELD)
             return metadata.deleted

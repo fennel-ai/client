@@ -569,6 +569,6 @@ def test_feature_is_deleted():
         age: int
         virtual: bool = F().meta(deleted=True)
 
-    assert not UserInfo.age.is_deleted()
-    assert not UserInfo.user_id.is_deleted()
-    assert UserInfo.virtual.is_deleted()
+    assert not UserInfo.age.__fennel_is_deleted__()
+    assert not UserInfo.user_id.__fennel_is_deleted__()
+    assert UserInfo.virtual.__fennel_is_deleted__()

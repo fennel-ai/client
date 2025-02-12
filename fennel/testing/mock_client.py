@@ -176,13 +176,15 @@ class MockClient(Client):
 
         if datasets is not None:
             datasets = [
-                dataset for dataset in datasets if not dataset.is_deleted()
+                dataset
+                for dataset in datasets
+                if not dataset.__fennel_is_deleted__()
             ]
         if featuresets is not None:
             featuresets = [
                 featureset
                 for featureset in featuresets
-                if not featureset.is_deleted()
+                if not featureset.__fennel_is_deleted__()
             ]
         if incremental:
             cur_datasets = self.get_datasets()
