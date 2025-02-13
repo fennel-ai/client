@@ -459,7 +459,7 @@ class Client:
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
         workflow: Optional[str] = None,
         use_v2: bool = True,
-        num_dpus: Optional[int] = None
+        num_dpus: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Extract point in time correct values of output features.
 
