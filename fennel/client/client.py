@@ -619,7 +619,7 @@ class Client:
                     ]
                 )
 
-        req = {
+        req: dict[str, Any] = {
             "input_features": input_feature_names,
             "output_features": output_feature_names,
             "input": extract_historical_input,
