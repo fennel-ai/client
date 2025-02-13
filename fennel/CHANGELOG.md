@@ -1,5 +1,5 @@
 # Changelog
-## [1.5.53] - 2024-11-12
+## [1.5.77] - 2024-11-12
 - Add support for num_dpus parameter in offline query
 
 ## [1.5.77] - 2025-02-13
