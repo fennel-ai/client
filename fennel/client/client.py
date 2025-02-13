@@ -459,6 +459,7 @@ class Client:
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
         workflow: Optional[str] = None,
         use_v2: bool = True,
+        num_dpus: Optional[int] = None
     ) -> Dict[str, Any]:
         """Extract point in time correct values of output features.
 
@@ -497,6 +498,9 @@ class Client:
         workflow (Optional[str]): The name of the workflow associated with offline query.
             workflow param is equivalent to tagging (ex: fraud, finance etc.).
              If not provided, the "default" value will be used.
+
+        num_dpus (Optional[int]): Number of glue DPUs to use while executing the offline query.
+            We do not retry the job if it fails with the given DPUs
 
         Returns: Dict[str, Any]:
         ----------
@@ -625,6 +629,8 @@ class Client:
         }
         if workflow is not None:
             req["workflow"] = workflow
+        if num_dpus is not None:
+            req["num_dpus"] = num_dpus
         response = self._post_json(
             "{}/query_offline".format(
                 V1_API,

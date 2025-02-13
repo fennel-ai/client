@@ -312,6 +312,7 @@ class MockClient(Client):
         feature_to_column_map: Optional[Dict[Feature, str]] = None,
         workflow: Optional[str] = "default",
         use_v2: bool = False,
+        num_dpus: Optional[int] = None,
     ) -> Union[pd.DataFrame, pd.Series]:
         if input_dataframe is None:
             raise ValueError(
