@@ -1,4 +1,8 @@
 # Changelog
+
+## [1.5.79] - 2025-02-15
+- Bump pyarrow to 16.0.0
+
 ## [1.5.78] - 2024-11-12
 - Add support for num_dpus parameter in offline query
 
