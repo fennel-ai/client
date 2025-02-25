@@ -867,9 +867,9 @@ class Client:
             url = base_url
 
         response = self._get(url)
-        if response.status_code != requests.codes.OK:
-            raise Exception(response.json())
-        return response.json()
+        if response["status_code"] != 200:
+            raise Exception(response["body"])
+        return response["body"]
 
     def inspect(
         self, dataset: Union[str, Dataset], n: int = 10

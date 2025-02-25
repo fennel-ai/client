@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.5.80] - 2025-02-25
+- Use pycurl for xray
+
 ## [1.5.79] - 2025-02-15
 - Bump pyarrow to 16.0.0
 
