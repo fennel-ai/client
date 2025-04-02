@@ -459,6 +459,55 @@ def is_user_defined(obj):
     return inspect.isclass(type(obj)) and not inspect.isbuiltin(obj)
 
 
+def _add_input_constraints(func, params):
+    """
+    Wraps the user's extractor with a function that:
+    1. Checks that all input series have the same length.
+    2. Runs the extractor.
+    3. Asserts that the number of rows in the output matches the input length.
+       The output can be either a pandas Series or DataFrame.
+    """
+
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        # Ensure we have the correct number of arguments
+        assert (
+            len(args) == len(params) + 2
+        ), f"Expected {len(params) + 2} arguments, got {len(args)}"
+
+        args = list(args)
+        input_series = [
+            arg for arg in args[2:]
+        ]  # Skip the first two fixed args
+
+        # Measure length of input series
+        input_length = len(input_series[0])
+
+        renamed_args = args[:2] + [
+            arg.rename(name.fqn()) for name, arg in zip(params, input_series)
+        ]
+
+        # Run the extractor
+        ret = func(*renamed_args, **kwargs)
+
+        # Ensure the output matches the input length
+        if isinstance(ret, pd.Series) or isinstance(ret, pd.DataFrame):
+            output_length = len(ret)
+        else:
+            raise ValueError(
+                f"Expected a pandas Series or DataFrame but got {type(ret)} in {func.__qualname__}."
+            )
+
+        # Check that the output length matches the input length
+        assert (
+            output_length == input_length
+        ), f"Output length mismatch in {func.__qualname__}: expected {input_length}, got {output_length}"
+
+        return ret
+
+    return inner
+
+
 def _add_featureset_name(func, params):
     """Rewrites the output column names of the extractor to be fully qualified names.
     Also add feature names to the input parameters of the extractor.
@@ -800,6 +849,7 @@ class Featureset:
             extractor.featureset = self._name
             extractor.inputs = inputs
             func = _add_featureset_name(extractor.func, extractor.inputs)
+            func = _add_input_constraints(func, extractor.inputs)
             # Setting func at both extractor.func and class attribute
             extractor.func = func
             setattr(self.__fennel_original_cls__, name, classmethod(func))
