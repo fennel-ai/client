@@ -1,0 +1,311 @@
+name: fennel-datalib-publish
+env:
+  RUST_TOOLCHAIN: "1.79.0"
+  UNSAFE_PYO3_SKIP_VERSION_CHECK: "1"
+  RUSTFLAGS: "-C codegen-units=1"
+  CARGO_INCREMENTAL: 0
+# Controls when the workflow will run
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # TODO: support windows
+  # windows:
+  #   runs-on: windows-latest
+  #   strategy:
+  #     matrix:
+  #       python: [
+  #         { version: '3.12' },
+  #         { version: '3.11' },
+  #         { version: '3.10' },
+  #         { version: '3.9' },
+  #       ]
+  #       platform:
+  #         - runner: windows-latest
+  #           target: x64
+  #         - runner: windows-latest
+  #           target: x86
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Build
+  #       run: build-script.bat
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python.version }}
+  #         architecture: ${{ matrix.platform.target }}
+  #     - name: Build wheels
+  #       uses: PyO3/maturin-action@v1
+  #       with:
+  #         target: ${{ matrix.platform.target }}
+  #         args: --release --strip --out=dist --features "extension-module" --manifest-path fennel_data_lib/Cargo.toml -i python${{ matrix.python.version }} 
+  #         sccache: 'true'
+  #     - name: Upload wheels
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: fennel-data-lib-wheels-windows-${{ matrix.platform.target }}-${{ matrix.python.version }}
+  #         path: dist
+
+
+  manylinux_2_34_amd64:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [
+          { version: '3.12' },
+          { version: '3.11' },
+          { version: '3.10' },
+          { version: '3.9' },
+        ]
+        platform:
+          - target: x86_64-unknown-linux-gnu
+            arch: x86_64
+            platform: linux/amd64
+          
+    env:
+      CC: "clang"
+      CFLAGS: "-Os -fstrict-aliasing -fno-plt -flto=full -emit-llvm"
+      LDFLAGS: "-fuse-ld=lld -Wl,-plugin-opt=also-emit-llvm -Wl,--as-needed -Wl,-zrelro,-znow"
+      RUSTFLAGS: "-C linker=clang -C link-arg=-fuse-ld=lld -C link-arg=-Wl,-zrelro,-znow -C codegen-units=4"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        uses: PyO3/maturin-action@v1
+        env:
+          CC: "gcc"
+          CFLAGS: "-Os"
+          LDFLAGS: "-Wl,--as-needed"
+        with:
+          rustup-components: rust-src
+          target: ${{ matrix.platform.target }}
+          args: --release --strip --out=dist  --features "extension-module" --manifest-path fennel_data_lib/Cargo.toml -i python${{ matrix.python.version }} 
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: fennel-data-lib-wheels-${{ matrix.platform.arch }}-${{ matrix.python.version }}-manylinux_2_17_amd64 
+          path: dist
+
+
+  manylinux_2_17_amd64:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Python and Build Wheels
+        run: |
+          docker pull quay.io/pypa/manylinux2014_x86_64
+          docker run --rm -v ${{ github.workspace }}:/project -w /project quay.io/pypa/manylinux2014_x86_64 /bin/bash -c "
+            yum install -y gcc 
+            python${{ matrix.python-version }} -m venv venv
+            source venv/bin/activate
+            curl -sS https://bootstrap.pypa.io/get-pip.py | python
+            curl https://sh.rustup.rs -sSf | sh -s -- -y
+            source /root/.cargo/env
+            pip install maturin
+            maturin build --release --strip --out dist --manylinux 2_17 --features 'extension-module' --manifest-path fennel_data_lib/Cargo.toml -i python${{ matrix.python-version }}
+          "
+      - name: Upload Wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: fennel-data-lib-wheels-${{ matrix.python-version }}-manylinux_2_17_amd64
+          path: dist
+
+  musllinux_1_2:
+      runs-on: ubuntu-22.04
+      strategy:
+        fail-fast: false
+        matrix:
+          python: [
+            { version: '3.12' },
+            { version: '3.11' },
+            { version: '3.10' },
+            { version: '3.9' },
+          ]
+          platform:
+            - target: aarch64-unknown-linux-musl
+              arch: aarch64
+              platform: linux/arm64
+            - target: x86_64-unknown-linux-musl
+              arch: x86_64
+              platform: linux/amd64
+      steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        uses: PyO3/maturin-action@v1
+        env:
+          CC: "gcc"
+          CFLAGS: "-Os"
+          LDFLAGS: "-Wl,--as-needed"
+        with:
+          rust-toolchain: nightly-2024-07-02
+          rustup-components: rust-src
+          target: ${{ matrix.platform.target }}
+          manylinux: musllinux_1_2
+          args: --release --strip --out=dist --features "extension-module" --manifest-path fennel_data_lib/Cargo.toml -i python${{ matrix.python.version }}
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: fennel-data-lib-wheels-${{ matrix.platform.arch }}-${{ matrix.python.version }}-musllinux_1_2
+          path: dist
+
+
+  manylinux_2_17_non_amd64:
+      runs-on: ubuntu-22.04
+      strategy:
+        fail-fast: false
+        matrix:
+          python: [
+            { version: '3.12', abi: 'cp312-cp312' },
+            { version: '3.11', abi: 'cp311-cp311' },
+            { version: '3.10', abi: 'cp310-cp310' },
+            { version: '3.9', abi: 'cp39-cp39' },
+          ]
+          target: [
+            {
+              arch: 'aarch64',
+              cflags: '-Os -flto=full -fstrict-aliasing',
+              target: 'aarch64-unknown-linux-gnu',
+            },
+            {
+              arch: 'armv7',
+              cflags: '-Os -flto=full -fstrict-aliasing',
+              target: 'armv7-unknown-linux-gnueabihf',
+            },
+            {
+              arch: 'ppc64le',
+              cflags: '-Os -flto=full -fstrict-aliasing',
+              # rustflags: '-Z mir-opt-level=4  -D warnings',
+              target: 'powerpc64le-unknown-linux-gnu',
+            },
+            {
+              arch: 's390x',
+              cflags: '-Os -flto=full -fstrict-aliasing -march=z10',
+              target: 's390x-unknown-linux-gnu',
+            },
+          ]
+      steps:
+      - uses: actions/checkout@v4
+      - name: build-std
+        run: |
+          mkdir -p .cargo
+          cp ci/config.toml .cargo/config.toml
+      - name: Build
+        uses: PyO3/maturin-action@v1
+        env:
+          PYO3_CROSS_LIB_DIR: "/opt/python/${{ matrix.python.abi }}"
+          CFLAGS: "${{ matrix.target.cflags }}"
+          LDFLAGS: "-Wl,--as-needed"
+          PROTOC: "${{ env.PROTOC }}"
+        with:
+          target: ${{ matrix.target.target }}
+          rustup-components: rust-src
+          manylinux: auto
+          args: --release --strip --out=dist --features "extension-module" --manifest-path fennel_data_lib/Cargo.toml -i python${{ matrix.python.version }}
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: fennel-data-lib-wheels-${{ matrix.target.arch }}-${{ matrix.python.version }}-manylinux_2_17_non_amd64
+          path: dist
+
+  macos_universal2_aarch64:
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [
+          { version: '3.12', macosx_target: "10.15" },
+          { version: '3.11', macosx_target: "10.15" },
+          { version: '3.10', macosx_target: "10.15" },
+          { version: '3.9', macosx_target: "10.15" },
+        ]
+    env:
+      CC: "clang"
+      CFLAGS: "-Os -fstrict-aliasing -flto=full"
+      LDFLAGS: "-Wl,--as-needed"
+      CFLAGS_x86_64_apple_darwin: "-O2 -fstrict-aliasing -flto=full -march=x86-64-v2 -mtune=generic"
+      CFLAGS_aarch64_apple_darwin: "-O2 -fstrict-aliasing -flto=full -mcpu=apple-m1 -mtune=generic"
+      #PATH: "/Users/runner/work/server/server/.venv/bin:/Users/runner/.cargo/bin:/usr/local/opt/curl/bin:/usr/local/bin:/usr/local/sbin:/Users/runner/bin:/Library/Frameworks/Python.framework/Versions/Current/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+    steps:
+
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "${{ matrix.python.version }}"
+
+    - uses: dtolnay/rust-toolchain@master
+      with:
+        toolchain: "nightly-2024-07-02"
+        targets: "aarch64-apple-darwin, x86_64-apple-darwin"
+        components: "rust-src"
+
+    - name: Build environment
+      run: |
+        cargo fetch --target aarch64-apple-darwin &
+
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        uv venv --python python${{ matrix.python.version }}
+        uv pip install --upgrade "maturin>=1,<2"
+
+        mkdir -p .cargo
+        cp ci/config.toml .cargo/config.toml
+
+    - name: maturin
+      run: |
+        source .venv/bin/activate
+        PATH=$HOME/.cargo/bin:$PATH \
+        MACOSX_DEPLOYMENT_TARGET="${{ matrix.python.macosx_target }}" \
+        PYO3_CROSS_LIB_DIR=$(python -c "import sysconfig;print(sysconfig.get_config_var('LIBDIR'))") \
+        maturin build --release --strip \
+          --out dist \
+          --features="extension-module"  \
+          --manifest-path fennel_data_lib/Cargo.toml \
+          --interpreter python${{ matrix.python.version }} \
+          --target=universal2-apple-darwin
+
+
+    - name: Upload sdist
+      uses: actions/upload-artifact@v4
+      with:
+          name: fennel-data-lib-wheels-macos-aarch64_${{ matrix.python.version }}    
+          path: dist
+
+
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install protobuf compiler (protoc)
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist --manifest-path fennel_data_lib/Cargo.toml 
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: fennel-data-lib-wheels-sdist
+          path: dist
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [macos_universal2_aarch64, sdist, musllinux_1_2, manylinux_2_17_non_amd64, musllinux_1_2, manylinux_2_17_amd64, manylinux_2_17_amd64]
+    steps:
+      - uses: actions/download-artifact@v4
+      - name: Publish to PyPI
+        uses: PyO3/maturin-action@v1
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_PACKAGR_ACCESS_TOKEN }}
+        with:
+          command: upload
+          args: --non-interactive --skip-existing fennel-data-lib-wheels-*/*
